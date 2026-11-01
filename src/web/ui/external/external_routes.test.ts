@@ -1,4 +1,5 @@
 import express from "express";
+import { JSDOM } from "jsdom";
 import request from "supertest";
 
 import { UnsafeUrlError } from "@/web/scraping/safe_fetch";
@@ -77,6 +78,49 @@ describe("GET /externalReader", () => {
     expect(res.text).not.toMatch(
       /id="external-source-paste" value="paste" checked/
     );
+  });
+
+  test("sits under the Texts section: app bar and Custom tab", async () => {
+    const res = await request(makeApp(jest.fn())).get("/externalReader");
+    const doc = new JSDOM(res.text).window.document;
+
+    // The app bar highlights Texts (`activePage: "library"`).
+    const navLink = doc.querySelector('.nav-desktop a[aria-current="page"]');
+    expect(navLink?.getAttribute("href")).toBe("/library");
+    expect(navLink?.textContent?.trim()).toBe("Texts");
+
+    // The tab bar comes before the import form, with Custom current.
+    const tabs = doc.querySelector("main > nav.texts-tabs");
+    expect(tabs).not.toBeNull();
+    expect(tabs!.nextElementSibling?.tagName).toBe("MORCUS-EXTERNAL-LOADER");
+    const current = tabs!.querySelectorAll('[aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(current[0].getAttribute("href")).toBe("/externalReader");
+  });
+
+  test("shares the Texts section's draggable page width", async () => {
+    const res = await request(makeApp(jest.fn())).get("/externalReader");
+    const doc = new JSDOM(res.text).window.document;
+
+    expect(doc.body.classList.contains("body-library")).toBe(true);
+    expect(
+      doc.querySelector("morcus-page-width")?.getAttribute("data-surface")
+    ).toBe("library");
+  });
+
+  test("keeps the Texts tabs on a failed import", async () => {
+    const res = await request(
+      makeApp(async () => {
+        throw new UnsafeUrlError("Local addresses are not allowed");
+      })
+    ).get(`/externalReader?url=${encodeURIComponent("http://localhost/")}`);
+    const doc = new JSDOM(res.text).window.document;
+
+    expect(
+      doc
+        .querySelector('nav.texts-tabs [aria-current="page"]')
+        ?.getAttribute("href")
+    ).toBe("/externalReader");
   });
 
   test("?local= renders a reader shell for the saved text, never scraping", async () => {

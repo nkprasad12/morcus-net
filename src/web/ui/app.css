@@ -32,6 +32,7 @@
 @import "./dialog/dialog.css";
 @import "./about/about.css";
 @import "./library/library.css";
+@import "./open_texts/open_texts.css";
 @import "./corpus/corpus.css";
 @import "./external/external.css";
 @import "./macronizer/macronizer.css";

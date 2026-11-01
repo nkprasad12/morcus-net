@@ -21,6 +21,13 @@ import { getRegisteredElementTags } from "@/web/ui/core/dom/base_element.client"
 import { renderDictSearchBar } from "@/web/ui/dict/search/search_bar.server";
 import { renderAppBar } from "@/web/ui/shell/page_shell.server";
 import { renderPageWidthHandles } from "@/web/ui/shell/page_width.server";
+import { renderOpenTextReaderHostHtml } from "@/web/ui/open_texts/open_texts_contract.common";
+import {
+  FIXTURE_PL_ENTRY,
+  FIXTURE_PL_SOURCE,
+} from "@/web/ui/open_texts/open_texts_reader_fixtures";
+import { SEED_OPEN_TEXTS_CATALOG_BUNDLE } from "@/common/open_texts/catalog_loader";
+import { renderOpenTextsCatalogContentHtml } from "@/web/ui/open_texts/open_texts.server";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -269,6 +276,16 @@ const FIXTURES: Record<string, string> = {
         </div>
       </div>
     </morcus-macronizer-view>`,
+
+  "morcus-open-text-reader": renderOpenTextReaderHostHtml({
+    entry: FIXTURE_PL_ENTRY,
+    sourceMeta: FIXTURE_PL_SOURCE,
+    backHref: "/opentexts",
+  }),
+
+  "morcus-open-texts-view": renderOpenTextsCatalogContentHtml(
+    SEED_OPEN_TEXTS_CATALOG_BUNDLE
+  ),
 };
 
 beforeAll(() => {

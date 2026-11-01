@@ -3,22 +3,20 @@
 
 .external-landing {
   display: block;
-  max-width: 640px;
+  width: 100%;
   margin: 0 auto;
 }
 
 .external-landing-header {
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
-.external-landing-title {
-  margin: 0 0 var(--space-3);
-  font-size: 1.8rem;
-}
-
+/* Matches the Library and Open Texts descriptions. */
 .external-landing-lede {
   margin: 0;
   color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .external-import-form {
@@ -96,14 +94,9 @@
   margin-top: var(--space-2);
 }
 
-.external-form-note,
-.external-landing-back {
+.external-form-note {
   color: var(--text-muted);
   font-size: 0.85rem;
-}
-
-.external-landing-back {
-  margin-top: var(--space-5);
 }
 
 .external-error {

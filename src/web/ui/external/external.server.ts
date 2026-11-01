@@ -23,6 +23,7 @@ import {
   renderReaderTextPanelHtml,
 } from "@/web/ui/reader/reader.server";
 import { renderPageShell } from "@/web/ui/shell/page_shell.server";
+import { renderTextsTabBar } from "@/web/ui/shell/texts_tabs.server";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import {
   DEFAULT_LINE_MODE,
@@ -102,11 +103,12 @@ export function renderExternalLandingContentHtml(
   // `disabled` so the textarea's `required` cannot block the No-JS form. The
   // tabs, the paste panel and the saved list are `data-js-only`, so without
   // JS (or until `<morcus-external-loader>` is upgraded) only the plain GET
-  // form for web pages shows.
+  // form for web pages shows. The Texts tab bar sits above the loader, at the
+  // full column width, so it lines up with the other two tabs.
   return ssr`
+    ${renderTextsTabBar("external")}
     <morcus-external-loader class="external-landing" data-page="landing">
       <header class="external-landing-header">
-        <h1 class="external-landing-title">Read your own text</h1>
         <p class="external-landing-lede">Paste a Latin text, or import one from a web page, and read it with the dictionary alongside, just like a work in the library.</p>
       </header>
 
@@ -188,10 +190,6 @@ export function renderExternalLandingContentHtml(
         <ul class="external-saved-list" id="external-saved-list"></ul>
         <p class="external-form-note" id="external-saved-empty">Texts you read here are saved in this browser.</p>
       </section>
-
-      <p class="external-landing-back">
-        <a href="/library">&larr; Return to Library Catalog</a>
-      </p>
     </morcus-external-loader>
   `;
 }
@@ -207,6 +205,8 @@ export function renderExternalLandingPageHtml(
     activePage: "library",
     isExternal: true,
     contentHtml: renderExternalLandingContentHtml(options),
+    // Shares the Texts section's width setting with /library and /opentexts.
+    widthSurface: "library",
   });
 }
 

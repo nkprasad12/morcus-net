@@ -57,21 +57,24 @@ export interface V2BundleBudget {
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
     "common.js": { maxBrotliBytes: 19.75 * 1024 },
-    "reader.js": { maxBrotliBytes: 12.5 * 1024 },
+    "reader.js": { maxBrotliBytes: 13 * 1024 },
     "dict.js": { maxBrotliBytes: 8.5 * 1024 },
     "corpus.js": { maxBrotliBytes: 5.5 * 1024 },
-    "external.js": { maxBrotliBytes: 4 * 1024 },
+    // Includes the Open Texts reader (M4 + M5): `parseTeiDocument` (`fast-xml-parser`)
+    // and `parseLatinLibraryOpenText` (`src/common/thelatinlibrary/`), plus the
+    // `/opentexts` catalog filter (`<morcus-open-texts-view>`, ~0.6 KiB).
+    "external.js": { maxBrotliBytes: 31 * 1024 },
     "macronizer.js": { maxBrotliBytes: 4 * 1024 },
   },
   routes: {
     about: { maxBrotliBytes: 19.75 * 1024 },
     dicts: { maxBrotliBytes: 27.75 * 1024 },
     corpus: { maxBrotliBytes: 24.75 * 1024 },
-    library: { maxBrotliBytes: 32 * 1024 },
-    external: { maxBrotliBytes: 35.5 * 1024 },
+    library: { maxBrotliBytes: 32.5 * 1024 },
+    external: { maxBrotliBytes: 62.75 * 1024 },
     macronizer: { maxBrotliBytes: 23.25 * 1024 },
   },
-  maxCssBrotliBytes: 21.25 * 1024,
+  maxCssBrotliBytes: 22.25 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
   // pre-paint preference must not grow it (~300 B raw / ~210 B brotli). Do not

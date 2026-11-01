@@ -1,0 +1,264 @@
+/* Open Texts Catalog Styling (UI V2 — /opentexts) */
+
+.open-texts-view {
+  display: block;
+  width: 100%;
+  margin: 0 auto var(--space-8);
+}
+
+.open-texts-header {
+  margin-bottom: var(--space-6);
+}
+
+/* Uncurated collection explainer banner */
+.open-texts-notice {
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+  background-color: var(--badge-resume-bg);
+  border: 1px solid var(--badge-resume-border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.open-texts-notice-body {
+  margin: 0;
+}
+
+.open-texts-notice-body a {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* Without JS: the list and its controls are `data-js-only` (the M4 JS-only
+   exception), so this note is all that follows the banner. */
+.open-texts-nojs-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Search & filter controls (filtered in place by <morcus-open-texts-view>) */
+.open-texts-search-form {
+  margin-bottom: var(--space-4);
+}
+
+.open-texts-filter-tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-4) var(--space-6);
+  padding: var(--space-3) var(--space-5);
+}
+
+.open-texts-filter-group {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.open-texts-filter-group::-webkit-scrollbar {
+  display: none;
+}
+
+.open-texts-filter-label {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-right: var(--space-1);
+}
+
+/* Results summary & clear filters bar */
+.open-texts-summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-1);
+  color: var(--text-muted);
+}
+
+.open-texts-count {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* A button that looks like a link. */
+.open-texts-reset-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.open-texts-reset-link:hover {
+  text-decoration: underline;
+}
+
+/* Author -> Works grouped listing */
+.open-texts-groups {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.open-texts-author-group {
+  background-color: var(--card-surface-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.open-texts-author-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+.open-texts-author-name {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.open-texts-author-count {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.open-texts-work-list {
+  list-style-type: none;
+  margin-block: 0;
+  padding-inline-start: 0;
+}
+
+.open-texts-work-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.open-texts-work-item:last-child {
+  border-bottom: none;
+}
+
+.open-texts-work-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.open-texts-work-link {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  overflow-wrap: break-word;
+}
+
+.open-texts-work-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Decision #19: Partial-coverage notice & link to curated Library edition */
+.open-texts-partial-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.open-texts-partial-link {
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.open-texts-partial-link:hover {
+  text-decoration: underline;
+}
+
+/* Work row metadata chips & source badge */
+.open-texts-work-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.open-texts-meta-chip {
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.open-texts-source-badge {
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.open-texts-source-pl {
+  background-color: var(--badge-macra-bg);
+  color: var(--badge-macra-text);
+  border: 1px solid var(--badge-macra-border);
+}
+
+.open-texts-source-ll {
+  background-color: var(--badge-trans-bg);
+  color: var(--badge-trans-text);
+  border: 1px solid var(--badge-trans-border);
+}
+
+@media (width <= 640px) {
+  .open-texts-work-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .open-texts-work-badges {
+    justify-content: flex-start;
+  }
+}

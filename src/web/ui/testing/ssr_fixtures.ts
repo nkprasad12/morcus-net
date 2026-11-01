@@ -40,6 +40,8 @@ import {
   encodeSuggestions,
 } from "@/web/ui/macronizer/macronizer_params.server";
 import { renderMacronizerContentHtml } from "@/web/ui/macronizer/macronizer_view.server";
+import { buildOpenTextsCatalogFixtures } from "@/web/ui/open_texts/open_texts_catalog_fixtures";
+import { buildOpenTextsReaderFixtures } from "@/web/ui/open_texts/open_texts_reader_fixtures";
 import { renderReaderContentHtml } from "@/web/ui/reader/reader.server";
 import {
   CORPUS_TEST_AUTHORS,
@@ -352,6 +354,8 @@ export async function buildSsrFixtures(): Promise<SsrFixture[]> {
     buildLibraryFixtures(),
     buildReaderFixtures(),
     buildExternalFixtures(),
+    buildOpenTextsCatalogFixtures(),
+    buildOpenTextsReaderFixtures(),
     buildCorpusFixtures(),
     buildMacronizerFixtures(),
     buildStaticPageFixtures(),

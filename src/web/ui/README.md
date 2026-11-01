@@ -129,6 +129,20 @@ The rule block lives in [`critical.css`](critical.css), so it's correct from fir
 
 There is no global "JS is on" flag. [`core/conformance/gate_conformance.test.ts`](core/conformance/gate_conformance.test.ts) fails on `<noscript>`, `.has-js`, `:defined` and `.js-only` classes, and ratchets the number of `[data-upgraded]` rules per CSS file. **Exceptions and ratchet increases require human review**; do not add one to make the test pass.
 
+### The M4 JS-only exception: Open Texts
+
+The Open Texts catalog browser (`/opentexts`) and reader (`/opentexts?open=<id>`, `open_texts/open_text_reader.client.ts`) are the one reading surface that is **JS-only by design**, an explicit exception to the Zero-JS Baseline. Open Texts ship only catalog metadata (M4): the text itself is fetched in the browser from its pinned upstream commit (`raw.githubusercontent.com`, falling back to `cdn.jsdelivr.net`), parsed on the reader's device (`parseTeiDocument`), and cached in IndexedDB (`open_text_storage.client.ts`). The server never has the text, so it cannot render it.
+
+What still holds:
+
+- **The No-JS pages are honest.** The reader's server renders only the `<morcus-open-text-reader>` host (`renderOpenTextReaderHostHtml` in `open_texts/open_texts_contract.common.ts`). Its `data-nojs-only` note says the text needs JavaScript and links to the upstream source and back to the catalog. Since every work it lists opens in that reader, the catalog (`open_texts.server.ts`) is JS-only too: its search, filter pills, summary and list are `data-js-only`, and a `data-nojs-only` note under the uncurated banner says browsing and reading Open Texts requires JavaScript.
+- **The catalog filters like the Library.** The server renders the full Author → Works list; `<morcus-open-texts-view>` (`open_texts/open_texts_view.client.ts`, in `external.js`, which the catalog loads with `route: "external"`) filters it in place by author, title, volume label, source and period, toggling `hidden` and rewriting counts as text. It creates no markup and never changes the URL.
+- **The client renders the library's reader, not a new one.** `open_text_view_adapter.client.ts` builds the same `<morcus-reader-view>` frame the server renders for library and external texts (passage sections, sticky bar, dictionary companion panel), so tokenization, dictionary lookup, section permalinks and the drawer behave as everywhere else. It uses only existing reader and core classes.
+- **DOM writes stay audited.** The frame is written by a single `setHtml` call site (`mountOpenTextFrame`, counted in `inventory_ratchet.json`); page turns replace the passage through the reader view's `adoptPassage` and patch the surrounding chrome with text and attributes only. Because the frame only exists after the async load, it is outside the SSR fixtures; the host markup is checked through `open_texts/open_texts_reader_fixtures.ts`.
+- **The URL stays the source of truth.** Page turns update `?page=` (`pushState`), Back and Forward turn pages, and the last page read is remembered per work, so `/opentexts?open=<id>` reopens where the reader left off.
+
+Do not extend this exception to other pages: anything the server can render, it must.
+
 ### Hash targets and the reveal protocol
 
 No-JS UI often opens via a link to a fragment (`<a href="#reader-dict">` plus a `:target` rule). Scope such `:target` rules with `:not([data-upgraded] *)` so the component takes over after upgrade, and have the component adopt the state instead of reading `location.hash` itself:

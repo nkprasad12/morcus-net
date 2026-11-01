@@ -12,6 +12,7 @@
       "src/web/ui/dict/settings/dict_settings.client.ts": 1,
       "src/web/ui/external/external_loader.client.ts": 1,
       "src/web/ui/library/library_view.client.ts": 3,
+      "src/web/ui/open_texts/open_text_view_adapter.client.ts": 1,
       "src/web/ui/reader/reader_panel.client.ts": 3,
       "src/web/ui/reader/reader_view.client.ts": 1
     }

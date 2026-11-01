@@ -79,6 +79,50 @@ describe("library SSR & client hydration", () => {
       expect(html).not.toContain("data-author=");
       expect(html).not.toContain("data-title=");
     });
+
+    it("heads the page with the Texts tabs, Library current", async () => {
+      document.documentElement.innerHTML = await renderLibraryPageHtml();
+
+      const tabs = document.querySelector(".library-header > nav.texts-tabs");
+      expect(tabs).not.toBeNull();
+      const current = tabs!.querySelectorAll('[aria-current="page"]');
+      expect(current).toHaveLength(1);
+      expect(current[0].getAttribute("href")).toBe("/library");
+      expect(
+        [...tabs!.querySelectorAll("a")].map((a) => a.getAttribute("href"))
+      ).toEqual(["/library", "/opentexts", "/externalReader"]);
+    });
+
+    it("highlights Texts in the app bar", async () => {
+      document.documentElement.innerHTML = await renderLibraryPageHtml();
+
+      const navLink = document.querySelector(
+        '.nav-desktop a[aria-current="page"]'
+      );
+      expect(navLink?.getAttribute("href")).toBe("/library");
+      expect(navLink?.textContent?.trim()).toBe("Texts");
+    });
+
+    it("points to Open Texts and to reading your own text", async () => {
+      document.documentElement.innerHTML = await renderLibraryPageHtml();
+
+      const links = [...document.querySelectorAll(".library-own-text a")];
+      expect(links.map((a) => a.getAttribute("href"))).toEqual([
+        "/opentexts",
+        "/externalReader",
+      ]);
+    });
+
+    it("puts the description between the tab bar and the search bar", async () => {
+      document.documentElement.innerHTML = await renderLibraryPageHtml();
+
+      const header = document.querySelector(".library-header")!;
+      expect([...header.children].map((child) => child.classList[0])).toEqual([
+        "texts-tabs",
+        "library-own-text",
+        "library-search-form",
+      ]);
+    });
   });
 
   describe("MorcusLibraryView", () => {

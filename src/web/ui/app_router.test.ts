@@ -1344,7 +1344,7 @@ describe("app_router integration", () => {
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("morcus-library-view");
-      expect(res.text).toContain("Welcome to the library!");
+      expect(res.text).toContain("Welcome to the library of verified texts!");
       expect(res.text).toContain("search-form");
       expect(res.text).toContain("Julius Caesar");
       expect(res.text).toContain("work-card");
@@ -1668,6 +1668,7 @@ describe("app_router integration", () => {
         json: { reportText: "telemetry coverage" },
       },
       { route: "/library", method: "GET", url: "/library" },
+      { route: "/opentexts", method: "GET", url: "/opentexts" },
       { route: "/about", method: "GET", url: "/about" },
     ];
 

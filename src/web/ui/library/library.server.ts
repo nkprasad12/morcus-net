@@ -2,6 +2,8 @@ import { renderPageShell } from "@/web/ui/shell/page_shell.server";
 import { getV2LibrarySummaries } from "@/web/ui/reader/reader_loader.server";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import { EXTERNAL_READER_PATH } from "@/web/ui/external/external_url.common";
+import { renderTextsTabBar } from "@/web/ui/shell/texts_tabs.server";
+import { TEXTS_TAB_PATHS } from "@/web/ui/shell/texts_tabs.common";
 import * as he from "he";
 import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
@@ -77,6 +79,10 @@ export async function renderLibraryPageHtml(): Promise<string> {
   const contentHtml = ssr`
     <morcus-library-view class="library-view">
       <header class="library-header">
+        ${renderTextsTabBar("library")}
+        <p class="library-own-text">Welcome to the library of verified texts!<br>Looking for something else? Try <a href="${
+          TEXTS_TAB_PATHS.opentexts
+        }">Open Texts</a>, or <a href="${EXTERNAL_READER_PATH}">read your own text</a>.</p>
         <div class="library-search-form search-form" data-js-only>
           <div class="input-wrapper">
             <input type="text"
@@ -100,8 +106,6 @@ export async function renderLibraryPageHtml(): Promise<string> {
             </div>
           </div>
         </div>
-
-        <p class="library-own-text">Welcome to the library! Choose a work below, or <a href="${EXTERNAL_READER_PATH}">read your own text</a>.</p>
       </header>
 
       <div id="library-empty-state" class="empty-state library-empty-state" hidden>
