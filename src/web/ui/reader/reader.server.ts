@@ -309,6 +309,7 @@ const HEADER_ATTRIBUTION_LABELS: Record<DocumentAttribution, string> = {
   perseus: "Text kindly provided by Perseus",
   hypotactic: "Text kindly provided by Hypotactic",
   publicDomain: "Text from the public domain",
+  theLatinLibrary: "Text kindly provided by The Latin Library",
 };
 
 /**

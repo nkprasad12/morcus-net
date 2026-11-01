@@ -232,4 +232,96 @@ describe("resolvePageInWork section fallback", () => {
       matched: true,
     });
   });
+
+  test("resolves roman_law compact pr and Digest Books 30–32 Title 0 elided citations", async () => {
+    const digest: V2PreprocessedWork = {
+      ...fakeWork("tll.justinian.digest", "digest"),
+      author: "Justinian",
+      urlAuthor: "justinian",
+      textParts: ["book", "title", "lex", "paragraph"],
+      paginationDepth: 2,
+      citationStyle: "roman_law",
+      pages: [
+        {
+          id: ["1", "1"],
+          title: "Book 1, Title 1",
+          sectionCount: 2,
+          citationRange: ["1.1.1pr", "1.1.1.1"],
+          singleHtml:
+            '<div class="reader-section" id="sec-1.1.1pr"><span id="sec-1.1.1.pr"></span></div>',
+        },
+        {
+          id: ["30", "0"],
+          title: "Book 30",
+          sectionCount: 3,
+          citationRange: ["30.1pr", "30.79.1"],
+          singleHtml:
+            '<div class="reader-section" id="sec-30.1pr"><span id="sec-30.0.1.pr"></span></div><div class="reader-section" id="sec-30.79.1"><span id="sec-30.0.79.1"></span></div>',
+        },
+        {
+          id: ["31", "0"],
+          title: "Book 31",
+          sectionCount: 1,
+          citationRange: ["31.1.1", "31.1.1"],
+          singleHtml: '<div class="reader-section" id="sec-31.1.1"></div>',
+        },
+        {
+          id: ["32", "0"],
+          title: "Book 32",
+          sectionCount: 1,
+          citationRange: ["32.1.1", "32.1.1"],
+          singleHtml: '<div class="reader-section" id="sec-32.1.1"></div>',
+        },
+      ],
+    };
+
+    for (const q of ["1.1.1pr", "1.1.1.pr"]) {
+      expect(resolvePageInWork(digest, q)).toMatchObject({
+        pageIndex: 0,
+        matched: true,
+      });
+    }
+
+    for (const q of ["30.79.1", "30.79", "30.1pr", "30.0.1.pr", "30.0.79.1"]) {
+      expect(resolvePageInWork(digest, q)).toMatchObject({
+        pageIndex: 1,
+        matched: true,
+      });
+    }
+
+    expect(resolvePageInWork(digest, "31.1.1")).toMatchObject({
+      pageIndex: 2,
+      matched: true,
+    });
+    expect(resolvePageInWork(digest, "32.1.1")).toMatchObject({
+      pageIndex: 3,
+      matched: true,
+    });
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "reader-digest-"));
+    try {
+      const summaries = saveV2LibraryDb(tmpDir, [digest]);
+      expect(summaries[0].citationStyle).toBe("roman_law");
+      const loaded = await getV2Work("justinian/digest", tmpDir);
+      expect(loaded?.citationStyle).toBe("roman_law");
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+
+    // Non-roman_law work does not apply Roman-law alias rewrites even if textParts has "title"
+    const defaultWork: V2PreprocessedWork = {
+      ...digest,
+      citationStyle: undefined,
+      pages: [
+        {
+          id: ["30", "0"],
+          title: "Book 30, Title 0",
+          sectionCount: 1,
+          citationRange: ["30.0.79.1", "30.0.79.1"],
+          singleHtml: '<div class="reader-section" id="sec-30.0.79.1"></div>',
+        },
+      ],
+    };
+    expect(resolvePageInWork(defaultWork, "30.79.1").matched).toBe(false);
+  });
 });

@@ -13,6 +13,8 @@ function getAttributionNoticeHtml(attribution?: string): string {
       return `<p class="reader-about-attribution">The raw text was provided by David Chamberlain of <a href="https://hypotactic.com" target="_blank" rel="noopener noreferrer">https://hypotactic.com</a> under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-SA-4.0</a> license.</p>`;
     case "publicDomain":
       return `<p class="reader-about-attribution">The raw text is in the public domain.</p>`;
+    case "theLatinLibrary":
+      return `<p class="reader-about-attribution">The raw text was provided by <a href="https://www.thelatinlibrary.com" target="_blank" rel="noopener noreferrer">The Latin Library</a>, which presents it as being in the public domain.</p>`;
     case "perseus":
     default:
       return `<p class="reader-about-attribution">The raw text was provided by the Perseus Digital Library and was accessed originally from <a href="https://github.com/PerseusDL/canonical-latinLit" target="_blank" rel="noopener noreferrer">https://github.com/PerseusDL/canonical-latinLit</a>. It is provided under Perseus&#39; conditions of the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-SA-4.0</a> license, and you must offer Perseus any modifications you make.</p>`;

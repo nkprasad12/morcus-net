@@ -6,7 +6,28 @@ export interface TranslationInfo {
   translator?: string;
 }
 
-export type DocumentAttribution = "perseus" | "hypotactic" | "publicDomain";
+export type DocumentAttribution =
+  | "perseus"
+  | "hypotactic"
+  | "publicDomain"
+  | "theLatinLibrary";
+
+/**
+ * Per-work citation formatting and lookup conventions (Decision #21).
+ *
+ * - `"default"`: Standard classical literary citation labels (e.g. `pr` -> `Praefatio`,
+ *   dot-separated `1.1.1.pr`).
+ * - `"roman_law"`: Roman juristic / Corpus Juris Civilis conventions (Digest, Gaius):
+ *   - `pr` is labelled `principium` (`Principium`), not `Praefatio`.
+ *   - Digest Books 30-32 (`De legatis I-III`): single-title books keep `"0"` in the
+ *     section ID hierarchy (`["30", "0", "79", "1"]`), hide `Title 0` in human-readable
+ *     labels (`Book 30, Lex 79, 1`), and accept `30.79.1` as a jump/lookup alias.
+ *   - Compact display format attaches `pr` directly to the law/chapter number (`1.1.1pr`,
+ *     local gutter `1pr`), while accepting both `1.1.1pr` and `1.1.1.pr` on lookup.
+ *   - Jurist inscriptions (`Ulpianus 1 inst.`) appear once per *lex* in small caps
+ *     with `kind="editorial"` (`data-no-tokenize="true"`).
+ */
+export type CitationStyle = "default" | "roman_law";
 
 export interface DocumentInfo {
   title: string;
@@ -24,6 +45,8 @@ export interface DocumentInfo {
   /** The licence statement in the source file's header, if it has one. */
   licence?: string;
   attribution: DocumentAttribution;
+  /** Optional citation formatting and lookup style (defaults to `"default"`). */
+  citationStyle?: CitationStyle;
 }
 
 export interface WorkPage {

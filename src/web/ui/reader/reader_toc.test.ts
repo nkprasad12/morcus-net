@@ -4,7 +4,10 @@
 
 import { ReaderTocController } from "@/web/ui/reader/reader_toc.client";
 import { revealTarget } from "@/web/ui/core/nav/reveal.client";
-import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
+import {
+  preRenderTocItemsHtml,
+  renderTocDrawer,
+} from "@/web/ui/reader/reader_toc.server";
 
 describe("ReaderTocController", () => {
   let container: HTMLDivElement;
@@ -611,6 +614,98 @@ describe("ReaderTocController", () => {
       controller.dispose();
     });
 
+    test("resolves roman_law compact pr (1.1.1pr) and Digest Books 30–32 Title 0 elided queries (30.79.1, 30.79, 30.1pr, 31.1.1, 32.1.1) only when data-citation-style is roman_law", () => {
+      document.body.innerHTML = "";
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <dialog id="reader-toc-drawer" class="reader-toc-drawer" data-citation-style="roman_law">
+          <div class="reader-toc-header">
+            <form id="reader-toc-search-form" class="reader-toc-search-form" action="/work/justinian/digest" method="GET">
+              <input type="text" name="jump" id="reader-toc-search-input" class="reader-toc-search-input" />
+            </form>
+          </div>
+          <div class="reader-toc-list" id="reader-toc-list">
+            <details class="reader-toc-group" data-group-id="1" open>
+              <summary class="reader-toc-summary"><span class="reader-toc-group-label">Book 1</span></summary>
+              <div class="reader-toc-group-children">
+                <a href="/work/justinian/digest/1.1" class="reader-toc-item active" data-page-id="1.1">
+                  <span class="reader-toc-item-title">Title 1</span>
+                  <span class="reader-toc-item-id">&sect; 1.1</span>
+                </a>
+              </div>
+            </details>
+            <a href="/work/justinian/digest/30.0" class="reader-toc-item" data-page-id="30.0">
+              <span class="reader-toc-item-title">Book 30</span>
+              <span class="reader-toc-item-id">&sect; 30</span>
+            </a>
+            <a href="/work/justinian/digest/31.0" class="reader-toc-item" data-page-id="31.0">
+              <span class="reader-toc-item-title">Book 31</span>
+              <span class="reader-toc-item-id">&sect; 31</span>
+            </a>
+            <a href="/work/justinian/digest/32.0" class="reader-toc-item" data-page-id="32.0">
+              <span class="reader-toc-item-title">Book 32</span>
+              <span class="reader-toc-item-id">&sect; 32</span>
+            </a>
+          </div>
+        </dialog>
+      `;
+      document.body.appendChild(div);
+
+      const controller = connectController({ root: div });
+      const searchInput = controller.searchInput!;
+      controller.open();
+
+      const item11 = div.querySelector<HTMLAnchorElement>(
+        '[data-page-id="1.1"]'
+      )!;
+      const item30 = div.querySelector<HTMLAnchorElement>(
+        '[data-page-id="30.0"]'
+      )!;
+      item11.addEventListener("click", (e) => e.preventDefault());
+      item30.addEventListener("click", (e) => e.preventDefault());
+
+      // Compact 1.1.1pr -> expands to canonical #sec-1.1.1.pr
+      searchInput.value = "1.1.1pr";
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+      expect(getVisiblePageIds(div)).toEqual(["1.1"]);
+      expect(getSelectedPageId(div)).toBe("1.1");
+      searchInput.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      );
+      expect(item11.getAttribute("href")).toBe(
+        "/work/justinian/digest/1.1#sec-1.1.1.pr"
+      );
+
+      // Title-0 elided 30.79.1 -> resolves to page 30.0 / section 30.0.79.1
+      searchInput.value = "30.79.1";
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+      expect(getVisiblePageIds(div)).toEqual(["30.0"]);
+      expect(getSelectedPageId(div)).toBe("30.0");
+      searchInput.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      );
+      expect(item30.getAttribute("href")).toBe(
+        "/work/justinian/digest/30.0#sec-30.0.79.1"
+      );
+
+      // 30.79, 30.1pr, 31.1.1, 32.1.1
+      controller.applyFilter("30.79");
+      expect(getSelectedPageId(div)).toBe("30.0");
+      controller.applyFilter("30.1pr");
+      expect(getSelectedPageId(div)).toBe("30.0");
+      controller.applyFilter("31.1.1");
+      expect(getSelectedPageId(div)).toBe("31.0");
+      controller.applyFilter("32.1.1");
+      expect(getSelectedPageId(div)).toBe("32.0");
+
+      // Without data-citation-style="roman_law", 30.79.1 is not rewritten to 30.0.79.1
+      controller.drawer!.removeAttribute("data-citation-style");
+      controller.applyFilter("30.79.1");
+      expect(getSelectedPageId(div)).toBeNull();
+
+      controller.dispose();
+    });
+
     test("supports ArrowDown and ArrowUp keyboard navigation through visible items", () => {
       document.body.innerHTML = "";
       const root = createComprehensiveTocFixture("1.1");
@@ -800,5 +895,76 @@ describe("preRenderTocItemsHtml", () => {
       '<span class="reader-toc-item-title">Lines 1–414</span>'
     );
     expect(html).toContain('data-page-id="1"');
+  });
+
+  test("omits Title 0 and renders Principium for citationStyle: roman_law", () => {
+    const html = preRenderTocItemsHtml({
+      work: {
+        urlAuthor: "justinian",
+        urlName: "digest",
+        textParts: ["book", "title", "lex", "paragraph"],
+        citationStyle: "roman_law",
+        pages: [
+          {
+            id: ["1", "1"],
+            title: "Book 1, Title 1",
+            sectionCount: 1,
+            citationRange: ["1.1.1pr", "1.1.1pr"],
+            singleHtml: "",
+          },
+          {
+            id: ["30", "0"],
+            title: "Book 30",
+            sectionCount: 1,
+            citationRange: ["30.1pr", "30.79.1"],
+            singleHtml: "",
+          },
+        ],
+        navTree: {
+          id: [],
+          children: [
+            { id: ["1"], children: [{ id: ["1", "1"], children: [] }] },
+            { id: ["30"], children: [{ id: ["30", "0"], children: [] }] },
+          ],
+        },
+      },
+    });
+
+    expect(html).toContain(
+      '<span class="reader-toc-item-title">Title 1</span>'
+    );
+    expect(html).toContain(
+      '<span class="reader-toc-item-title">Book 30</span>'
+    );
+    expect(html).toContain('data-page-id="30.0"');
+    expect(html).not.toContain("Title 0");
+
+    const drawerHtml = renderTocDrawer({
+      work: {
+        id: "tll.justinian.digest",
+        title: "Digesta",
+        author: "Justinian",
+        urlAuthor: "justinian",
+        urlName: "digest",
+        attribution: "theLatinLibrary",
+        hasMacra: false,
+        hasTranslation: false,
+        textParts: ["book", "title", "lex", "paragraph"],
+        paginationDepth: 2,
+        citationStyle: "roman_law",
+        tocHtml: html,
+        pages: [
+          {
+            id: ["1", "1"],
+            title: "Book 1, Title 1",
+            sectionCount: 1,
+            citationRange: ["1.1.1.pr", "1.1.1.pr"],
+            singleHtml: "",
+          },
+        ],
+      },
+      activePageIndex: 0,
+    });
+    expect(drawerHtml).toContain('data-citation-style="roman_law"');
   });
 });

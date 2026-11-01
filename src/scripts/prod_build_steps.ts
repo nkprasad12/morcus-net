@@ -95,6 +95,7 @@ const PROCESS_LAT_LIB: StepConfig = {
       upstreamSource("canonical-latinlit"),
       upstreamSource("hypotactic"),
       upstreamSource("phi-public-domain-json"),
+      upstreamSource("thelatinlibrary"),
     ],
   },
 };

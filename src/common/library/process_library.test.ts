@@ -44,6 +44,8 @@ function setupFakePhiDir() {
 
 setupFakeHypotacticData();
 setupFakePhiDir();
+// Keep a locally configured Latin Library checkout out of these builds.
+replaceEnvVar("THELATINLIBRARY_ROOT", "thelatinlibrary-testdata-absent");
 
 beforeAll(() => {
   process.env.MORCEUS_DATA_ROOT = FAKE_MORCEUS_DATA_ROOT;

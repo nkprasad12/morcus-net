@@ -5,7 +5,13 @@
  * poem.line, book.line, act.scene.line).
  */
 
-import { formatSectionLabel } from "@/common/library/section_labels";
+import {
+  type CitationStyle,
+  expandRomanLawCompactPrTokens,
+  formatCitationId,
+  formatSectionLabel,
+  formatSectionPath,
+} from "@/common/library/section_labels";
 
 /**
  * Citation ID tuple representing hierarchical address coordinates (e.g. ["1", "1", "2"]).
@@ -13,20 +19,31 @@ import { formatSectionLabel } from "@/common/library/section_labels";
 export type CitationId = string[];
 
 /**
- * Converts a CitationId tuple to canonical dot notation (e.g. ["1", "2", "3"] -> "1.2.3").
+ * Converts a CitationId tuple to canonical dot notation (e.g. ["1", "2", "3"] -> "1.2.3",
+ * or ["1", "1", "1", "pr"] -> "1.1.1pr" when `citationStyle === "roman_law"`).
  */
-export function citationToString(id: CitationId): string {
-  return id.join(".");
+export function citationToString(
+  id: CitationId,
+  citationStyle?: CitationStyle,
+  textParts?: readonly string[]
+): string {
+  return formatCitationId(id, citationStyle, textParts);
 }
 
 /**
  * Parses a dot-separated citation string into a CitationId tuple (e.g. "1.2.3" -> ["1", "2", "3"]).
  */
-export function parseCitationString(str: string): CitationId {
-  return str
+export function parseCitationString(
+  str: string,
+  citationStyle?: CitationStyle
+): CitationId {
+  const tokens = str
     .trim()
     .split(".")
     .filter((tok) => tok.length > 0);
+  return citationStyle === "roman_law"
+    ? expandRomanLawCompactPrTokens(tokens)
+    : tokens;
 }
 
 /**
@@ -49,14 +66,15 @@ export function isRetiredFrontMatterId(id: string): boolean {
 export function getDifferentialCitationLabel(
   currPageId: CitationId | string,
   targetPageId: CitationId | string,
-  textParts: string[]
+  textParts: string[],
+  citationStyle?: CitationStyle
 ): string {
   const currArr = Array.isArray(currPageId)
     ? currPageId
-    : parseCitationString(currPageId);
+    : parseCitationString(currPageId, citationStyle);
   const targetArr = Array.isArray(targetPageId)
     ? targetPageId
-    : parseCitationString(targetPageId);
+    : parseCitationString(targetPageId, citationStyle);
 
   let diffIdx = 0;
   while (
@@ -71,5 +89,14 @@ export function getDifferentialCitationLabel(
   }
   const partName = textParts[diffIdx] ?? `Section`;
   const value = targetArr[diffIdx] ?? "";
-  return formatSectionLabel(partName, value, targetArr[diffIdx - 1]);
+  const label = formatSectionLabel(
+    partName,
+    value,
+    targetArr[diffIdx - 1],
+    citationStyle
+  );
+  return (
+    label ||
+    formatSectionPath(textParts, targetArr.slice(0, diffIdx + 1), citationStyle)
+  );
 }

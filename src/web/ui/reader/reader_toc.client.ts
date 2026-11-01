@@ -203,6 +203,13 @@ export class ReaderTocController extends BaseController {
     this.applyFilter("");
   }
 
+  #isRomanLaw(): boolean {
+    return (
+      this.drawer?.dataset.citationStyle === "roman_law" ||
+      this.listContainer?.dataset.citationStyle === "roman_law"
+    );
+  }
+
   #normalizeCitationInput(raw: string): string {
     const cleaned = raw
       .replace(/^[§\s]+/, "")
@@ -210,16 +217,72 @@ export class ReaderTocController extends BaseController {
       .replace(/:+/g, ".");
     if (!cleaned) return "";
 
-    if (cleaned.startsWith(".")) {
+    let normalized = cleaned;
+    if (normalized.startsWith(".")) {
       const activeItem = this.listContainer?.querySelector<HTMLElement>(
         ".reader-toc-item.active"
       );
       const activePageId = activeItem?.dataset.pageId ?? "";
       if (activePageId) {
-        return `${activePageId}${cleaned}`;
+        normalized = `${activePageId}${normalized}`;
       }
     }
-    return cleaned;
+
+    if (!this.#isRomanLaw()) {
+      return normalized;
+    }
+
+    const items = Array.from(
+      this.listContainer?.querySelectorAll<HTMLAnchorElement>(
+        ".reader-toc-item"
+      ) ?? []
+    );
+    if (items.length === 0) return normalized;
+
+    let segments = normalized.split(".").filter((s) => s.length > 0);
+    if (segments.length === 0) return normalized;
+
+    // Compact `pr` token expansion (e.g. `1.1.1pr` -> `1.1.1.pr`, `30.1pr` -> `30.1.pr`)
+    // so the normalized section anchor targets the canonical `.reader-section` id.
+    const expandedSegments: string[] = [];
+    for (const seg of segments) {
+      const prMatch = /^(\d+[a-z]?)pr$/i.exec(seg);
+      if (prMatch) {
+        expandedSegments.push(prMatch[1], "pr");
+      } else {
+        expandedSegments.push(seg);
+      }
+    }
+    segments = expandedSegments;
+    normalized = segments.join(".");
+
+    // Digest Books 30–32 title-`0` elision: if the TOC has page `<book>.0`
+    // and no page `<book>.<seg1>`, rewrite `<book>.<rest>` to `<book>.0.<rest>`
+    // so `30.79.1`, `30.79`, `30.1pr`, `31.1.1`, `32.1.1` filter & jump to
+    // page `<book>.0`.
+    if (segments.length >= 2) {
+      const seg0Lower = segments[0].toLowerCase();
+      const seg1Lower = segments[1].toLowerCase();
+      if (seg1Lower !== "0") {
+        const zeroPageIdLower = `${seg0Lower}.0`;
+        const directPrefixLower = `${seg0Lower}.${seg1Lower}`;
+        const hasZeroPage = items.some(
+          (it) => (it.dataset.pageId ?? "").toLowerCase() === zeroPageIdLower
+        );
+        const hasDirectPage = items.some((it) => {
+          const pid = (it.dataset.pageId ?? "").toLowerCase();
+          return (
+            pid === directPrefixLower || pid.startsWith(`${directPrefixLower}.`)
+          );
+        });
+        if (hasZeroPage && !hasDirectPage) {
+          segments = [segments[0], "0", ...segments.slice(1)];
+          normalized = segments.join(".");
+        }
+      }
+    }
+
+    return normalized;
   }
 
   public applyFilter(rawQuery: string): void {

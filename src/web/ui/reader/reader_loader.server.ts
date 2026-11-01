@@ -6,6 +6,7 @@ import {
   V2PreprocessedWork,
   V2WorkSummary,
 } from "@/common/library/preprocess/preprocessed_types";
+import { expandRomanLawCitationAliases } from "@/common/library/section_labels";
 import { ReadOnlyDb } from "@/common/sql_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
@@ -284,6 +285,7 @@ export function saveV2LibraryDb(
       editor: v2Work.editor,
       textParts: v2Work.textParts,
       paginationDepth: v2Work.paginationDepth,
+      citationStyle: v2Work.citationStyle,
       pageCount: v2Work.pages.length,
       firstPageId,
     };
@@ -521,17 +523,38 @@ export function resolvePageInWork(
 
   // Strip optional leading label word (e.g. Zero-JS `?jump=Book+2` -> "2")
   const stripped = rawNeedle
-    .replace(/^(book|liber|chapter|caput|section|elegy|poem|carmen)\s+/i, "")
+    .replace(
+      /^(book|liber|title|titulus|lex|paragraph|chapter|caput|section|elegy|poem|carmen)\s+/i,
+      ""
+    )
     .trim();
   if (stripped && stripped !== rawNeedle) {
     const afterStrip = tryResolve(stripped);
     if (afterStrip) return afterStrip;
   }
 
+  // Roman-law citation aliases: compact `pr` (`1.1.1pr` <-> `1.1.1.pr`) and
+  // Digest Books 30–32 title-`0` elision (`30.79.1` -> `30.0.79.1`, `30.1pr` -> `30.0.1.pr`).
+  const candidateNeedles = new Set<string>(
+    stripped && stripped !== rawNeedle ? [rawNeedle, stripped] : [rawNeedle]
+  );
+  if (work.citationStyle === "roman_law") {
+    for (const base of Array.from(candidateNeedles)) {
+      for (const alias of expandRomanLawCitationAliases(base, work.textParts)) {
+        candidateNeedles.add(alias);
+      }
+    }
+    for (const alias of candidateNeedles) {
+      if (alias === rawNeedle || alias === stripped) continue;
+      const resolvedAlias = tryResolve(alias);
+      if (resolvedAlias) return resolvedAlias;
+    }
+  }
+
   // 4. A section on some page. A work cited by line alone (`["line"]`) has a
   //    single page `1`, so `?jump=57` has to find the page holding `sec-57`.
   //    This reads page HTML, so it only runs once everything else has missed.
-  for (const needle of new Set([rawNeedle, stripped])) {
+  for (const needle of candidateNeedles) {
     if (!/^[^\s"'<>&]+$/.test(needle)) continue;
     const anchor = `id="sec-${needle}"`;
     const sectionIdx = work.pages.findIndex((p) =>

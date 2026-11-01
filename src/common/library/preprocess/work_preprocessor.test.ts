@@ -1489,3 +1489,130 @@ describe("preprocessWorkToV2 drama and dialogue", () => {
     });
   });
 });
+
+describe("preprocessWorkToV2 roman_law citationStyle and smallcaps inscriptions", () => {
+  const DIGEST_METADATA: LibraryWorkMetadata = {
+    author: "Justinian",
+    name: "Digesta",
+    id: "tll.justinian.digest",
+    urlAuthor: "justinian",
+    urlName: "digest",
+    attribution: "theLatinLibrary",
+  };
+
+  it("renders smallcaps editorial inscriptions (Rule D) with reader-editorial-smallcaps and data-no-tokenize", () => {
+    const work = makeWork({
+      textParts: ["book", "title", "lex", "paragraph"],
+      rows: [
+        [
+          ["1", "1", "1", "pr"],
+          span(
+            [],
+            span(
+              [
+                ["kind", "editorial"],
+                ["style", "smallcaps"],
+              ],
+              "Ulpianus libro primo institutionum."
+            ),
+            " Iuri operam daturum prius nosse oportet."
+          ),
+        ],
+      ],
+    });
+    work.info.citationStyle = "roman_law";
+
+    const v2 = preprocessWorkToV2(work, DIGEST_METADATA);
+    expect(v2.citationStyle).toBe("roman_law");
+    expect(v2.pages[0].singleHtml).toContain(
+      '<span class="reader-editorial reader-editorial-smallcaps" data-no-tokenize="true">Ulpianus libro primo institutionum.</span>'
+    );
+  });
+
+  it("formats compact pr citations (1.1.1pr), gutter labels (1pr, 1, 2pr), undivided laws, and Book 30 Title 0 elision (Rules A, B, C)", () => {
+    const head = (text: string) =>
+      new XmlNode<ProcessedWorkContentNodeType>("head", [], [text]);
+    const work = makeWork({
+      textParts: ["book", "title", "lex", "paragraph"],
+      rows: [
+        [["1", "1"], head("I. DE IUSTITIA ET IURE")],
+        [["1", "1", "1", "pr"], span([], "Iuri operam daturum.")],
+        [["1", "1", "1", "1"], span([], "Cuius merito quis nos sacerdotes.")],
+        [["1", "1", "2"], span([], "Veluti erga deum religio.")],
+        [["1", "1", "3", "pr"], span([], "Ut vim atque iniuriam.")],
+        [["30", "0"], head("DE LEGATIS ET FIDEICOMMISSIS")],
+        [["30", "0", "1", "pr"], span([], "Per omnia exaequata sunt legata.")],
+        [["30", "0", "79"], span([], "Si chorus aut familia legata sit.")],
+        [["30", "0", "79", "1"], span([], "Proinde si fundus.")],
+      ],
+      pages: [
+        { id: ["1", "1"], rows: [0, 5] },
+        { id: ["30", "0"], rows: [5, 9] },
+      ],
+    });
+    work.info.citationStyle = "roman_law";
+    work.navTree = {
+      id: [],
+      children: [
+        { id: ["1"], children: [{ id: ["1", "1"], children: [] }] },
+        { id: ["30"], children: [{ id: ["30", "0"], children: [] }] },
+      ],
+    };
+
+    const v2 = preprocessWorkToV2(work, DIGEST_METADATA);
+
+    // Page 1.1: Book 1, Title 1
+    // Canonical `.reader-section` id, href, and citationRange stay on the raw `secId.join(".")`
+    // so corpus matchText highlights and `#sec-...` target flashes match, while `.cite-prefix`
+    // and `.cite-local` display the compact/elided form and compact anchors are gutter aliases.
+    const page1 = v2.pages[0];
+    expect(page1.title).toBe("Book 1, Title 1");
+    expect(page1.citationRange).toEqual(["1.1.1.pr", "1.1.3.pr"]);
+    expect(page1.singleHtml).toContain(
+      '<div class="reader-section" id="sec-1.1.1.pr">'
+    );
+    expect(page1.singleHtml).toContain('<span id="sec-1.1.1pr"></span>');
+    expect(page1.singleHtml).toContain(
+      '<a href="#sec-1.1.1.pr" class="section-anchor"><span class="cite-prefix">1.1.</span><span class="cite-local">1pr</span></a>'
+    );
+    expect(page1.singleHtml).toContain(
+      '<a href="#sec-1.1.1.1" class="section-anchor"><span class="cite-prefix">1.1.1.</span><span class="cite-local">1</span></a>'
+    );
+    expect(page1.singleHtml).toContain(
+      '<a href="#sec-1.1.2" class="section-anchor"><span class="cite-prefix">1.1.</span><span class="cite-local">2</span></a>'
+    );
+    expect(page1.singleHtml).toContain(
+      '<a href="#sec-1.1.3.pr" class="section-anchor"><span class="cite-prefix">1.1.</span><span class="cite-local">3pr</span></a>'
+    );
+
+    // Page 30.0: Book 30 (Title 0 elided in display, raw join on `.reader-section`)
+    const page30 = v2.pages[1];
+    expect(page30.title).toBe("Book 30");
+    expect(page30.title).not.toContain("Title 0");
+    expect(page30.citationRange).toEqual(["30.0.1.pr", "30.0.79.1"]);
+    expect(page30.singleHtml).toContain(
+      '<div class="reader-section" id="sec-30.0.1.pr">'
+    );
+    expect(page30.singleHtml).toContain('<span id="sec-30.1pr"></span>');
+    expect(page30.singleHtml).toContain(
+      '<a href="#sec-30.0.1.pr" class="section-anchor"><span class="cite-prefix">30.</span><span class="cite-local">1pr</span></a>'
+    );
+    expect(page30.singleHtml).toContain(
+      '<div class="reader-section" id="sec-30.0.79">'
+    );
+    expect(page30.singleHtml).toContain('<span id="sec-30.79"></span>');
+    expect(page30.singleHtml).toContain(
+      '<div class="reader-section" id="sec-30.0.79.1">'
+    );
+    expect(page30.singleHtml).toContain('<span id="sec-30.79.1"></span>');
+    expect(page30.singleHtml).toContain(
+      '<a href="#sec-30.0.79.1" class="section-anchor"><span class="cite-prefix">30.79.</span><span class="cite-local">1</span></a>'
+    );
+
+    // TOC omits Title 0
+    expect(v2.tocHtml).toContain(
+      '<span class="reader-toc-item-title">Book 30</span>'
+    );
+    expect(v2.tocHtml).not.toContain("Title 0");
+  });
+});
