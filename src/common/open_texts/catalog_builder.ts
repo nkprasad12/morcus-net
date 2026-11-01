@@ -350,14 +350,40 @@ export function buildPatrologiaLatinaOpenTextEntries(
   };
 }
 
+function resolveExistingRoot(
+  envKey: string,
+  candidates: readonly string[],
+  fallback: string
+): string {
+  const configured = envVar(envKey, "unsafe");
+  if (
+    configured !== undefined &&
+    configured.trim() !== "" &&
+    fs.existsSync(configured)
+  ) {
+    return configured;
+  }
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return configured !== undefined && configured.trim() !== ""
+    ? configured
+    : fallback;
+}
+
 /**
  * Resolves the default local checkout root and pinned commit for
  * `patrologia_latina-dev` from `.env` and `upstream_sources.lock.json`.
  */
 export function resolveDefaultPatrologiaLatinaOptions(): BuildPatrologiaLatinaOptions {
   const locked = upstreamSource("patrologia_latina-dev");
-  const rootDir =
-    envVar("PATROLOGIA_LATINA_ROOT", "unsafe") ?? "patrologia_latina-dev";
+  const rootDir = resolveExistingRoot(
+    "PATROLOGIA_LATINA_ROOT",
+    ["patrologia_latina-dev", "../patrologia_latina-dev"],
+    "patrologia_latina-dev"
+  );
   return {
     rootDir,
     commit: locked.commit,
@@ -371,13 +397,16 @@ export function resolveDefaultPatrologiaLatinaOptions(): BuildPatrologiaLatinaOp
  */
 export function resolveDefaultTheLatinLibraryOptions(): BuildLatinLibraryFromRootOptions {
   const locked = upstreamSource("thelatinlibrary");
-  const configured = envVar("THELATINLIBRARY_ROOT", "unsafe");
-  const rootDir =
-    configured !== undefined && configured.trim() !== ""
-      ? configured
-      : fs.existsSync("TheLatinLibrary")
-      ? "TheLatinLibrary"
-      : "thelatinlibrary";
+  const rootDir = resolveExistingRoot(
+    "THELATINLIBRARY_ROOT",
+    [
+      "TheLatinLibrary",
+      "thelatinlibrary",
+      "../TheLatinLibrary",
+      "../thelatinlibrary",
+    ],
+    "thelatinlibrary"
+  );
   return {
     rootDir,
     commit: locked.commit,

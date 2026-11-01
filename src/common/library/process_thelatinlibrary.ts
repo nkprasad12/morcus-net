@@ -236,10 +236,19 @@ export function convertTheLatinLibraryWork(
  */
 export function resolveTheLatinLibraryRoot(): string | undefined {
   const configured = envVar(THE_LATIN_LIBRARY_ROOT_ENV, "unsafe");
-  if (configured !== undefined && configured.trim() !== "") {
+  if (
+    configured !== undefined &&
+    configured.trim() !== "" &&
+    fs.existsSync(configured)
+  ) {
     return configured;
   }
-  for (const candidate of ["TheLatinLibrary", "thelatinlibrary"]) {
+  for (const candidate of [
+    "TheLatinLibrary",
+    "thelatinlibrary",
+    "../TheLatinLibrary",
+    "../thelatinlibrary",
+  ]) {
     if (fs.existsSync(candidate)) {
       return candidate;
     }
