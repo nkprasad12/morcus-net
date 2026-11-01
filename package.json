@@ -98,6 +98,7 @@
     "mongodb": "6.5",
     "node-cleanup": "^2.1.2",
     "on-headers": "~1.1.0",
+    "parse5": "^7.3.0",
     "postcss-selector-parser": "^7.1.6",
     "preact": "^10.26.0",
     "prettier": "2.8.4",

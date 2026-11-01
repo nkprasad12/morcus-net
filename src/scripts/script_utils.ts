@@ -26,7 +26,7 @@ export interface DownloadConfig {
 
 interface RepoConfig {
   /** Each repo is checked out at `commit`, not at its default branch HEAD. */
-  repos: { repo: string; commit: string }[];
+  repos: { repo: string; commit: string; sparsePaths?: readonly string[] }[];
 }
 
 export interface StepConfig {
@@ -125,15 +125,26 @@ function getRepoNameFromUrl(url: string): string {
 
 async function cloneRepo(
   repoUrl: string,
-  commit: string
+  commit: string,
+  sparsePaths?: readonly string[]
 ): Promise<string | undefined> {
   const cloneDir = getRepoNameFromUrl(repoUrl);
   try {
     // A shallow fetch of just the pinned commit, rather than a full clone.
     await shellStep(`git init -q ${cloneDir}`);
+    const hasSparse = sparsePaths !== undefined && sparsePaths.length > 0;
+    const filterFlag = hasSparse ? " --filter=blob:none" : "";
     await shellStep(
-      `git -C ${cloneDir} fetch -q --depth 1 ${repoUrl} ${commit}`
+      `git -C ${cloneDir} fetch -q --depth 1${filterFlag} ${repoUrl} ${commit}`
     );
+    if (hasSparse) {
+      const quoted = sparsePaths
+        .map((p) => `'${p.replace(/'/g, "'\\''")}'`)
+        .join(" ");
+      await shellStep(
+        `git -C ${cloneDir} sparse-checkout set --no-cone ${quoted}`
+      );
+    }
     await shellStep(`git -C ${cloneDir} checkout -q FETCH_HEAD`);
     console.log(chalk.blue(`Cloned ${repoUrl}@${commit} into ${cloneDir}`));
     return cloneDir;
@@ -148,7 +159,9 @@ async function cloneRepo(
 async function cloneAllRepos(
   config: RepoConfig
 ): Promise<(string | undefined)[]> {
-  const promises = config.repos.map((r) => cloneRepo(r.repo, r.commit));
+  const promises = config.repos.map((r) =>
+    cloneRepo(r.repo, r.commit, r.sparsePaths)
+  );
   return Promise.all(promises);
 }
 

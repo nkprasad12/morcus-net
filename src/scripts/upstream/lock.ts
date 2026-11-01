@@ -28,6 +28,8 @@ export interface UpstreamSource {
   env: string;
   /** The file in the repo that `env` points at; unset if it's the root. */
   file?: string;
+  /** Optional sparse-checkout paths (no-cone) for large repos. */
+  sparsePaths?: readonly string[];
 }
 
 export interface UpstreamLock {
@@ -73,6 +75,15 @@ export function validateUpstreamLock(lock: UpstreamLock): void {
     envs.add(source.env);
     if (source.file !== undefined && typeof source.file !== "string") {
       throw new Error(`${name}: file must be a string`);
+    }
+    if (
+      source.sparsePaths !== undefined &&
+      (!Array.isArray(source.sparsePaths) ||
+        source.sparsePaths.some((p) => typeof p !== "string" || p.length === 0))
+    ) {
+      throw new Error(
+        `${name}: sparsePaths must be an array of non-empty strings`
+      );
     }
   }
 }

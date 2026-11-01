@@ -404,6 +404,21 @@ export function syncClone(
       })})`,
     };
   }
+  if (source.sparsePaths !== undefined && source.sparsePaths.length > 0) {
+    const sparse = tryGit(dir, [
+      "sparse-checkout",
+      "set",
+      "--no-cone",
+      ...source.sparsePaths,
+    ]);
+    if (!sparse.ok) {
+      return {
+        name,
+        outcome: "error",
+        message: `couldn't configure sparse-checkout: ${sparse.stderr}`,
+      };
+    }
+  }
   const moved = tryGit(dir, ["checkout", "-q", "-B", PINNED_BRANCH, pin]);
   if (!moved.ok) {
     return {
