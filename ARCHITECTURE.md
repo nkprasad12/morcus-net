@@ -138,6 +138,7 @@ A specialized engine designed to query massive Latin textual corpora with comple
   - Server-rendered, citation-addressed pages with in-place page turns when JS is available.
   - Word click-through to the embedded dictionary panel.
   - Parallel English translations, notes, and the External Reader for pasted or scraped texts.
+  - **Texts tabs**: the top bar's Texts section has three tabs, Library (`/library`, curated works grouped in collapsible author cards), Experimental (`/experimentalTexts`, see 3.9) and Custom (`/externalReader`), rendered by `src/web/ui/shell/texts_tabs.server.ts`.
 
 ### 3.6. Macronizer & NLP (`src/macronizer/`, `src/latincy/`, `src/py/`)
 

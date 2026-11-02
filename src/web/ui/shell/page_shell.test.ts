@@ -62,6 +62,21 @@ describe("renderAppBar", () => {
     expect(logoImg).not.toBeNull();
     expect(logoImg!.getAttribute("src")).toBe("/favicon.ico");
   });
+
+  test("labels the /library entry Texts on desktop and mobile", () => {
+    const container = document.createElement("div");
+    container.innerHTML = renderAppBar("library");
+
+    for (const nav of [".nav-desktop", ".mobile-menu-dropdown"]) {
+      const labels = [...container.querySelectorAll(`${nav} a.nav-link`)].map(
+        (a) => a.textContent?.trim()
+      );
+      expect(labels).toEqual(["Dictionary", "Texts", "Corpus", "About"]);
+      const texts = container.querySelector(`${nav} a[href="/library"]`);
+      expect(texts?.textContent?.trim()).toBe("Texts");
+      expect(texts?.getAttribute("aria-current")).toBe("page");
+    }
+  });
 });
 
 describe("renderPageShell", () => {

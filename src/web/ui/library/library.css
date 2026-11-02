@@ -1,5 +1,70 @@
 /* Classical Library Catalog Styling (UI V2) */
 
+/* Texts section tabs (shell/texts_tabs.server.ts): Library · Experimental ·
+   Custom. Styled here because app.css imports this file for every page,
+   so /library, /experimentalTexts and the /externalReader landing all share it. */
+/* Pulled up into `.container`'s top padding so the tabs sit snugly under the
+   app bar. */
+.texts-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: calc(-1 * var(--space-3));
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.texts-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-6) var(--space-4);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.texts-tab:hover {
+  color: var(--text);
+}
+
+.texts-tab.active {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* The active underline sits on the bar's bottom border. */
+.texts-tab.active::after {
+  content: "";
+  position: absolute;
+  inset-inline: var(--space-4);
+  bottom: -1px;
+  height: 3px;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  background: var(--primary);
+}
+
+.texts-tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  border-radius: var(--radius-md);
+}
+
+@media (width <= 640px) {
+  .texts-tabs {
+    gap: 0;
+  }
+
+  .texts-tab {
+    flex: 1;
+    justify-content: center;
+    padding-inline: var(--space-2);
+  }
+}
+
 .library-view {
   display: block;
   width: 100%;
@@ -12,15 +77,16 @@
 }
 
 .library-own-text {
-  margin: 0;
+  margin: 0 0 var(--space-5);
   color: var(--text-muted);
   font-size: 0.92rem;
   line-height: 1.5;
 }
 
 /* Search Bar & Filter Pills (matches Dictionary design) */
+/* Last in `.library-header`, whose margin spaces it from the grid. */
 .library-search-form {
-  margin-bottom: var(--space-5);
+  margin-bottom: 0;
 }
 
 .library-search-form .search-tray {
@@ -59,80 +125,95 @@
 /* .filter-pill.active shares the filled look of .btn-primary
    (core/nav/components.css). */
 
-/* Continuous Works Grid */
+/* Works, grouped by author: a stack of collapsible author cards (native
+   <details>), each listing its works as rows, like /experimentalTexts. */
 .library-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--space-5);
 }
 
-/* The grid item: the card link, plus (with a saved spot) the corner tag laid
-   over it as a sibling, since its clear button can't go inside the link. */
-.work-card-item {
+/* Each author is a collapsible .author-card (core/nav/components.css). */
+
+/* The row: the work's link plus (with badges or a saved spot) the corner tag
+   beside it as a sibling, since its clear button can't go inside the link.
+   They share the title's line when there is room; a title too long for both
+   wraps the tag onto the next line, at the start. */
+.library-work-row {
   position: relative;
-  display: grid;
-}
-
-.work-card-item[hidden] {
-  display: none;
-}
-
-/* Work Card (Fully Clickable Card) */
-.work-card {
-  padding: var(--space-5);
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  text-decoration: none;
-  color: inherit;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  min-height: 2.75rem;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.15s ease;
 }
 
-.work-card-item:hover .work-card-title {
-  color: var(--primary);
+.library-work-row:last-child {
+  border-bottom: none;
 }
 
-.work-card-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.library-work-row:hover {
+  background-color: var(--surface-alt);
+}
+
+/* The title's link. Its ::after covers the whole row, so the row (badges
+   included) is still one click target. */
+.library-work-link {
+  flex: 1 1 auto;
   min-width: 0;
-  width: 100%;
+  color: inherit;
+  text-decoration: none;
 }
 
-.work-card-author {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  line-height: 1.3;
+.library-work-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/* The ring goes round the whole row, the link's real click area. */
+.library-work-link:focus-visible {
+  outline: none;
+}
+
+.library-work-link:focus-visible::after {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
 }
 
 .work-card-title {
+  margin: 0;
   font-family: var(--font-serif);
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.35;
-  margin: 0;
   color: var(--text);
   overflow-wrap: break-word;
   transition: color 0.15s ease;
 }
 
+.library-work-row:hover .work-card-title {
+  color: var(--primary);
+}
+
+/* Raised over the link's ::after so the clear button can take clicks. */
 .work-card-corner-tag {
-  position: absolute;
-  /* Aligns the badge text baseline and right edge with .work-card-author's
-     inset (padding: var(--space-5), less the badge's 2px top padding). */
-  top: calc(var(--space-5) - 2px);
-  right: var(--space-5);
+  position: relative;
+  z-index: var(--z-raised);
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
+  max-width: 100%;
   background: var(--tag-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  /* Clicks on the badges reach the card link beneath; only the clear button
+  /* Clicks on the badges reach the row's link beneath; only the clear button
      takes them. */
   pointer-events: none;
-  transition: transform 0.15s ease;
 }
 
 .work-card-corner-tag:empty {
@@ -141,12 +222,6 @@
 
 .work-card-corner-tag > .badge + .badge {
   border-left: 1px solid var(--border);
-}
-
-/* Lift with the card (.work-card-item:hover in components.css: the card
-   itself isn't :hover while the pointer is over the tag). */
-.work-card-item:hover > .work-card-corner-tag {
-  transform: translateY(-2px);
 }
 
 .badge-resume > svg,
@@ -168,23 +243,12 @@
   color: inherit;
 }
 
-/* Clear the corner badges on the author line only, scaled to the badge count
-   so the title below keeps the full width of the card. */
-.work-card-item:has(.work-card-corner-tag > .badge) .work-card-author {
-  padding-right: 5.5rem;
-}
-
-.work-card-item:has(.work-card-corner-tag > .badge:nth-child(2))
-  .work-card-author {
-  padding-right: 9.5rem;
-}
-
 @media (width <= 640px) {
   .library-header {
     margin-bottom: var(--space-5);
   }
+
   .library-grid {
-    grid-template-columns: 1fr;
     gap: var(--space-4);
   }
 }

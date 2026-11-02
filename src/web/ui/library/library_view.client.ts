@@ -8,6 +8,9 @@ import {
 } from "@/web/ui/core/index.client";
 import { savedSpotsStore } from "@/web/ui/reader/saved_spots.client";
 
+/** An author's collapsible card (`<details>`), holding its works' rows. */
+const GROUP = "details[data-author-group]";
+
 export class MorcusLibraryView extends BaseElement {
   #currentFilter: string = "all";
   #currentQuery: string = "";
@@ -16,6 +19,8 @@ export class MorcusLibraryView extends BaseElement {
     HTMLAnchorElement,
     { author: string; title: string }
   >();
+  /** Author cards unfolded automatically while filtering, restored when cleared. */
+  readonly #autoOpened = new WeakSet<HTMLDetailsElement>();
 
   // Read in more than one place; a getter re-queries rather than caches.
   get #workCards() {
@@ -24,17 +29,24 @@ export class MorcusLibraryView extends BaseElement {
 
   /**
    * The card's author and title as the user sees them, for filtering. The
-   * server doesn't duplicate them into attributes; the saved-spot badge sits
-   * in the wrapper, outside these spans, so it never leaks into the text.
+   * server doesn't duplicate them into attributes: the author is its card's
+   * heading, and the saved-spot badge sits in the row, outside the title, so
+   * it never leaks into the text. The one exception is `data-alt-author`, the
+   * original Perseus spelling of an author whose heading is normalized
+   * (`Seneca, Lucius Annaeus` under `Seneca the Younger`), so it still matches.
    */
   #textOf(card: HTMLAnchorElement): { author: string; title: string } {
     let text = this.#searchText.get(card);
     if (!text) {
-      const read = (sel: string) =>
-        (card.querySelector(sel)?.textContent ?? "").trim().toLowerCase();
+      const read = (el: Element | null | undefined) =>
+        (el?.textContent ?? "").trim().toLowerCase();
+      const shownAuthor = read(
+        card.closest(GROUP)?.querySelector(".library-author-name")
+      );
+      const altAuthor = (card.dataset.altAuthor ?? "").trim().toLowerCase();
       text = {
-        author: read(".work-card-author"),
-        title: read(".work-card-title"),
+        author: altAuthor ? `${shownAuthor} ${altAuthor}` : shownAuthor,
+        title: read(card.querySelector(".work-card-title")),
       };
       this.#searchText.set(card, text);
     }
@@ -113,9 +125,31 @@ export class MorcusLibraryView extends BaseElement {
         tokens.every((tok) => author.includes(tok) || title.includes(tok));
 
       const isVisible = matchesTag && matchesQuery;
-      // The card's wrapper is the grid item (see library.server.ts).
+      // The card's row is the list item (see library.server.ts).
       (card.parentElement ?? card).hidden = !isVisible;
       if (isVisible) visibleCount++;
+    }
+
+    // Each author's card: hidden while none of its works match, unfolded (if
+    // the user folded it) while filtering, and restored when the filter clears.
+    const filtered = tokens.length > 0 || this.#currentFilter !== "all";
+    for (const group of this.scope.$$<HTMLDetailsElement>(GROUP)) {
+      let visibleInGroup = 0;
+      for (const card of Array.from(
+        group.querySelectorAll<HTMLElement>(".work-card")
+      )) {
+        if (!(card.parentElement ?? card).hidden) visibleInGroup++;
+      }
+      group.hidden = visibleInGroup === 0;
+      if (filtered && visibleInGroup > 0) {
+        if (!group.open) {
+          group.open = true;
+          this.#autoOpened.add(group);
+        }
+      } else if (this.#autoOpened.has(group)) {
+        group.open = false;
+        this.#autoOpened.delete(group);
+      }
     }
 
     if (emptyState) {

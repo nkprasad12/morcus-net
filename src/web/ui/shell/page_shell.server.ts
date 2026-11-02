@@ -18,6 +18,11 @@ import { renderAppearanceMenu } from "@/web/ui/shell/appearance_menu.server";
 import { THEME_COLOR } from "@/web/ui/shell/theme_color.common";
 import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
+/**
+ * The highlighted app-bar entry. `"library"` is the **Texts** section
+ * (`/library`, `/work/...`, `/experimentalTexts`, `/externalReader`): the link keeps
+ * `href="/library"` but is labelled "Texts".
+ */
 export type V2ActivePage = "dicts" | "about" | "library" | "corpus";
 
 /**
@@ -62,8 +67,8 @@ interface PageShellBaseOptions {
   extraHeadHtml?: string;
   /**
    * Gives the page draggable width handles, saved per surface
-   * (`core/widgets/page_width.client.ts`). Pages without one (About, External) keep
-   * their fixed width.
+   * (`core/widgets/page_width.client.ts`). Pages without one (e.g. About, or an
+   * imported external text) keep their fixed width.
    */
   widthSurface?: WidthSurface;
 }
@@ -148,7 +153,7 @@ export function renderAppBar(activePage?: V2ActivePage): string {
               class="nav-link ${isLibraryActive ? "active" : ""}"
               ${isLibraryActive ? 'aria-current="page"' : ""}
             >
-              Library
+              Texts
             </a>
             <a
               href="/corpus"
@@ -200,7 +205,7 @@ export function renderAppBar(activePage?: V2ActivePage): string {
                 class="nav-link ${isLibraryActive ? "active" : ""}"
                 ${isLibraryActive ? 'aria-current="page"' : ""}
               >
-                Library
+                Texts
               </a>
               <a
                 href="/corpus"
