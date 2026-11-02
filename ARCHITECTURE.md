@@ -155,6 +155,12 @@ A specialized engine designed to query massive Latin textual corpora with comple
 - **Client code**: Light DOM custom elements, bundled by Rsbuild into route-aligned chunks in `build/client/` (hashed, immutable, precompressed).
 - **Testing**: [`src/web/ui/docs/TESTING.md`](src/web/ui/docs/TESTING.md) (Jest under jsdom, Playwright functional and visual suites).
 
+### 3.8. The Latin Library (`src/common/thelatinlibrary/`)
+
+Texts from thelatinlibrary.com come from a snapshot repository (`thelatinlibrary` in `upstream_sources.lock.json`), never from the live site at build or request time.
+
+- **Page layer (`src/common/thelatinlibrary/`)**: browser-safe parsing of the site's HTML pages: charset detection, a small DOM adapter over `parse5` (Node) or `DOMParser` (browser), section-marker detection and lenient page extraction. Nothing here may import Node built-ins or `parse5` (enforced by ESLint).
+
 ---
 
 ## 4. Key Workflows & Pipelines

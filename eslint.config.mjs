@@ -76,6 +76,7 @@ const NO_SERVER_ONLY_IMPORTS = {
     "**/*.server",
     "express",
     "he",
+    "parse5",
     "node:*",
     "child_process",
     "crypto",
@@ -337,6 +338,24 @@ export default [
       ],
     },
   },
+  // Browser-safe shared modules in src/common/thelatinlibrary/ run in both
+  // Node and the browser, so they get the same import boundaries as *.common.ts.
+  {
+    files: ["src/common/thelatinlibrary/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            NO_RELATIVE_IMPORTS,
+            NO_SERVER_ONLY_IMPORTS,
+            NO_CLIENT_IMPORTS,
+          ],
+        },
+      ],
+    },
+  },
   // Everything else under src/ runs in Node (servers, build steps, scripts,
   // Playwright suites), so it gets the server-side ban too: a `*.client.ts`
   // module expects browser globals at load time. Disjoint from the UI V2 and
@@ -344,7 +363,12 @@ export default [
   // UI V2: they may exercise both tiers (e.g. under jsdom).
   {
     files: ["src/**/*.ts"],
-    ignores: ["src/web/ui/**", "src/bundler/**", "**/*.test.ts"],
+    ignores: [
+      "src/web/ui/**",
+      "src/common/thelatinlibrary/**",
+      "src/bundler/**",
+      "**/*.test.ts",
+    ],
     rules: {
       "no-restricted-imports": [
         "error",

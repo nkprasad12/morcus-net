@@ -5,25 +5,9 @@ import type { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { XmlNode } from "@/common/xml/xml_node";
 import { MorceusTables } from "@/morceus/cruncher_tables";
-import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
+import { parseRomanNumeral, toRoman } from "@/morceus/numerals/roman_numerals";
 import type { IrregularForm, Lemma, Stem } from "@/morceus/stem_parsing";
 import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
-
-const ROMAN_NUMERALS: [string, number][] = [
-  ["M", 1000],
-  ["CM", 900],
-  ["D", 500],
-  ["CD", 400],
-  ["C", 100],
-  ["XC", 90],
-  ["L", 50],
-  ["XL", 40],
-  ["X", 10],
-  ["IX", 9],
-  ["V", 5],
-  ["IV", 4],
-  ["I", 1],
-];
 
 interface TableNumerals {
   ordinal?: string;
@@ -112,14 +96,7 @@ function arabicToRoman(input: number): string | undefined {
   if (!Number.isInteger(input) || input < 1 || input > 3999) {
     return undefined;
   }
-  let result = "";
-  for (const [roman, value] of ROMAN_NUMERALS) {
-    while (input >= value) {
-      result += roman;
-      input -= value;
-    }
-  }
-  return result;
+  return toRoman(input);
 }
 
 function findNumeralData(input: number): Numeral {

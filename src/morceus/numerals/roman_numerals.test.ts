@@ -1,31 +1,25 @@
-import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
+import { parseRomanNumeral, toRoman } from "@/morceus/numerals/roman_numerals";
 
-function toCanonicalRoman(value: number): string {
-  const table: [number, string][] = [
-    [1000, "M"],
-    [900, "CM"],
-    [500, "D"],
-    [400, "CD"],
-    [100, "C"],
-    [90, "XC"],
-    [50, "L"],
-    [40, "XL"],
-    [10, "X"],
-    [9, "IX"],
-    [5, "V"],
-    [4, "IV"],
-    [1, "I"],
-  ];
-  let out = "";
-  let rest = value;
-  for (const [unit, symbols] of table) {
-    while (rest >= unit) {
-      out += symbols;
-      rest -= unit;
-    }
-  }
-  return out;
-}
+describe("toRoman", () => {
+  it("formats positive integers as canonical uppercase Roman numerals", () => {
+    expect(toRoman(1)).toBe("I");
+    expect(toRoman(4)).toBe("IV");
+    expect(toRoman(9)).toBe("IX");
+    expect(toRoman(14)).toBe("XIV");
+    expect(toRoman(49)).toBe("XLIX");
+    expect(toRoman(99)).toBe("XCIX");
+    expect(toRoman(444)).toBe("CDXLIV");
+    expect(toRoman(1999)).toBe("MCMXCIX");
+    expect(toRoman(3999)).toBe("MMMCMXCIX");
+  });
+
+  it("returns empty string for non-positive or non-integer values", () => {
+    expect(toRoman(0)).toBe("");
+    expect(toRoman(-5)).toBe("");
+    expect(toRoman(1.5)).toBe("");
+    expect(toRoman(NaN)).toBe("");
+  });
+});
 
 describe("parseRomanNumeral", () => {
   it("Rejects illegal characters", () => {
@@ -64,7 +58,7 @@ describe("parseRomanNumeral", () => {
 
   it("parses every canonical numeral from 1 to 4999 in either case", () => {
     for (let value = 1; value <= 4999; value++) {
-      const numeral = toCanonicalRoman(value);
+      const numeral = toRoman(value);
       expect([numeral, parseRomanNumeral(numeral)]).toEqual([numeral, value]);
       expect([numeral, parseRomanNumeral(numeral.toLowerCase())]).toEqual([
         numeral,

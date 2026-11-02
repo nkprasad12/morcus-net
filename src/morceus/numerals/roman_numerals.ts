@@ -20,6 +20,40 @@ function symbolValue(code: number): number {
   return 0;
 }
 
+const ROMAN_NUMERALS: readonly [number, string][] = [
+  [1000, "M"],
+  [900, "CM"],
+  [500, "D"],
+  [400, "CD"],
+  [100, "C"],
+  [90, "XC"],
+  [50, "L"],
+  [40, "XL"],
+  [10, "X"],
+  [9, "IX"],
+  [5, "V"],
+  [4, "IV"],
+  [1, "I"],
+];
+
+/**
+ * Formats a positive integer as a canonical uppercase Roman numeral (`IV`,
+ * `IX`, etc.), or `""` for `n < 1` or non-integers.
+ */
+export function toRoman(n: number): string {
+  if (!Number.isInteger(n) || n < 1) {
+    return "";
+  }
+  let out = "";
+  for (const [unit, symbols] of ROMAN_NUMERALS) {
+    while (n >= unit) {
+      out += symbols;
+      n -= unit;
+    }
+  }
+  return out;
+}
+
 /** A distinct bit for each "five" symbol (V, L, D), or 0 for other values. */
 function fiveBit(value: number): number {
   return value === 5 ? 1 : value === 50 ? 2 : value === 500 ? 4 : 0;
