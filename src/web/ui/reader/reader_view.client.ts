@@ -525,7 +525,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         secAnchor.closest<HTMLElement>(".reader-section");
       const copyPermalink = () => {
         void copyText(fullUrl);
-        if (secEl) this.#revealSection(secEl);
+        // The anchor is on screen: flash the section without scrolling to it.
+        if (secEl) this.#revealSection(secEl, { scroll: false });
         this.#saveCurrentSpot(secId);
         showToast(`Copied permalink: § ${secId}`);
       };
@@ -1424,9 +1425,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * `scroll-margin-top`, where the no-JS hash jump lands too) and flashes it.
    * A section that is the passage's only one is the whole page, so it gets no
    * highlight; the `:target` rule in reader_text.css skips it the same way.
+   * Pass `{ scroll: false }` to flash in place: copying a section's permalink
+   * from its on-screen anchor must not move the page.
    */
-  #revealSection(section: HTMLElement): void {
-    if (typeof section.scrollIntoView === "function") {
+  #revealSection(
+    section: HTMLElement,
+    options: { scroll?: boolean } = {}
+  ): void {
+    const { scroll = true } = options;
+    if (scroll && typeof section.scrollIntoView === "function") {
       section.scrollIntoView({
         behavior: "smooth",
         block: "start",

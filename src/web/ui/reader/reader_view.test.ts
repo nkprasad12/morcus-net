@@ -4511,13 +4511,12 @@ describe("section jump highlighting", () => {
     expect(sec.classList.contains("target-highlight")).toBe(false);
   });
 
-  test("copying a permalink highlights only in a multi-section passage", () => {
+  test("copying a permalink highlights only in a multi-section passage, without scrolling", () => {
     let el = createReaderView(twoSections);
     delete el.dataset.work;
+    scrollSpy.mockClear();
     el.querySelector<HTMLAnchorElement>('a[href="#sec-1.1"]')!.click();
-    expect(scrollSpy).toHaveBeenLastCalledWith(
-      expect.objectContaining({ block: "start" })
-    );
+    expect(scrollSpy).not.toHaveBeenCalled();
     expect(
       document.getElementById("sec-1.1")!.classList.contains("target-highlight")
     ).toBe(true);

@@ -61,4 +61,33 @@ describe("copyText", () => {
     await expect(copyText("hello")).resolves.toBe(false);
     expect(document.querySelector("textarea")).toBeNull();
   });
+
+  test("focuses the fallback textarea without scrolling the viewport", async () => {
+    setClipboard(undefined);
+    document.execCommand = jest.fn(() => true);
+    const focusSpy = jest.spyOn(HTMLTextAreaElement.prototype, "focus");
+
+    try {
+      await expect(copyText("hello")).resolves.toBe(true);
+      expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+    } finally {
+      focusSpy.mockRestore();
+    }
+  });
+
+  test("returns focus to the previously focused element after the fallback", async () => {
+    setClipboard(undefined);
+    document.execCommand = jest.fn(() => true);
+    document.body.innerHTML = '<a href="#x" id="permalink">§ 1</a>';
+    const link = document.getElementById("permalink")!;
+    link.focus();
+    expect(document.activeElement).toBe(link);
+
+    try {
+      await expect(copyText("hello")).resolves.toBe(true);
+      expect(document.activeElement).toBe(link);
+    } finally {
+      document.body.innerHTML = "";
+    }
+  });
 });
