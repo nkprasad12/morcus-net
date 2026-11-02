@@ -7,6 +7,7 @@
  */
 
 export * from "@/common/thelatinlibrary/page_layer_types";
+export * from "@/common/thelatinlibrary/snapshot_types";
 
 export {
   decodeLatinLibraryHtmlBytes,

@@ -161,6 +161,7 @@ Texts from thelatinlibrary.com come from a snapshot repository (`thelatinlibrary
 
 - **Page layer (`src/common/thelatinlibrary/`)**: browser-safe parsing of the site's HTML pages: charset detection, a small DOM adapter over `parse5` (Node) or `DOMParser` (browser), section-marker detection and lenient page extraction. Nothing here may import Node built-ins or `parse5` (enforced by ESLint).
 - **Onboarding (`src/scripts/thelatinlibrary/onboard.ts`, `src/scripts/thelatinlibrary/converters/`)**: `onboard.ts` converts selected pages into `works/<id>.json` in the snapshot, with per-work converters in `converters/` for texts that need special handling (such as Gaius and the Digest). During the library build, `src/common/library/process_thelatinlibrary.ts` turns these into ordinary library works.
+- **Snapshot crawler (`src/scripts/thelatinlibrary/crawl/`)**: a maintainer-run tool that crawls the site into the snapshot's `raw/` pages, scans each page for provenance statements, and builds `manifest.json` (one entry per page) and `work_index.json` (one entry per work); `src/common/thelatinlibrary/snapshot_types.ts` defines both formats. It is not part of the build.
 
 ---
 
