@@ -21,6 +21,12 @@
  */
 
 import {
+  committed,
+  IndexedDbConnection,
+  isRecord,
+  promisify,
+} from "@/web/ui/core/storage/idb.client";
+import {
   parseLineMode,
   type LineMode,
 } from "@/web/ui/external/external_text.common";
@@ -51,10 +57,6 @@ interface NewExternalContent {
   content: string;
   source?: ExternalContentSource;
   lineMode?: LineMode;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Validates a stored row, tolerating both V1 and V2 shapes. */
@@ -124,46 +126,6 @@ export function storageKeyFor(
   return content.source === "fromUrl" ? content.title : generateId();
 }
 
-function promisify<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("IDB error"));
-  });
-}
-
-function openDb(factory: IDBFactory): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = factory.open(
-      EXTERNAL_CONTENT_DB_NAME,
-      EXTERNAL_CONTENT_DB_VERSION
-    );
-    // Mirrors V1's schema creation, so whichever UI runs first creates a
-    // database the other can open.
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(EXTERNAL_CONTENT_STORE)) {
-        db.createObjectStore(EXTERNAL_CONTENT_STORE, {
-          keyPath: "storageKey",
-        });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () =>
-      reject(request.error ?? new Error("Could not open IndexedDB"));
-    request.onblocked = () =>
-      reject(new Error(`Opening ${EXTERNAL_CONTENT_DB_NAME} was blocked`));
-  });
-}
-
-/** Resolves once `tx` commits, so writes are durable before callers proceed. */
-function committed(tx: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error ?? new Error("IDB transaction failed"));
-    tx.onabort = () => reject(tx.error ?? new Error("IDB transaction aborted"));
-  });
-}
-
 interface ExternalContentStoreOptions {
   /**
    * Defaults to the global `indexedDB`. Injectable for tests; `null` means
@@ -182,40 +144,25 @@ interface ExternalContentStoreOptions {
  * can degrade to "saving isn't available in this browser".
  */
 export class ExternalContentStore {
-  #dbPromise: Promise<IDBDatabase> | null = null;
-  readonly #factory: IDBFactory | null;
+  readonly #conn: IndexedDbConnection;
   readonly #now: () => number;
   readonly #generateId: () => string;
 
   constructor(options: ExternalContentStoreOptions = {}) {
-    this.#factory =
-      options.factory !== undefined
-        ? options.factory
-        : typeof indexedDB === "undefined"
-        ? null
-        : indexedDB;
+    this.#conn = new IndexedDbConnection({
+      dbName: EXTERNAL_CONTENT_DB_NAME,
+      version: EXTERNAL_CONTENT_DB_VERSION,
+      stores: [{ name: EXTERNAL_CONTENT_STORE, keyPath: "storageKey" }],
+      factory: options.factory,
+    });
     this.#now = options.now ?? Date.now;
     this.#generateId = options.generateId ?? generateOpaqueKey;
-  }
-
-  #db(): Promise<IDBDatabase> {
-    if (this.#dbPromise === null) {
-      const factory = this.#factory;
-      this.#dbPromise = factory
-        ? openDb(factory)
-        : Promise.reject(new Error("IndexedDB is not available"));
-      // A failed open must not be cached forever: retry on the next call.
-      this.#dbPromise.catch(() => {
-        this.#dbPromise = null;
-      });
-    }
-    return this.#dbPromise;
   }
 
   async #objectStore(
     mode: IDBTransactionMode
   ): Promise<{ store: IDBObjectStore; tx: IDBTransaction }> {
-    const db = await this.#db();
+    const db = await this.#conn.db();
     const tx = db.transaction(EXTERNAL_CONTENT_STORE, mode);
     return { store: tx.objectStore(EXTERNAL_CONTENT_STORE), tx };
   }
@@ -290,13 +237,6 @@ export class ExternalContentStore {
 
   /** Closes the connection, e.g. on element disconnect or in tests. */
   async close(): Promise<void> {
-    const pending = this.#dbPromise;
-    this.#dbPromise = null;
-    if (pending === null) return;
-    try {
-      (await pending).close();
-    } catch {
-      // Never opened; nothing to close.
-    }
+    await this.#conn.close();
   }
 }
