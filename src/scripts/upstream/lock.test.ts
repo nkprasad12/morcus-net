@@ -14,7 +14,7 @@ import { parsePinRequest } from "@/scripts/upstream/pin";
 
 const SHA = "0123456789abcdef0123456789abcdef01234567";
 
-function lockWith(source: Record<string, string>): UpstreamLock {
+function lockWith(source: Record<string, unknown>): UpstreamLock {
   return {
     sources: {
       foo: {
@@ -96,6 +96,23 @@ describe("lock helpers", () => {
     expect(() => validateUpstreamLock(lockWith({ env: "lower" }))).toThrow(
       /env/
     );
+    expect(() =>
+      validateUpstreamLock(
+        lockWith({ sparsePaths: ["/edition_metadata_sorted.csv", "/data/"] })
+      )
+    ).not.toThrow();
+    expect(() =>
+      validateUpstreamLock(lockWith({ sparsePaths: "/data/" }))
+    ).toThrow(/sparsePaths/);
+    expect(() => validateUpstreamLock(lockWith({ sparsePaths: [] }))).toThrow(
+      /sparsePaths/
+    );
+    expect(() =>
+      validateUpstreamLock(lockWith({ sparsePaths: ["/data/", ""] }))
+    ).toThrow(/sparsePaths/);
+    expect(() =>
+      validateUpstreamLock(lockWith({ sparsePaths: [123] }))
+    ).toThrow(/sparsePaths/);
     expect(() => validateUpstreamLock(JSON.parse("{}"))).toThrow(/sources/);
   });
 

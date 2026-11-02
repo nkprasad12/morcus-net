@@ -2,6 +2,8 @@ import {
   checkContainsContent,
   countLocalOnlyCommits,
   findRemote,
+  isDirty,
+  tryGit,
 } from "@/scripts/upstream/git";
 import {
   cloneInto,
@@ -75,5 +77,42 @@ describe("git helpers", () => {
     expect(countLocalOnlyCommits(dir, "HEAD")).toBe(0);
     commit(dir, "local", { "data.txt": "local" });
     expect(countLocalOnlyCommits(dir, "HEAD")).toBe(1);
+  });
+
+  it("treats a fresh --no-checkout clone without an index as clean", () => {
+    sandbox = makeSandbox();
+    const noCheckout = `${sandbox.morcusDir}/no-checkout`;
+    sh(
+      sandbox.morcusDir,
+      "clone",
+      "-q",
+      "--no-checkout",
+      sandbox.remote,
+      noCheckout
+    );
+    expect(isDirty(noCheckout)).toBe(false);
+  });
+
+  it("scrubs inherited GIT_* env vars in tryGit", () => {
+    sandbox = makeSandbox();
+    const dir = cloneInto(sandbox, "foo");
+    const savedGitDir = process.env.GIT_DIR;
+    const savedWorkTree = process.env.GIT_WORK_TREE;
+    const savedIndex = process.env.GIT_INDEX_FILE;
+    process.env.GIT_DIR = "/nonexistent/git-dir";
+    process.env.GIT_WORK_TREE = "/nonexistent/work-tree";
+    process.env.GIT_INDEX_FILE = "/nonexistent/index";
+    try {
+      const res = tryGit(dir, ["rev-parse", "HEAD"]);
+      expect(res.ok).toBe(true);
+      expect(res.stdout).toBe(sandbox.base);
+    } finally {
+      if (savedGitDir === undefined) delete process.env.GIT_DIR;
+      else process.env.GIT_DIR = savedGitDir;
+      if (savedWorkTree === undefined) delete process.env.GIT_WORK_TREE;
+      else process.env.GIT_WORK_TREE = savedWorkTree;
+      if (savedIndex === undefined) delete process.env.GIT_INDEX_FILE;
+      else process.env.GIT_INDEX_FILE = savedIndex;
+    }
   });
 });

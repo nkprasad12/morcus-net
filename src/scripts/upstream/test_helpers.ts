@@ -7,13 +7,14 @@ import { spawnSync } from "child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
+import { scrubGitEnv } from "@/scripts/upstream/git";
 
 export function sh(cwd: string, ...args: string[]): string {
   const result = spawnSync("git", args, {
     cwd,
     encoding: "utf8",
     env: {
-      ...process.env,
+      ...scrubGitEnv(),
       GIT_AUTHOR_NAME: "Test",
       GIT_AUTHOR_EMAIL: "test@example.com",
       GIT_COMMITTER_NAME: "Test",

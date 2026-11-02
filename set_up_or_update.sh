@@ -34,16 +34,18 @@ ENV_PATH="$MORCUS_NET_DIR/.env"
 
 LOCK_PATH="$MORCUS_NET_DIR/upstream_sources.lock.json"
 
-# Prints "<source> <env var> <file or -> <repo>" for each upstream data source
-# in the lock file, which pins each repo to a commit. Each source is cloned
-# into "$MORCUS_DIR/<source>", and its env var points at <file> in the clone
-# (or at the clone itself). `./morcus.sh upstream sync` then checks out the
-# pinned commits, leaving any local work alone.
+# Prints "<source> <env var> <file or -> <repo> [sparse path...]" for each
+# upstream data source in the lock file, which pins each repo to a commit. Each
+# source is cloned into "$MORCUS_DIR/<source>", and its env var points at
+# <file> in the clone (or at the clone itself). `./morcus.sh upstream sync`
+# then checks out the pinned commits, leaving any local work alone.
 function list_sources {
   node -e '
     const { sources } = require(process.argv[1]);
     for (const [name, s] of Object.entries(sources)) {
-      console.log([name, s.env, s.file || "-", s.repo].join(" "));
+      console.log(
+        [name, s.env, s.file || "-", s.repo, ...(s.sparsePaths || [])].join(" ")
+      );
     }
   ' "$LOCK_PATH"
 }
@@ -77,9 +79,16 @@ function replace_env_var {
 function clone_repo {
   local dir=$1
   local url=$2
+  shift 2
+  local sparse_paths=("$@")
   if [ ! -d "$dir" ]; then
     echo -e "${COLOR_INFO}Cloning repo '$dir' from $url...${COLOR_RESET}"
-    git clone "$url" "$dir"
+    if [ "${#sparse_paths[@]}" -gt 0 ]; then
+      git clone --filter=blob:none --no-checkout "$url" "$dir"
+      git -C "$dir" sparse-checkout set --no-cone "${sparse_paths[@]}"
+    else
+      git clone "$url" "$dir"
+    fi
     echo -e "${COLOR_INFO}Repo '$dir' cloned.${COLOR_RESET}"
   fi
 }
@@ -276,11 +285,12 @@ if [ "$(get_env_var GAFFIOT_RAW_PATH)" == "$LEGACY_GAFFIOT" ]; then
   echo -e "${INDENT}${COLOR_INFO}$LEGACY_GAFFIOT is no longer used; delete it whenever you like.${COLOR_RESET}"
 fi
 
-while read -r SOURCE VAR FILE URL; do
+while read -r SOURCE VAR FILE URL SPARSE_PATHS; do
   # An env var that's already set may point at a clone somewhere else, which
   # this script leaves alone.
   if ! env_has_var "$VAR"; then
-    clone_repo "$SOURCE" "$URL"
+    read -r -a SPARSE_ARGS <<< "$SPARSE_PATHS"
+    clone_repo "$SOURCE" "$URL" "${SPARSE_ARGS[@]}"
     if [ "$FILE" == "-" ]; then
       set_env_var "$VAR" "$MORCUS_DIR/$SOURCE"
     else

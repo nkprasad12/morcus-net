@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 import {
   PINNED_BRANCH,
@@ -214,6 +214,47 @@ describe("clones", () => {
       expect(result.outcome).toBe("left");
       expect(sh(elsewhere, "rev-parse", "--abbrev-ref", "HEAD")).toBe("main");
     });
+
+    it("applies, updates, and disables sparse-checkout across syncs", () => {
+      source.commit = commit(sandbox.upstream, "add second file", {
+        "data.txt": "a",
+        "extra.txt": "b",
+      });
+      sh(sandbox.upstream, "push", "-q", "origin", "main");
+      source.sparsePaths = ["/data.txt"];
+
+      // Simulate set_up_or_update.sh: partial --no-checkout clone + sparse-checkout set.
+      const dir = path.join(sandbox.morcusDir, "foo");
+      sh(
+        sandbox.morcusDir,
+        "clone",
+        "-q",
+        "--filter=blob:none",
+        "--no-checkout",
+        sandbox.remote,
+        dir
+      );
+      sh(dir, "sparse-checkout", "set", "--no-cone", "/data.txt");
+
+      expect(sync().outcome).toBe("moved");
+      expect(existsSync(path.join(dir, "data.txt"))).toBe(true);
+      expect(existsSync(path.join(dir, "extra.txt"))).toBe(false);
+
+      // Re-applies changed sparsePaths even when already on morcus-pinned at the pin.
+      source.sparsePaths = ["/extra.txt"];
+      expect(sync().outcome).toBe("ok");
+      expect(existsSync(path.join(dir, "data.txt"))).toBe(false);
+      expect(existsSync(path.join(dir, "extra.txt"))).toBe(true);
+
+      // Disables sparse-checkout when sparsePaths is removed from the lock.
+      delete source.sparsePaths;
+      expect(sync().outcome).toBe("ok");
+      expect(existsSync(path.join(dir, "data.txt"))).toBe(true);
+      expect(existsSync(path.join(dir, "extra.txt"))).toBe(true);
+      expect(
+        sh(dir, "config", "--bool", "--default", "false", "core.sparseCheckout")
+      ).toBe("false");
+    });
   });
 
   describe("status", () => {
@@ -230,6 +271,40 @@ describe("clones", () => {
 
       source.commit = "f".repeat(40);
       expect(describeStatus(status())).toContain("pin not fetched");
+    });
+
+    it("reports sparse-checkout drift in status", () => {
+      cloneInto(sandbox, "foo");
+      const lock = { sources: { foo: source } };
+      const status = () => cloneStatuses(lock, env(), sandbox.morcusDir)[0];
+
+      // Lock requires sparsePaths, but clone is a full checkout.
+      source.sparsePaths = ["/data.txt"];
+      expect(isAtPin(status())).toBe(false);
+      expect(describeStatus(status())).toContain("sparse-checkout drift");
+
+      // Sync applies sparsePaths; drift clears.
+      expect(syncClone("foo", source, env(), sandbox.morcusDir).outcome).toBe(
+        "moved"
+      );
+      expect(isAtPin(status())).toBe(true);
+      expect(describeStatus(status())).not.toContain("sparse-checkout drift");
+
+      // Changing sparsePaths in lock causes drift again.
+      source.sparsePaths = ["/other.txt"];
+      expect(isAtPin(status())).toBe(false);
+      expect(describeStatus(status())).toContain("sparse-checkout drift");
+
+      // Removing sparsePaths from lock while clone is still sparse also reports drift.
+      delete source.sparsePaths;
+      expect(isAtPin(status())).toBe(false);
+      expect(describeStatus(status())).toContain("sparse-checkout drift");
+
+      // Sync disables sparse-checkout; drift clears.
+      expect(syncClone("foo", source, env(), sandbox.morcusDir).outcome).toBe(
+        "ok"
+      );
+      expect(isAtPin(status())).toBe(true);
     });
   });
 });

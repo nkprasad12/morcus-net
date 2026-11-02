@@ -72,12 +72,25 @@
       "commit": "6ce6d3e4e7f45c1257b7938f2a2204c971dda530",
       "env": "PHI_JSON_ROOT"
     },
+    "patrologia_latina-dev": {
+      "repo": "https://github.com/nkprasad12/patrologia_latina-dev.git",
+      "branch": "master",
+      "commit": "8c651f859f821f0868755596f1a513946ca25350",
+      "env": "PATROLOGIA_LATINA_ROOT",
+      "sparsePaths": ["/edition_metadata_sorted.csv", "/data/"]
+    },
     "gaffiot": {
       "repo": "https://github.com/nkprasad12/gaffiot.git",
       "branch": "main",
       "commit": "6bccf36d525655c00f7a760dffdee3d4fabdcfc7",
       "env": "GAFFIOT_RAW_PATH",
       "file": "gaffiot.js"
+    },
+    "thelatinlibrary": {
+      "repo": "https://github.com/nkprasad12/TheLatinLibrary.git",
+      "branch": "main",
+      "commit": "0add164aa2de66ad51f10afdced5a84d564132e7",
+      "env": "THELATINLIBRARY_ROOT"
     }
   }
 }

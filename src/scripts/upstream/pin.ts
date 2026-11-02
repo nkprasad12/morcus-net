@@ -108,10 +108,14 @@ function cloneContext(
   // `--prune` drops remote-tracking branches deleted on the remote, so a
   // commit only on a deleted branch doesn't count as "on the remote". It
   // doesn't touch local branches or tags.
+  const hasSparse =
+    source.sparsePaths !== undefined && source.sparsePaths.length > 0;
+  const filter = hasSparse ? ["--filter=blob:none"] : [];
   const fetched = tryGit(location.dir, [
     "fetch",
     "-q",
     "--prune",
+    ...filter,
     remote,
     "--tags",
   ]);
@@ -236,7 +240,9 @@ function planPin(
     );
   }
   const oldCommit = source.commit;
-  if (!ensureCommit(dir, remote, oldCommit)) {
+  const hasSparse =
+    source.sparsePaths !== undefined && source.sparsePaths.length > 0;
+  if (!ensureCommit(dir, remote, oldCommit, hasSparse)) {
     throw new Error(
       `${name}: can't fetch the current pin ${oldCommit.slice(0, 7)}`
     );
@@ -434,7 +440,11 @@ export function tagPins(names: string[], options: PinOptions = {}): boolean {
         console.log(chalk.green(`${name.padEnd(24)}already tagged`));
         continue;
       }
-      if (!ensureCommit(context.dir, context.remote, source.commit)) {
+      const hasSparse =
+        source.sparsePaths !== undefined && source.sparsePaths.length > 0;
+      if (
+        !ensureCommit(context.dir, context.remote, source.commit, hasSparse)
+      ) {
         throw new Error(`${name}: can't fetch ${source.commit.slice(0, 7)}`);
       }
       if (!isOnRemote(context.dir, context.remote, source.commit)) {

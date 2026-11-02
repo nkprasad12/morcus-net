@@ -1,9 +1,10 @@
 # Upstream data repos
 
-Morcus builds its dictionaries and library from 11 ancillary repos (`lexica`, `smithandhall`, `canonical-latinlit`, ...). Most are our forks of other projects. [`upstream_sources.lock.json`](../../../upstream_sources.lock.json) pins each one to a commit:
+Morcus builds its dictionaries and library from 13 ancillary repos (`lexica`, `smithandhall`, `canonical-latinlit`, `thelatinlibrary`, `patrologia_latina-dev`, ...). Most are our forks of other projects. [`upstream_sources.lock.json`](../../../upstream_sources.lock.json) pins each one to a commit:
 
 - **Prod and CI** build exactly the pinned commits, so the same morcus-net commit always builds the same data, and a data change is its own reviewable, revertable commit.
 - **Local builds** (`./morcus.sh build` / `web`) use whatever is checked out at each source's env var (`LS_PATH`, `SH_RAW_PATH`, ...), so local commits in a data repo just work. Builds warn when that differs from the pins.
+- **Sparse checkouts (`sparsePaths`)**: Large multi-directory repos can specify `sparsePaths` (an array of `--no-cone` sparse-checkout patterns, e.g. `["/edition_metadata_sorted.csv", "/data/"]` on `patrologia_latina-dev`) so `set_up_or_update.sh`, `./morcus.sh upstream sync`, and prod builds fetch with `--filter=blob:none` and only check out the paths Morcus reads.
 
 Staying close to the original upstream projects is **not** a goal. Forks being behind upstream is fine.
 
@@ -17,8 +18,8 @@ Staying close to the original upstream projects is **not** a goal. Forks being b
 
 | Command                                        | What it does                                                                                                                                                                                                      |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `./morcus.sh upstream status`                  | One line per clone: at pin / ahead / behind / uncommitted changes / custom path. Offline.                                                                                                                         |
-| `./morcus.sh upstream sync [source...]`        | Fetches missing pins and moves clones to them, leaving local work alone (see below). `set_up_or_update.sh` runs it.                                                                                               |
+| `./morcus.sh upstream status`                  | One line per clone: at pin / ahead / behind / uncommitted changes / sparse-checkout drift / custom path. Offline.                                                                                                 |
+| `./morcus.sh upstream sync [source...]`        | Fetches missing pins, applies `sparsePaths` (or disables sparse checkout when removed), and moves clones to them, leaving local work alone (see below). `set_up_or_update.sh` runs it.                            |
 | `./morcus.sh upstream pin <source>[@<ref>]...` | Re-pins. `<ref>` is a branch, tag or SHA in your clone (default: the source's tracked `branch` on the remote). Add `--dry-run` to check without changing anything, `--allow-drop` and `--yes` to override checks. |
 | `./morcus.sh upstream tag [source...]`         | Pushes any missing `morcus-pin/<sha>` tags for the current pins.                                                                                                                                                  |
 | `./morcus.sh upstream verify`                  | Checks every pin is tagged on its repo. CI runs this before the Docker build.                                                                                                                                     |

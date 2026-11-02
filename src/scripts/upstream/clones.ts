@@ -185,6 +185,8 @@ export interface CloneState {
   /** Commits in HEAD but not the pin, and vice versa (if the pin is available). */
   ahead: number;
   behind: number;
+  /** Whether the clone's sparse-checkout paths differ from the lock file's. */
+  sparseDrift: boolean;
 }
 
 export type CloneStatus =
@@ -195,10 +197,47 @@ export type CloneStatus =
       state: CloneState;
     };
 
+function isSparseCheckout(dir: string): boolean {
+  return tryGit(dir, ["sparse-checkout", "list"]).ok;
+}
+
+/**
+ * Whether `dir`'s sparse-checkout state differs from `sparsePaths` (`--no-cone`
+ * patterns when non-empty, or a full checkout when unset/empty).
+ */
+export function hasSparseDrift(
+  dir: string,
+  sparsePaths?: readonly string[]
+): boolean {
+  const expected =
+    sparsePaths !== undefined && sparsePaths.length > 0
+      ? sparsePaths
+      : undefined;
+  const list = tryGit(dir, ["sparse-checkout", "list"]);
+  if (!list.ok) {
+    return expected !== undefined;
+  }
+  if (expected === undefined) {
+    return true;
+  }
+  const cone =
+    tryGit(dir, ["config", "--bool", "--get", "core.sparseCheckoutCone"])
+      .stdout === "true";
+  if (cone) {
+    return true;
+  }
+  const actual = list.stdout.split("\n").filter(Boolean);
+  return (
+    actual.length !== expected.length ||
+    actual.some((p, i) => p !== expected[i])
+  );
+}
+
 export function cloneState(
   dir: string,
   custom: boolean,
-  pin: string
+  pin: string,
+  sparsePaths?: readonly string[]
 ): CloneState {
   const pinAvailable = hasCommit(dir, pin);
   return {
@@ -209,6 +248,7 @@ export function cloneState(
     pinAvailable,
     ahead: pinAvailable ? countCommits(dir, `${pin}..HEAD`) : 0,
     behind: pinAvailable ? countCommits(dir, `HEAD..${pin}`) : 0,
+    sparseDrift: hasSparseDrift(dir, sparsePaths),
   };
 }
 
@@ -224,7 +264,12 @@ export function cloneStatuses(
     return {
       name,
       location,
-      state: cloneState(location.dir, location.custom, source.commit),
+      state: cloneState(
+        location.dir,
+        location.custom,
+        source.commit,
+        source.sparsePaths
+      ),
     };
   });
 }
@@ -236,7 +281,8 @@ export function isAtPin(status: CloneStatus): boolean {
     status.state.pinAvailable &&
     status.state.ahead === 0 &&
     status.state.behind === 0 &&
-    !status.state.dirty
+    !status.state.dirty &&
+    !status.state.sparseDrift
   );
 }
 
@@ -270,6 +316,9 @@ export function describeStatus(status: CloneStatus): string {
   }
   parts.push(state.branch === undefined ? "detached" : `on '${state.branch}'`);
   if (state.dirty) parts.push("uncommitted changes");
+  if (state.sparseDrift) {
+    parts.push("sparse-checkout drift; run `./morcus.sh upstream sync`");
+  }
   if (state.custom) parts.push(`custom path ${state.dir}`);
   if (status.location.envUnset) parts.push("env var not set");
   return parts.join(", ");
@@ -333,6 +382,30 @@ export interface SyncResult {
   message: string;
 }
 
+function applySparseCheckout(
+  dir: string,
+  sparsePaths?: readonly string[]
+): string | undefined {
+  if (sparsePaths !== undefined && sparsePaths.length > 0) {
+    const sparse = tryGit(dir, [
+      "sparse-checkout",
+      "set",
+      "--no-cone",
+      ...sparsePaths,
+    ]);
+    return sparse.ok
+      ? undefined
+      : `couldn't configure sparse-checkout: ${sparse.stderr}`;
+  }
+  if (isSparseCheckout(dir)) {
+    const disabled = tryGit(dir, ["sparse-checkout", "disable"]);
+    return disabled.ok
+      ? undefined
+      : `couldn't disable sparse-checkout: ${disabled.stderr}`;
+  }
+  return undefined;
+}
+
 /** Moves one clone to its pin if that's safe; see {@link decideSync}. */
 export function syncClone(
   name: string,
@@ -352,8 +425,13 @@ export function syncClone(
   const { dir } = location;
   const pin = source.commit;
   const short = pin.slice(0, 7);
-  const remote = findRemote(dir, source.repo) ?? source.repo;
-  if (!ensureCommit(dir, remote, pin)) {
+  const remoteName = findRemote(dir, source.repo);
+  const remote = remoteName ?? source.repo;
+  const hasSparse =
+    remoteName !== undefined &&
+    source.sparsePaths !== undefined &&
+    source.sparsePaths.length > 0;
+  if (!ensureCommit(dir, remote, pin, hasSparse)) {
     return {
       name,
       outcome: "error",
@@ -361,13 +439,12 @@ export function syncClone(
     };
   }
   if (location.custom) {
-    const state = cloneState(dir, true, pin);
+    const state = cloneState(dir, true, pin, source.sparsePaths);
     const description = describeStatus({ name, location, state });
     return { name, outcome: "left", message: `${description}; not managed` };
   }
   const branch = currentBranch(dir);
   const managed = new Set([PINNED_BRANCH, source.branch]);
-  const remoteName = findRemote(dir, source.repo);
   const defaultBranch =
     remoteName === undefined ? undefined : remoteDefaultBranch(dir, remoteName);
   if (defaultBranch !== undefined) managed.add(defaultBranch);
@@ -377,10 +454,11 @@ export function syncClone(
     "-q",
     `refs/heads/${PINNED_BRANCH}`,
   ]).ok;
+  const dirty = isDirty(dir);
   const decision = decideSync({
     branch,
     managedBranches: managed,
-    dirty: isDirty(dir),
+    dirty,
     headIsPin: git(dir, ["rev-parse", "HEAD"]) === pin,
     localOnlyInHead: countLocalOnlyCommits(dir, "HEAD"),
     localOnlyInPinnedBranch:
@@ -388,12 +466,24 @@ export function syncClone(
         ? countLocalOnlyCommits(dir, `refs/heads/${PINNED_BRANCH}`)
         : 0,
   });
-  if (decision.action === "none") {
-    const dirty = isDirty(dir) ? ", with uncommitted changes" : "";
-    return { name, outcome: "ok", message: `at pin ${short}${dirty}` };
+  if (
+    decision.action === "none" &&
+    dirty &&
+    hasSparseDrift(dir, source.sparsePaths)
+  ) {
+    const state = cloneState(dir, false, pin, source.sparsePaths);
+    return {
+      name,
+      outcome: "left",
+      message: `has uncommitted changes; leaving it (${describeStatus({
+        name,
+        location,
+        state,
+      })})`,
+    };
   }
   if (decision.action === "leave") {
-    const state = cloneState(dir, false, pin);
+    const state = cloneState(dir, false, pin, source.sparsePaths);
     return {
       name,
       outcome: "left",
@@ -403,6 +493,16 @@ export function syncClone(
         state,
       })})`,
     };
+  }
+  if (!dirty) {
+    const sparseError = applySparseCheckout(dir, source.sparsePaths);
+    if (sparseError !== undefined) {
+      return { name, outcome: "error", message: sparseError };
+    }
+  }
+  if (decision.action === "none") {
+    const dirtySuffix = dirty ? ", with uncommitted changes" : "";
+    return { name, outcome: "ok", message: `at pin ${short}${dirtySuffix}` };
   }
   const moved = tryGit(dir, ["checkout", "-q", "-B", PINNED_BRANCH, pin]);
   if (!moved.ok) {

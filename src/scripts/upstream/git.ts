@@ -1,6 +1,8 @@
 /** Small synchronous git helpers for the upstream tooling. */
 
 import { spawnSync } from "child_process";
+import { existsSync } from "fs";
+import path from "path";
 import { canonicalRepo } from "@/scripts/upstream/lock";
 
 export interface GitResult {
@@ -9,12 +11,31 @@ export interface GitResult {
   stderr: string;
 }
 
+/**
+ * Returns a copy of `env` without git's repo-location variables (`GIT_DIR`,
+ * `GIT_INDEX_FILE`, etc.), so git commands targeting another clone aren't
+ * redirected back to the enclosing repo when run inside a git hook.
+ */
+export function scrubGitEnv(
+  env: NodeJS.ProcessEnv = process.env
+): NodeJS.ProcessEnv {
+  const clean = { ...env };
+  delete clean.GIT_DIR;
+  delete clean.GIT_WORK_TREE;
+  delete clean.GIT_COMMON_DIR;
+  delete clean.GIT_INDEX_FILE;
+  delete clean.GIT_OBJECT_DIRECTORY;
+  delete clean.GIT_ALTERNATE_OBJECT_DIRECTORIES;
+  delete clean.GIT_PREFIX;
+  return clean;
+}
+
 /** Runs `git -C <dir> <args>` and never throws. */
 export function tryGit(dir: string, args: string[]): GitResult {
   const result = spawnSync("git", ["-C", dir, ...args], {
     encoding: "utf8",
     // Never block on a credential prompt; fail instead.
-    env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    env: { ...scrubGitEnv(), GIT_TERMINAL_PROMPT: "0" },
   });
   return {
     ok: result.status === 0,
@@ -50,6 +71,14 @@ export function currentBranch(dir: string): string | undefined {
 
 /** Whether tracked files have uncommitted changes. Untracked files don't count. */
 export function isDirty(dir: string): boolean {
+  const index = path.resolve(
+    dir,
+    git(dir, ["rev-parse", "--git-path", "index"])
+  );
+  if (!existsSync(index)) {
+    // A fresh `--no-checkout` clone has no index yet and no modified tracked files.
+    return false;
+  }
   return git(dir, ["status", "--porcelain", "--untracked-files=no"]) !== "";
 }
 
@@ -92,17 +121,20 @@ export function remoteDefaultBranch(
 
 /**
  * Makes `sha` available in `dir`, fetching from `remote` if needed. Returns
- * whether it is available.
+ * whether it is available. When `sparse` is true, fetches use
+ * `--filter=blob:none` so large repos don't download unneeded blobs.
  */
 export function ensureCommit(
   dir: string,
   remote: string,
-  sha: string
+  sha: string,
+  sparse = false
 ): boolean {
   if (hasCommit(dir, sha)) return true;
-  tryGit(dir, ["fetch", "-q", remote, "--tags"]);
+  const filter = sparse ? ["--filter=blob:none"] : [];
+  tryGit(dir, ["fetch", "-q", ...filter, remote, "--tags"]);
   if (hasCommit(dir, sha)) return true;
-  tryGit(dir, ["fetch", "-q", remote, sha]);
+  tryGit(dir, ["fetch", "-q", ...filter, remote, sha]);
   return hasCommit(dir, sha);
 }
 
