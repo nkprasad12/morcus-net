@@ -3006,10 +3006,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   describe("What's New pre-paint recording", () => {
     function readPrepaint(): Record<string, string> {
-      return JSON.parse(localStorage.getItem("morcus_prepaint") ?? "{}") as Record<
-        string,
-        string
-      >;
+      return JSON.parse(
+        localStorage.getItem("morcus_prepaint") ?? "{}"
+      ) as Record<string, string>;
     }
 
     beforeEach(() => {

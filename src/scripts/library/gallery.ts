@@ -47,7 +47,10 @@ import {
   buildCitationSpine,
   CitationSpine,
 } from "@/common/library/cite_structure";
-import { isInlineTitleNote, isVacuousNote } from "@/common/library/process_work";
+import {
+  isInlineTitleNote,
+  isVacuousNote,
+} from "@/common/library/process_work";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import {
