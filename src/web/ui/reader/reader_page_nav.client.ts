@@ -26,6 +26,18 @@ import { isSwipeNavOn } from "@/web/ui/reader/reader_settings.client";
 
 export type PageDir = "prev" | "next";
 
+/**
+ * Turns pages for a host that renders its pages itself instead of swapping
+ * server pages through the sticky-bar pager. See
+ * `MorcusReaderView.pageTurner`.
+ */
+export interface ReaderPageTurner {
+  /** Whether there is a page in `dir`. */
+  canTurn: (dir: PageDir) => boolean;
+  /** Turns to the page in `dir`; resolves true once it is in place. */
+  turn: (dir: PageDir) => Promise<boolean>;
+}
+
 /** Swipes starting this close (px) to a screen edge belong to the OS back gesture. */
 export const EDGE_GUARD_PX = 24;
 /** Release distance that commits a swipe, as a fraction of `min(vw, vh)` (V1: 20%). */
@@ -37,12 +49,8 @@ export const SLIDE_MS = 180;
 /** Distance (px) the incoming page slides in from. */
 const ENTER_PX = 48;
 
-interface ReaderPageNavOptions {
+interface ReaderPageNavOptions extends ReaderPageTurner {
   root: HTMLElement;
-  /** Whether there is a page in `dir`. */
-  canTurn: (dir: PageDir) => boolean;
-  /** Turns to the page in `dir`; resolves true once it is in place. */
-  turn: (dir: PageDir) => Promise<boolean>;
 }
 
 const dirOf = (dx: number): PageDir => (dx < 0 ? "next" : "prev");

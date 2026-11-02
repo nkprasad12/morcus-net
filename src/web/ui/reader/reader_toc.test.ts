@@ -5,6 +5,14 @@
 import { ReaderTocController } from "@/web/ui/reader/reader_toc.client";
 import { revealTarget } from "@/web/ui/core/nav/reveal.client";
 import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
+import {
+  escapeTocText,
+  renderPageListTocDrawerHtml,
+  renderTocItemHtml,
+  renderTocTriggerHtml,
+} from "@/web/ui/reader/reader_toc.common";
+import * as he from "he";
+import { html } from "@/web/ui/core/dom/html.common";
 
 describe("ReaderTocController", () => {
   let container: HTMLDivElement;
@@ -930,5 +938,120 @@ describe("preRenderTocItemsHtml", () => {
     );
     expect(html).toContain('data-page-id="30.0"');
     expect(html).not.toContain("Title 0");
+  });
+});
+
+describe("reader_toc.common", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  test("escapeTocText matches he.escape, so server markup is unchanged", () => {
+    const sample = `a&b<c>d"e'f\`g § ā`;
+    expect(escapeTocText(sample)).toBe(he.escape(sample));
+  });
+
+  test("renderTocItemHtml matches the server's leaf and active splice", () => {
+    expect(
+      renderTocItemHtml({
+        href: "/work/a/b/1.2",
+        pageId: "1.2",
+        label: "Chapter 2",
+        citation: "1.2",
+      })
+    ).toBe(
+      '<a href="/work/a/b/1.2" class="reader-toc-item" data-page-id="1.2"><span class="reader-toc-item-title">Chapter 2</span><span class="reader-toc-item-id">&sect; 1.2</span></a>'
+    );
+    expect(
+      renderTocItemHtml({
+        href: "/read?doc=x&page=530",
+        pageId: "530",
+        label: "col. 530",
+        active: true,
+      })
+    ).toBe(
+      '<a href="/read?doc=x&amp;page=530" class="reader-toc-item active" data-page-id="530" aria-current="page"><span class="reader-toc-item-title">col. 530</span></a>'
+    );
+  });
+
+  test("renderTocTriggerHtml renders the sticky bar's contents button", () => {
+    document.body.innerHTML = renderTocTriggerHtml({
+      title: "De <Fide>",
+      shortTitle: "De Fide",
+      pageLabelHtml: html`<span class="jump-val">col. 529</span>`,
+      sectionGlyph: false,
+    });
+    const btn = document.querySelector<HTMLAnchorElement>(
+      ".sticky-jump-box > a#reader-toc-btn"
+    )!;
+    expect(btn.getAttribute("href")).toBe("#reader-toc-drawer");
+    expect(btn.getAttribute("aria-controls")).toBe("reader-toc-drawer");
+    expect(btn.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(btn.querySelector(".sticky-work-title")?.getAttribute("title")).toBe(
+      "De <Fide>"
+    );
+    expect(btn.querySelector(".jump-glyph")).toBeNull();
+    expect(btn.querySelector(".jump-val")?.textContent).toBe("col. 529");
+    expect(btn.querySelector("svg.jump-chevron")).not.toBeNull();
+  });
+
+  test("a page-list drawer works with ReaderTocController", () => {
+    document.body.innerHTML =
+      renderTocTriggerHtml({
+        title: "De Fide",
+        shortTitle: "De Fide",
+        pageLabelHtml: html`<span class="jump-val">col. 530</span>`,
+      }) +
+      renderPageListTocDrawerHtml({
+        pages: ["529", "530", "531"].map((id) => ({
+          id,
+          label: `col. ${id}`,
+          href: `/read?doc=pl&page=${id}`,
+        })),
+        activeIndex: 1,
+        formAction: "/read",
+        hiddenFields: [["doc", "pl/x"]],
+        footer: { href: "/texts", label: "Back to the texts" },
+      });
+    const drawer =
+      document.querySelector<HTMLDialogElement>("#reader-toc-drawer")!;
+    expect(drawer.classList.contains("reader-toc-drawer")).toBe(true);
+    const form = drawer.querySelector<HTMLFormElement>(
+      ".reader-toc-search-form"
+    )!;
+    expect(form.getAttribute("action")).toBe("/read");
+    expect(
+      form.querySelector<HTMLInputElement>('input[type="hidden"][name="doc"]')
+        ?.value
+    ).toBe("pl/x");
+    const search = drawer.querySelector<HTMLInputElement>(
+      "#reader-toc-search-input"
+    )!;
+    expect(search.placeholder).toContain("(e.g. 530)");
+    expect(
+      drawer
+        .querySelector(".reader-toc-item.active")
+        ?.getAttribute("data-page-id")
+    ).toBe("530");
+    expect(
+      drawer.querySelector(".reader-toc-footer .reader-library-link")
+        ?.textContent
+    ).toBe("← Back to the texts");
+
+    const controller = new ReaderTocController({ root: document.body });
+    controller.connect();
+    document.querySelector<HTMLElement>("#reader-toc-btn")!.click();
+    expect(controller.isOpen()).toBe(true);
+
+    controller.applyFilter("531");
+    const visible = Array.from(
+      drawer.querySelectorAll<HTMLElement>(".reader-toc-item"),
+      (el) => (el.hidden ? null : el.dataset.pageId)
+    ).filter((id) => id !== null);
+    expect(visible).toEqual(["531"]);
+
+    controller.close();
+    expect(controller.isOpen()).toBe(false);
+    controller.dispose();
   });
 });

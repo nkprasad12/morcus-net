@@ -22,15 +22,21 @@ import {
   buildReaderPageUrl,
   renderTocDrawer,
 } from "@/web/ui/reader/reader_toc.server";
+import { renderTocTriggerHtml } from "@/web/ui/reader/reader_toc.common";
 import {
   renderReaderAboutSection,
   renderReaderSettingsPopover,
 } from "@/web/ui/reader/reader_dialogs.server";
-import {
-  renderCopyPillIconsHtml,
-  renderIconSvg,
-} from "@/web/ui/core/widgets/icons.common";
 import { getFirstHighlightSectionId } from "@/web/ui/reader/reader_highlight.common";
+import {
+  renderReaderCompanionPanelHtml,
+  renderReaderHeadingHtml as renderReaderHeadingCommonHtml,
+  renderReaderNotesSlotHtml,
+  renderReaderPagerArrowHtml,
+  renderReaderSettingsButtonHtml as renderReaderSettingsButtonCommonHtml,
+  renderReaderStickyBarHtml,
+} from "@/web/ui/reader/reader_frame.common";
+import { html, raw, type SafeHtml } from "@/web/ui/core/dom/html.common";
 import { renderSlotTemplates, slotAttr } from "@/web/ui/core/nav/slots.common";
 import {
   READER_PAGE_SLOTS,
@@ -162,7 +168,7 @@ export async function resolveReaderContext(
 function renderReaderPagerLink(
   ctx: ReaderRenderContext,
   dir: "prev" | "next"
-): string {
+): SafeHtml {
   const { work, activePage, query } = ctx;
   const page = dir === "prev" ? ctx.prevPage : ctx.nextPage;
   const pageUrl = buildReaderPageUrl(work, page, { query });
@@ -171,52 +177,24 @@ function renderReaderPagerLink(
     : dir === "prev"
     ? "Previous"
     : "Next";
-  const disabledAttrs = !page ? 'aria-disabled="true" tabindex="-1"' : "";
-
-  if (dir === "prev") {
-    return ssr`<a href="${pageUrl}"
-             class="reader-btn reader-nav-arrow ${!page ? "disabled" : ""}"
-             id="pager-prev"
-             ${disabledAttrs}
-             aria-label="Previous chapter"
-             title="Previous ([)"
-             ${slotAttr("pager-prev")}>
-            <span class="pager-arrow" aria-hidden="true">&larr;</span>
-            ${renderIconSvg("strokeChevronLeft", {
-              className: "pager-chevron",
-              width: 16,
-              height: 16,
-              strokeWidth: 2.5,
-            })}
-            <span class="pager-label">${he.escape(label)}</span>
-          </a>`;
-  }
-  return ssr`<a href="${pageUrl}"
-               class="reader-btn reader-nav-arrow ${!page ? "disabled" : ""}"
-               id="pager-next"
-               ${disabledAttrs}
-               aria-label="Next chapter"
-               title="Next (])"
-               ${slotAttr("pager-next")}>
-              <span class="pager-label">${he.escape(label)}</span>
-              <span class="pager-arrow" aria-hidden="true">&rarr;</span>
-              ${renderIconSvg("strokeChevronRight", {
-                className: "pager-chevron",
-                width: 16,
-                height: 16,
-                strokeWidth: 2.5,
-              })}
-            </a>`;
+  return renderReaderPagerArrowHtml({
+    dir,
+    href: pageUrl,
+    disabled: !page,
+    ariaLabel: dir === "prev" ? "Previous chapter" : "Next chapter",
+    title: dir === "prev" ? "Previous ([)" : "Next (])",
+    label,
+    id: `pager-${dir}`,
+    attrs: slotAttr(`pager-${dir}`),
+  });
 }
 
-/** The dictionary sheet's close glyph (same × as dialogs and popovers). */
-const SHEET_CLOSE_ICON = renderIconSvg("close", { width: 16, height: 16 });
-
 /** The current page id inside the TOC trigger. A page-turn slot. */
-function renderReaderPageLabel(ctx: ReaderRenderContext): string {
-  return `<span class="jump-val" ${slotAttr("page-label")}>${he.escape(
-    ctx.pageDotId
-  )}</span>`;
+function renderReaderPageLabel(ctx: ReaderRenderContext): SafeHtml {
+  // `he.escape`, not `html`'s escaping, so the markup stays as it was; and
+  // kept on one line, out of prettier's reflow.
+  // prettier-ignore
+  return html`<span class="jump-val" ${raw(slotAttr("page-label"))}>${raw(he.escape(ctx.pageDotId))}</span>`;
 }
 
 /**
@@ -225,83 +203,29 @@ function renderReaderPageLabel(ctx: ReaderRenderContext): string {
  */
 export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
   const { work } = ctx;
-
-  return ssr`<header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
-        
-        <div class="sticky-primary-row">
-${renderReaderPagerLink(ctx, "prev")}
-
-          <div class="reader-sticky-form" id="reader-jump-form">
-            <div class="sticky-center-group">
-              <div class="sticky-jump-box">
-                <a href="#reader-toc-drawer"
-                   class="reader-btn sticky-section-btn"
-                   id="reader-toc-btn"
-                   role="button"
-                   aria-haspopup="dialog"
-                   aria-expanded="false"
-                   aria-controls="reader-toc-drawer"
-                   title="Contents & Sections (T)">
-                  <span class="sticky-work-title" title="${he.escape(
-                    work.title
-                  )}">${he.escape(work.shortTitle || work.title)}</span>
-                  <span class="sticky-section-sep" aria-hidden="true">&middot;</span>
-                  <span class="jump-glyph" aria-hidden="true">&sect;</span>
-                  ${renderReaderPageLabel(ctx)}
-                  ${renderIconSvg("strokeChevronDown", {
-                    className: "jump-chevron",
-                    width: 14,
-                    height: 14,
-                    strokeWidth: 2.5,
-                  })}
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div class="sticky-primary-right">
-${renderReaderPagerLink(ctx, "next")}
-
-            <span class="running-right-sep" aria-hidden="true">&middot;</span>
-
-${renderReaderSettingsButtonHtml()}
-          </div>
-        </div>
-
-      </header>`;
+  return renderReaderStickyBarHtml({
+    prevHtml: renderReaderPagerLink(ctx, "prev"),
+    centerHtml: renderTocTriggerHtml({
+      title: work.title,
+      shortTitle: work.shortTitle || work.title,
+      pageLabelHtml: renderReaderPageLabel(ctx),
+    }),
+    nextHtml: renderReaderPagerLink(ctx, "next"),
+    centerId: "reader-jump-form",
+  });
 }
 
 /**
- * The `Aa` trigger for the reader settings dialog. `MorcusReaderSettings` finds it
- * by id, so every reader bar must render this exact button.
+ * The `Aa` trigger and the passage heading live in the browser-safe
+ * `reader_frame.common.ts`; these wrappers keep the server's string API.
  */
 export function renderReaderSettingsButtonHtml(): string {
-  return ssr`<button type="button"
-                    class="reader-btn reader-settings-btn"
-                    id="reader-settings-btn"
-                    data-js-only
-                    aria-haspopup="dialog"
-                    aria-expanded="false"
-                    aria-controls="reader-settings-popover"
-                    aria-label="Appearance &amp; Typography"
-                    title="Appearance &amp; Typography">
-              <span class="settings-glyph" aria-hidden="true">Aa</span>
-            </button>`;
+  return String(renderReaderSettingsButtonCommonHtml());
 }
 
-/**
- * Renders the passage `<h1>` heading. When `href` is supplied (library works
- * and URL-backed external texts), the heading text is wrapped in a permalink
- * anchor (`a.reader-heading-link`) that copies the page link on click.
- */
+/** See `renderReaderHeadingHtml` in `reader_frame.common.ts`. */
 export function renderReaderHeadingHtml(title: string, href?: string): string {
-  const escapedTitle = he.escape(title);
-  if (!href) {
-    return `<h1 class="reader-passage-heading" aria-live="polite">${escapedTitle}</h1>`;
-  }
-  return `<h1 class="reader-passage-heading" aria-live="polite"><a href="${he.escape(
-    href
-  )}" class="reader-heading-link" title="Copy link to this page" aria-label="${escapedTitle} (copy link to this page)">${escapedTitle}${renderCopyPillIconsHtml()}</a></h1>`;
+  return String(renderReaderHeadingCommonHtml(title, href));
 }
 
 /** Compact source credit beneath the passage heading, linking to the About tab. */
@@ -437,168 +361,39 @@ interface ReaderDictPanelOptions {
   companion?: ReaderCompanionOptions;
 }
 
-type CompanionTab = "dict" | "notes" | "translation" | "about";
-
-const COMPANION_TABS: readonly {
-  id: CompanionTab;
-  label: string;
-  icon: "book" | "notes" | "translation" | "info";
-}[] = [
-  { id: "dict", label: "Dictionary", icon: "book" },
-  { id: "notes", label: "Notes", icon: "notes" },
-  { id: "translation", label: "Translation", icon: "translation" },
-  { id: "about", label: "About", icon: "info" },
-];
-
-/**
- * One companion tab. It is a plain link to its view, so without JS the view
- * opens via `:target` (reader_panel.css). `ReaderPanelController` adds the
- * tab roles and takes over on upgrade.
- */
-function renderCompanionTab(
-  tab: (typeof COMPANION_TABS)[number],
-  shown: boolean
-): string {
-  const translation = tab.id === "translation";
-  return ssr`<a href="#panel-view-${tab.id}"
-                 class="reader-panel-tab${
-                   translation ? " tab-translation" : ""
-                 }"
-                 id="panel-tab-${tab.id}"
-                 aria-label="${tab.label}"${shown ? "" : " hidden"}${
-    translation ? " data-js-only" : ""
-  }>
-                <span class="reader-tab-icon" aria-hidden="true">${renderIconSvg(
-                  tab.icon,
-                  {
-                    width: 14,
-                    height: 14,
-                    extraAttrs:
-                      'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"',
-                  }
-                )}</span>
-                <span class="reader-tab-label">${tab.label}</span>
-              </a>`;
+/** Server-rendered markup (already escaped), for the shared renderers. */
+function trustedHtml(markup: string): SafeHtml {
+  return html`${raw(markup)}`;
 }
 
 /**
- * The page's notes, as the `notes` page-turn slot. The slot is a wrapper
- * inside `#panel-view-notes` so the view itself (active state, scroll
- * position) survives page turns.
+ * The page's notes, as the `notes` page-turn slot
+ * (`renderReaderNotesSlotHtml` in `reader_frame.common.ts`).
  */
 export function renderReaderNotesSlot(notesHtml: string): string {
-  return `<div class="reader-notes-slot" ${slotAttr(
-    "notes"
-  )}>${notesHtml}</div>`;
+  return renderReaderNotesSlotHtml(trustedHtml(notesHtml));
 }
 
 /**
  * The desktop splitter plus the dictionary panel (the bottom sheet on mobile),
- * for any page that hosts the reader frame.
+ * for any page that hosts the reader frame. The markup is shared with
+ * client-rendered readers (`renderReaderCompanionPanelHtml` in
+ * `reader_frame.common.ts`).
  */
 export function renderReaderDictPanelHtml(
   options: ReaderDictPanelOptions
 ): string {
-  const { query, dictIframeSrc, closeHref } = options;
-  const notesHtml = options.companion?.notesHtml ?? "";
-  const aboutHtml = options.companion?.aboutHtml ?? "";
-  const shown: Record<CompanionTab, boolean> = {
-    dict: true,
-    notes: notesHtml !== "",
-    translation: options.companion?.hasTranslation ?? false,
-    about: aboutHtml !== "",
-  };
-  const hasCompanionTabs = shown.notes || shown.translation || shown.about;
-  const activePageUrl = he.escape(closeHref);
-  const unarmedAttr = query ? "" : "\ndata-dict-unarmed";
-
-  // `.reader-sheet-bar` is the mobile sheet handle and teaser bar. In
-  // `.reader-panel-views` (the companion views), without JS the targeted view
-  // shows (else the dictionary); ReaderPanelController takes over on upgrade.
-  return ssr`<div class="reader-splitter resize-handle"
-             role="separator"
-             tabindex="0"
-             aria-orientation="vertical"
-             aria-label="Resize dictionary sidebar"
-             aria-valuemin="300"
-             aria-valuemax="750"
-             aria-valuenow="420">
-          <div class="resize-grip" aria-hidden="true" data-js-only></div>
-        </div>
-
-        <aside class="reader-dict-panel drawer${
-          query ? "" : " drawer-minimized"
-        }${
-    hasCompanionTabs ? " has-companion-tabs" : ""
-  }" id="reader-dict" aria-label="Dictionary">
-          <div class="reader-sheet-bar"
-               role="separator"
-               tabindex="0"
-               aria-orientation="horizontal"
-               aria-label="Resize dictionary drawer"
-               aria-valuemin="18"
-               aria-valuemax="88"
-               aria-valuenow="${query ? "48" : "0"}">
-            <div class="reader-sheet-handle" aria-hidden="true"></div>
-            <div class="reader-sheet-teaser">
-              <a href="#reader-dict" class="reader-sheet-label reader-sheet-open-link" title="Open Dictionary Search">
-                <span class="reader-teaser-nojs" data-nojs-only>Open Dictionary Search &uarr;</span>
-                <span class="reader-teaser-js" data-js-only>Tap any word to view definitions</span>
-              </a>
-              <nav class="reader-panel-tabs" aria-label="Companion panel"${
-                hasCompanionTabs ? "" : " hidden"
-              }>
-              ${COMPANION_TABS.map((tab) =>
-                renderCompanionTab(tab, shown[tab.id])
-              ).join("\n")}
-              </nav>
-              ${
-                query
-                  ? `<a href="${activePageUrl}#reader-dict-dismissed" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">${SHEET_CLOSE_ICON}</a>`
-                  : `<a href="#reader-dict-dismissed" class="reader-sheet-close reader-sheet-close-target" aria-label="Close dictionary panel" title="Close">${SHEET_CLOSE_ICON}</a>`
-              }
-            </div>
-          </div>
-
-          <div class="reader-panel-views">
-            <div class="dict-iframe-container reader-panel-view" id="panel-view-dict">
-              <div class="reader-dict-landing" data-js-only>
-                <p class="reader-dict-landing-copy"><strong><span class="reader-dict-verb-desktop">Click</span><span class="reader-dict-verb-mobile">Tap</span> any word</strong> in the passage to look it up<span class="reader-dict-landing-shortcut">, or press <kbd class="reader-dict-kbd">/</kbd> to search</span>.</p>
-              </div>
-              <iframe id="dict-frame"
-                      name="dict-frame"
-                      src="${he.escape(dictIframeSrc)}"${unarmedAttr}
-                      class="dict-iframe"
-                      title="Dictionary Search and Definitions"
-                      loading="lazy"></iframe>
-            </div>
-            <div class="reader-panel-notes reader-panel-view reader-panel-card" id="panel-view-notes" aria-live="polite">
-              ${renderReaderNotesSlot(notesHtml)}
-            </div>
-            <div class="reader-panel-translation reader-panel-view reader-panel-card" id="panel-view-translation" aria-live="polite"></div>
-            <div class="reader-panel-about reader-panel-view reader-panel-card" id="panel-view-about">
-              ${aboutHtml}
-            </div>
-          </div>
-          <button type="button"
-                  class="reader-dict-back-to-top"
-                  aria-label="Scroll dictionary to top"
-                  title="Jump to top"
-                  data-js-only>
-            ${renderIconSvg("chevronUp")}
-          </button>
-        </aside>
-        <a href="#reader-dict"
-           class="reader-drawer-fab"
-           aria-label="Open dictionary drawer"
-           title="Open dictionary drawer">
-          ${renderIconSvg("drawer", {
-            width: 18,
-            height: 18,
-            extraAttrs:
-              'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"',
-          })}
-        </a>`;
+  const { companion } = options;
+  return renderReaderCompanionPanelHtml({
+    query: options.query,
+    dictIframeSrc: options.dictIframeSrc,
+    closeHref: options.closeHref,
+    companion: companion && {
+      notesHtml: trustedHtml(companion.notesHtml),
+      aboutHtml: trustedHtml(companion.aboutHtml),
+      hasTranslation: companion.hasTranslation,
+    },
+  });
 }
 
 /**

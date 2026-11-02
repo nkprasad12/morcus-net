@@ -2956,6 +2956,137 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       expect(window.fetch).toHaveBeenCalledTimes(1);
       expect(el.dataset.page).toBe("2");
     });
+
+    describe("with a pageTurner (a host that renders its own pages)", () => {
+      function withTurner(canTurn: (dir: "prev" | "next") => boolean) {
+        const el = createNavigableReaderView({ pageId: "1" });
+        mockPage2Fetch();
+        const turn = jest.fn(async () => true);
+        el.pageTurner = { canTurn, turn };
+        return { el, turn };
+      }
+
+      test("] and [ turn through the pageTurner, not the pager links", async () => {
+        const { el, turn } = withTurner((dir) => dir === "next");
+
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "[" }));
+        await flush();
+        expect(turn).not.toHaveBeenCalled();
+
+        const next = new KeyboardEvent("keydown", {
+          key: "]",
+          cancelable: true,
+        });
+        window.dispatchEvent(next);
+        await flush();
+        expect(next.defaultPrevented).toBe(true);
+        expect(turn).toHaveBeenCalledTimes(1);
+        expect(turn).toHaveBeenCalledWith("next");
+        expect(window.fetch).not.toHaveBeenCalled();
+        expect(el.dataset.page).toBe("1");
+      });
+
+      test("its canTurn overrides the pager links", async () => {
+        // The pager has a next page, but the turner says there is none.
+        const { turn } = withTurner(() => false);
+
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "]" }));
+        await flush();
+
+        expect(turn).not.toHaveBeenCalled();
+        expect(window.fetch).not.toHaveBeenCalled();
+      });
+
+      test("swipes turn through it and close the TOC first", async () => {
+        const { el, turn } = withTurner(() => true);
+        el.querySelector<HTMLElement>("#reader-toc-btn")!.click();
+        const tocDrawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
+        expect(tocDrawer.hasAttribute("open")).toBe(true);
+
+        swipe(el, 200);
+        await flush();
+
+        expect(turn).toHaveBeenCalledWith("prev");
+        expect(tocDrawer.hasAttribute("open")).toBe(false);
+        expect(window.fetch).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe("closeToc and syncTocActivePage", () => {
+    test("closeToc closes an open contents dialog and is a no-op when closed", () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      const tocDrawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
+
+      expect(() => el.closeToc()).not.toThrow();
+      expect(tocDrawer.hasAttribute("open")).toBe(false);
+
+      el.querySelector<HTMLElement>("#reader-toc-btn")!.click();
+      expect(tocDrawer.hasAttribute("open")).toBe(true);
+      el.closeToc();
+      expect(tocDrawer.hasAttribute("open")).toBe(false);
+    });
+
+    test("syncTocActivePage moves the active item and opens only its group", () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      const list = el.querySelector(".reader-toc-content")!;
+      list.insertAdjacentHTML(
+        "beforeend",
+        `<details class="reader-toc-group" data-group-id="3" open>
+          <summary>Liber III</summary>
+          <a href="/work/caesar/de-bello-gallico/3.1" class="reader-toc-item" data-page-id="3.1">Caput 1</a>
+        </details>
+        <details class="reader-toc-group" data-group-id="2">
+          <summary>Liber II</summary>
+          <a href="/work/caesar/de-bello-gallico/2.1" class="reader-toc-item" data-page-id="2.1">Caput 1</a>
+        </details>`
+      );
+      const item = (id: string) =>
+        el.querySelector<HTMLElement>(
+          `.reader-toc-item[data-page-id="${id}"]`
+        )!;
+
+      el.syncTocActivePage("2.1");
+
+      expect(item("1").classList.contains("active")).toBe(false);
+      expect(item("1").hasAttribute("aria-current")).toBe(false);
+      expect(item("2.1").classList.contains("active")).toBe(true);
+      expect(item("2.1").getAttribute("aria-current")).toBe("page");
+      expect(
+        el.querySelector<HTMLDetailsElement>('details[data-group-id="2"]')!.open
+      ).toBe(true);
+      expect(
+        el.querySelector<HTMLDetailsElement>('details[data-group-id="3"]')!.open
+      ).toBe(false);
+    });
+
+    test("syncTocActivePage points the jump form at the new page", () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      el.querySelector("#reader-toc-drawer")!.insertAdjacentHTML(
+        "afterbegin",
+        '<form class="reader-toc-search-form" action="/work/caesar/de-bello-gallico/1"></form>'
+      );
+
+      el.syncTocActivePage("2");
+
+      expect(
+        el
+          .querySelector<HTMLFormElement>(".reader-toc-search-form")!
+          .getAttribute("action")
+      ).toBe("/work/caesar/de-bello-gallico/2");
+    });
+
+    test("syncTocActivePage ignores an empty page id", () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+
+      el.syncTocActivePage("");
+
+      expect(
+        el
+          .querySelector<HTMLElement>('.reader-toc-item[data-page-id="1"]')!
+          .classList.contains("active")
+      ).toBe(true);
+    });
   });
 
   test("swapPage coordinates with translation companion tab when work has translation", async () => {

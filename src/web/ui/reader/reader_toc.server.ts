@@ -13,8 +13,11 @@ import {
 } from "@/common/library/section_labels";
 import { citationToString } from "@/web/ui/reader/reader_types.server";
 import * as he from "he";
-import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
-import { ssr } from "@/web/ui/core/server/ssr_template.server";
+import { html, raw } from "@/web/ui/core/dom/html.common";
+import {
+  renderTocDrawerHtml,
+  renderTocItemHtml,
+} from "@/web/ui/reader/reader_toc.common";
 
 interface ReaderPageUrlOptions {
   query?: string;
@@ -131,9 +134,6 @@ export function preRenderTocItemsHtml(
 
     const key = node.id.join(".");
     const escapedKey = he.escape(key);
-    const displayKey = he.escape(
-      formatCitationId(node.id, citationStyle, textParts)
-    );
     const partName = textParts[node.id.length - 1] || "section";
     const coord = node.id[node.id.length - 1] || "";
     const singleLabel = coord
@@ -150,10 +150,12 @@ export function preRenderTocItemsHtml(
 
     if (node.children.length === 0) {
       const page = pageMap.get(key);
-      const pageUrl = buildReaderPageUrl(work, page ?? null);
-      return `<a href="${pageUrl}" class="reader-toc-item" data-page-id="${escapedKey}"><span class="reader-toc-item-title">${he.escape(
-        label
-      )}</span><span class="reader-toc-item-id">&sect; ${displayKey}</span></a>`;
+      return renderTocItemHtml({
+        href: buildReaderPageUrl(work, page ?? null),
+        pageId: key,
+        label,
+        citation: formatCitationId(node.id, citationStyle, textParts),
+      });
     }
 
     const childrenHtml = node.children
@@ -221,9 +223,8 @@ interface ReaderTocDrawerOptions {
 }
 
 /**
- * Renders the Table of Contents (TOC) dialog. Without JS, the trigger links
- * to `#reader-toc-drawer` and `:target` CSS shows it; the close link goes to
- * `#`. With JS, `ReaderTocController` opens it with `showModal()`.
+ * Renders the Table of Contents (TOC) dialog (`renderTocDrawerHtml` in
+ * `reader_toc.common.ts`) for a library work.
  */
 export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
   const { work, activePageIndex, query, jumpMiss } = options;
@@ -236,60 +237,18 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
   const pages = work.pages ?? [];
   const activePage = pages[activePageIndex] ?? pages[0];
   const exampleId = activePage ? normalizeId(activePage.id) : "1.1";
-  const formAction = `/work/${he.escape(work.urlAuthor)}/${he.escape(
-    work.urlName
-  )}${activePage ? `/${he.escape(exampleId)}` : ""}`;
-  const hiddenQueryInput = query
-    ? `<input type="hidden" name="q" value="${he.escape(query)}" />`
-    : "";
-  const searchValueAttr = jumpMiss ? `\nvalue="${he.escape(jumpMiss)}"` : "";
-  const missBannerHtml = jumpMiss
-    ? `\n<p class="reader-toc-miss" role="status">No section &ldquo;${he.escape(
-        jumpMiss
-      )}&rdquo; in this work.</p>`
-    : "";
+  const formAction = `/work/${work.urlAuthor}/${work.urlName}${
+    activePage ? `/${exampleId}` : ""
+  }`;
 
-  return ssr`<dialog id="reader-toc-drawer"
-              class="anchored-popover reader-toc-drawer"
-              aria-label="Table of Contents">
-        <div class="reader-toc-header">
-          <form class="reader-toc-search-form"
-                action="${formAction}"
-                method="GET">
-            ${hiddenQueryInput}
-            <span class="reader-toc-search-icon" aria-hidden="true">&sect;</span>
-            <input type="text"
-                   name="jump"
-                   id="reader-toc-search-input"
-                   class="reader-toc-search-input"${searchValueAttr}
-                   placeholder="Go to section (e.g. ${he.escape(
-                     exampleId
-                   )}) or filter…"
-                   aria-label="Go to section or filter contents"
-                   autocomplete="off"
-                   spellcheck="false" />
-            <kbd class="reader-toc-search-kbd" aria-hidden="true" title="Press Enter to go">&crarr;</kbd>
-          </form>
-          <a href="#"
-             class="reader-toc-close-btn"
-             id="reader-toc-close-btn"
-             role="button"
-             data-dialog-close
-             aria-label="Close table of contents">${renderIconSvg("close", {
-               className: "dialog-close-icon",
-               width: 18,
-               height: 18,
-             })}</a>
-        </div>${missBannerHtml}
-
-        <div class="reader-toc-list" id="reader-toc-list">
-          ${tocItemsHtml}
-          <div id="reader-toc-empty" class="reader-toc-empty" hidden>
-            No matching sections &mdash; press Enter to jump
-          </div>
-        </div>
-        <div class="reader-toc-footer">
-          <a href="/library" class="reader-library-link">&larr; Return to Library Catalog</a>
-        </div>
-      </dialog>`;
+  return renderTocDrawerHtml({
+    formAction,
+    hiddenFields: query ? [["q", query]] : [],
+    exampleId,
+    // Built from escaped parts by `preRenderTocItemsHtml` and spliced by
+    // `renderTocItemsHtml`.
+    itemsHtml: html`${raw(tocItemsHtml)}`,
+    jumpMiss,
+    footer: { href: "/library", label: "Return to Library Catalog" },
+  });
 }

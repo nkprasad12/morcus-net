@@ -55,6 +55,7 @@ import { ReaderTocController } from "@/web/ui/reader/reader_toc.client";
 import {
   ReaderPageNavController,
   type PageDir,
+  type ReaderPageTurner,
 } from "@/web/ui/reader/reader_page_nav.client";
 import {
   ReaderPanelController,
@@ -271,6 +272,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   #currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
   readonly #translationCache = new Map<string, string>();
 
+  /**
+   * Page turns for a host that renders its own pages (so its frame has no
+   * `#pager-prev` / `#pager-next` to swap server pages from).
+   * When set, swipes and the `[` / `]` shortcuts turn pages through it.
+   */
+  public pageTurner: ReaderPageTurner | null = null;
+
   constructor() {
     super();
     // Swipe page turns on touch devices. Self-contained after connect, so no
@@ -278,7 +286,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.addController(
       new ReaderPageNavController({
         root: this,
-        canTurn: (dir) => this.#pagerLink(dir) !== null,
+        canTurn: (dir) => this.#canTurnPage(dir),
         turn: (dir) => this.#turnPage(dir),
       })
     );
@@ -780,6 +788,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.dismissDrawer();
   }
 
+  /** Closes the contents dialog (`#reader-toc-drawer`) if it is open. */
+  public closeToc(): void {
+    if (this.#tocController.isOpen()) this.#tocController.close();
+  }
+
   public dismissDrawer(): void {
     const splitLayout =
       this.#layoutController.splitLayout ?? this.#splitLayoutEl;
@@ -1266,7 +1279,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
       if (e.key === "[" || e.key === "]") {
         const dir: PageDir = e.key === "[" ? "prev" : "next";
-        if (this.#pagerLink(dir)) {
+        if (this.#canTurnPage(dir)) {
           // Global shortcut; turnPage swaps the page itself
           e.preventDefault();
           void this.#turnPage(dir);
@@ -1403,16 +1416,26 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     return link && !link.classList.contains("disabled") ? link : null;
   }
 
+  /** Whether there is a page toward `dir` to turn to. */
+  #canTurnPage(dir: PageDir): boolean {
+    if (this.pageTurner) return this.pageTurner.canTurn(dir);
+    return this.#pagerLink(dir) !== null;
+  }
+
   /**
    * Turns to the adjacent page in place (keyboard shortcuts, swipe). Resolves
    * false if there is no page that way or the swap fails.
    */
   #turnPage(dir: PageDir): Promise<boolean> {
+    const turner = this.pageTurner;
+    if (turner) {
+      if (!turner.canTurn(dir)) return Promise.resolve(false);
+      this.closeToc();
+      return turner.turn(dir);
+    }
     const link = this.#pagerLink(dir);
     if (!link) return Promise.resolve(false);
-    if (this.#tocController?.isOpen()) {
-      this.#tocController.close();
-    }
+    this.closeToc();
     const url = new URL(link.href, window.location.href);
     return this.swapPage(url.href, { push: true });
   }
@@ -1582,7 +1605,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  #patchToc(newPageId: string): void {
+  /**
+   * Marks `newPageId` as the current page in the contents dialog (and opens
+   * its groups). Called after a page swap, and by hosts that turn pages
+   * themselves through {@link pageTurner}.
+   */
+  public syncTocActivePage(newPageId: string): void {
     if (!newPageId) return;
 
     const author = this.dataset.author;
@@ -1806,7 +1834,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (newPageId) {
       this.dataset.page = newPageId;
     }
-    this.#patchToc(newPageId);
+    this.syncTocActivePage(newPageId);
     this.#hydratePage({ isPopState, hash: url.hash });
 
     if (isTransActive) {

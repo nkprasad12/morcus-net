@@ -411,6 +411,63 @@ describe("decomposed_reader_renderers", () => {
       expect(html).not.toContain("Show Macra");
       expect(html).toContain('id="toggle-gutter"');
     });
+
+    test("pins the settings dialog markup", () => {
+      expect(renderReaderSettingsPopover()).toMatchInlineSnapshot(`
+        "<morcus-reader-settings>
+        <dialog class="anchored-popover reader-settings-popover"
+        id="reader-settings-popover"
+        aria-label="Reader settings">
+        <div class="settings-popover-header">
+        <h2 class="settings-popover-title">Reader settings</h2>
+        <button type="button"
+        class="settings-popover-close"
+        id="reader-settings-close-btn"
+        data-dialog-close
+        aria-label="Close reader settings"><svg viewBox="0 0 24 24" width="18" height="18" class="dialog-close-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="settings-body">
+        <button type="button" class="appearance-link" id="reader-appearance-link">
+        <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, contrast, theme</span></span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"></path></svg>
+        </button>
+        <div class="settings-group">
+        <h3 class="settings-group-title">Side Panel</h3>
+        <div class="settings-row">
+        <span class="settings-label">Text Size<span class="settings-hint">Relative to your text size</span></span>
+        <div class="stepper">
+        <button type="button" class="stepper-btn" id="dict-size-dec" aria-label="Decrease side panel text size">A&minus;</button>
+        <span class="stepper-val" id="dict-size-label">85%</span>
+        <button type="button" class="stepper-btn" id="dict-size-inc" aria-label="Increase side panel text size">A+</button>
+        </div>
+        </div>
+        </div>
+        <div class="settings-group">
+        <h3 class="settings-group-title">Textual Aids</h3>
+        <label class="settings-toggle-row">
+        <span class="settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
+        <input type="checkbox" id="toggle-macra" class="toggle-checkbox" checked>
+        </label>
+        <label class="settings-toggle-row">
+        <span class="settings-label">Show Section Numbers (&sect;)</span>
+        <input type="checkbox" id="toggle-gutter" class="toggle-checkbox" checked>
+        </label>
+        </div>
+        <div class="settings-group settings-touch-nav">
+        <h3 class="settings-group-title">Touch Navigation</h3>
+        <label class="settings-toggle-row">
+        <span class="settings-label">Swipe to turn pages</span>
+        <input type="checkbox" id="toggle-swipe-nav" class="toggle-checkbox" checked>
+        </label>
+        </div>
+        </div>
+        <div class="settings-popover-footer">
+        <button type="button" class="btn btn-secondary settings-reset-btn" id="reader-settings-reset-btn">Reset Defaults</button>
+        </div>
+        </dialog>
+        </morcus-reader-settings>"
+      `);
+    });
   });
 
   describe("renderTocDrawer", () => {
@@ -446,6 +503,59 @@ describe("decomposed_reader_renderers", () => {
       // Footer library link
       expect(html).toContain('class="reader-toc-footer"');
       expect(html).toContain('href="/library" class="reader-library-link"');
+    });
+
+    test("pins the contents dialog markup", () => {
+      expect(
+        renderTocDrawer({
+          work: dbgWork,
+          activePageIndex: 1,
+          query: "gallia",
+          jumpMiss: "9.9",
+        })
+      ).toMatchInlineSnapshot(`
+        "<dialog id="reader-toc-drawer"
+        class="anchored-popover reader-toc-drawer"
+        aria-label="Table of Contents">
+        <div class="reader-toc-header">
+        <form class="reader-toc-search-form"
+        action="/work/caesar/de_bello_gallico/1.2"
+        method="GET">
+        <input type="hidden" name="q" value="gallia" />
+        <span class="reader-toc-search-icon" aria-hidden="true">&sect;</span>
+        <input type="text"
+        name="jump"
+        id="reader-toc-search-input"
+        class="reader-toc-search-input"
+        value="9.9"
+        placeholder="Go to section (e.g. 1.2) or filter…"
+        aria-label="Go to section or filter contents"
+        autocomplete="off"
+        spellcheck="false" />
+        <kbd class="reader-toc-search-kbd" aria-hidden="true" title="Press Enter to go">&crarr;</kbd>
+        </form>
+        <a href="#"
+        class="reader-toc-close-btn"
+        id="reader-toc-close-btn"
+        role="button"
+        data-dialog-close
+        aria-label="Close table of contents"><svg viewBox="0 0 24 24" width="18" height="18" class="dialog-close-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></a>
+        </div>
+        <p class="reader-toc-miss" role="status">No section &ldquo;9.9&rdquo; in this work.</p>
+        <div class="reader-toc-list" id="reader-toc-list">
+        <details class="reader-toc-group" data-group-id="1" open><summary class="reader-toc-summary"><span class="reader-toc-chevron" aria-hidden="true">▸</span><span class="reader-toc-group-label">Book 1</span></summary><div class="reader-toc-group-children">
+        <a href="/work/caesar/de_bello_gallico/1.1?q=gallia" class="reader-toc-item" data-page-id="1.1"><span class="reader-toc-item-title">Chapter 1</span><span class="reader-toc-item-id">&sect; 1.1</span></a>
+        <a href="/work/caesar/de_bello_gallico/1.2?q=gallia" class="reader-toc-item active" data-page-id="1.2" aria-current="page"><span class="reader-toc-item-title">Chapter 2</span><span class="reader-toc-item-id">&sect; 1.2</span></a>
+        </div></details>
+        <div id="reader-toc-empty" class="reader-toc-empty" hidden>
+        No matching sections &mdash; press Enter to jump
+        </div>
+        </div>
+        <div class="reader-toc-footer">
+        <a href="/library" class="reader-library-link">&larr; Return to Library Catalog</a>
+        </div>
+        </dialog>"
+      `);
     });
 
     test("renderTocItemsHtml marks selected index active and leaves other inactive", () => {
@@ -545,6 +655,75 @@ describe("decomposed_reader_renderers", () => {
       expect(translatedHtml).not.toContain("reader-view-toggle");
       expect(translatedHtml).not.toContain('id="mode-single"');
       expect(translatedHtml).not.toContain('id="mode-parallel"');
+    });
+
+    test("pins the sticky bar markup", async () => {
+      const ctx = await resolveReaderContext({
+        workId: "caesar/de_bello_gallico",
+        pageId: "1.2",
+      });
+      expect(renderReaderStickyBar(ctx)).toMatchInlineSnapshot(`
+        "<header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
+        <div class="sticky-primary-row">
+        <a href="/work/caesar/de_bello_gallico/1.1"
+        class="reader-btn reader-nav-arrow "
+        id="pager-prev"
+
+        aria-label="Previous chapter"
+        title="Previous ([)"
+        data-slot="pager-prev">
+        <span class="pager-arrow" aria-hidden="true">&larr;</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" class="pager-chevron" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+        <span class="pager-label">Chapter 1</span>
+        </a>
+        <div class="reader-sticky-form" id="reader-jump-form">
+        <div class="sticky-center-group">
+        <div class="sticky-jump-box">
+        <a href="#reader-toc-drawer"
+        class="reader-btn sticky-section-btn"
+        id="reader-toc-btn"
+        role="button"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        aria-controls="reader-toc-drawer"
+        title="Contents & Sections (T)">
+        <span class="sticky-work-title" title="De bello Gallico">Bellum Gallicum</span>
+        <span class="sticky-section-sep" aria-hidden="true">&middot;</span>
+        <span class="jump-glyph" aria-hidden="true">&sect;</span>
+        <span class="jump-val" data-slot="page-label">1.2</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" class="jump-chevron" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+        </a>
+        </div>
+        </div>
+        </div>
+        <div class="sticky-primary-right">
+        <a href="#"
+        class="reader-btn reader-nav-arrow disabled"
+        id="pager-next"
+        aria-disabled="true" tabindex="-1"
+        aria-label="Next chapter"
+        title="Next (])"
+        data-slot="pager-next">
+        <span class="pager-label">Next</span>
+        <span class="pager-arrow" aria-hidden="true">&rarr;</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" class="pager-chevron" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+        <span class="running-right-sep" aria-hidden="true">&middot;</span>
+        <button type="button"
+        class="reader-btn reader-settings-btn"
+        id="reader-settings-btn"
+        data-js-only
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        aria-controls="reader-settings-popover"
+        aria-label="Appearance &amp; Typography"
+        title="Appearance &amp; Typography">
+        <span class="settings-glyph" aria-hidden="true">Aa</span>
+        </button>
+        </div>
+        </div>
+        </header>"
+      `);
     });
   });
 
