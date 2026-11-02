@@ -163,6 +163,14 @@ Texts from thelatinlibrary.com come from a snapshot repository (`thelatinlibrary
 - **Onboarding (`src/scripts/thelatinlibrary/onboard.ts`, `src/scripts/thelatinlibrary/converters/`)**: `onboard.ts` converts selected pages into `works/<id>.json` in the snapshot, with per-work converters in `converters/` for texts that need special handling (such as Gaius and the Digest). During the library build, `src/common/library/process_thelatinlibrary.ts` turns these into ordinary library works.
 - **Snapshot crawler (`src/scripts/thelatinlibrary/crawl/`)**: a maintainer-run tool that crawls the site into the snapshot's `raw/` pages, scans each page for provenance statements, and builds `manifest.json` (one entry per page) and `work_index.json` (one entry per work); `src/common/thelatinlibrary/snapshot_types.ts` defines both formats. It is not part of the build.
 
+### 3.9. Experimental Texts (`src/common/experimental_texts/`, `src/scripts/experimental_texts/`)
+
+An uncurated catalog of Latin texts that Morcus does not process or store. Only catalog metadata ships with the site; each text is fetched from its pinned source and parsed on the reader's device.
+
+- **Catalog build (`src/scripts/experimental_texts/catalog_builder.ts`)**: lists the works in the pinned Patrologia Latina repository and Latin Library snapshot, normalizes authors and titles, and writes `build/experimental_texts/experimental_texts_catalog.json`, recording the repository and commit of each source. Run with `./morcus.sh build --build_experimental_texts`; production builds it too.
+- **Catalog loading (`src/common/experimental_texts/catalog_loader.ts`)**: the server reads and validates the built catalog, falling back to a small sample catalog when none has been built.
+- **Parsers (`src/common/experimental_texts/`)**: browser-safe parsers that turn Patrologia Latina TEI XML and Latin Library HTML into one document format (`experimental_text_document.ts`).
+
 ---
 
 ## 4. Key Workflows & Pipelines
@@ -191,7 +199,7 @@ Texts from thelatinlibrary.com come from a snapshot repository (`thelatinlibrary
 ### 4.2. Production Build Pipeline (`src/scripts/prod_build_steps.ts`)
 
 1. Compile Rust bindings (`setup-node-bindgen` via `cargo` and `nj-cli`).
-2. Download sources at the commits pinned in `upstream_sources.lock.json`, and build the dictionary databases, library, V2 library and corpus. Pins change only through `./morcus.sh upstream pin`; see [`src/scripts/upstream/README.md`](src/scripts/upstream/README.md).
+2. Download sources at the commits pinned in `upstream_sources.lock.json`, and build the dictionary databases, library, V2 library, corpus and Experimental Texts catalog. Pins change only through `./morcus.sh upstream pin`; see [`src/scripts/upstream/README.md`](src/scripts/upstream/README.md).
 3. Bundle the UI V2 assets with Rsbuild (`src/bundler/client.rsbuild.ts`) into `build/client/`, writing Brotli and Gzip siblings.
 4. Bundle the server with esbuild (`src/bundler/server.esbuild.ts`) into `build/server.js`, type-checking the repo.
 

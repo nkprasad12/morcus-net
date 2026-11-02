@@ -24,11 +24,14 @@ import { processForcellini } from "@/common/dictionaries/forcellini/process_forc
 import { buildV2Bundle } from "@/bundler/client.rsbuild";
 import { buildCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 import { buildStaticPagesDb } from "@/web/ui/static_pages_seed.server";
+import { extractGithubOwnerRepo } from "@/common/experimental_texts/catalog_types";
+import { buildExperimentalTextsCatalog } from "@/scripts/experimental_texts/catalog_builder";
 import { pinnedDownload, upstreamSource } from "@/scripts/upstream/lock";
 
 const CANONICAL_LATINLIT_DIR = "canonical-latinlit";
 // The directories `cloneRepo` creates for these pinned upstreams.
 const THELATINLIBRARY_DIR = "TheLatinLibrary";
+const PATROLOGIA_LATINA_DIR = "patrologia_latina-dev";
 
 const SETUP_DIRS: StepConfig = {
   operation: () => createCleanDir(LIB_DEFAULT_DIR).then(() => {}),
@@ -102,6 +105,31 @@ const PROCESS_LAT_LIB: StepConfig = {
     ],
   },
 };
+const BUILD_EXPERIMENTAL_TEXTS_CATALOG: StepConfig = {
+  operation: () => {
+    const plSource = upstreamSource("patrologia_latina-dev");
+    const llSource = upstreamSource("thelatinlibrary");
+    buildExperimentalTextsCatalog(undefined, {
+      patrologiaLatina: {
+        rootDir: PATROLOGIA_LATINA_DIR,
+        commit: plSource.commit,
+        repo: extractGithubOwnerRepo(plSource.repo),
+      },
+      theLatinLibrary: {
+        rootDir: THELATINLIBRARY_DIR,
+        commit: llSource.commit,
+        repo: extractGithubOwnerRepo(llSource.repo),
+      },
+    });
+  },
+  label: "Experimental Texts catalog creation",
+  repoInfo: {
+    repos: [
+      upstreamSource("patrologia_latina-dev"),
+      upstreamSource("thelatinlibrary"),
+    ],
+  },
+};
 const MAKE_V2_BUNDLE: StepConfig = {
   operation: () => buildV2Bundle(/* minify= */ true),
   label: "Building UI V2 assets",
@@ -131,6 +159,7 @@ const ALL_STEPS = [
   MAKE_FORCELLINI,
   MAKE_COMPLETIONS_DB,
   PROCESS_LAT_LIB,
+  BUILD_EXPERIMENTAL_TEXTS_CATALOG,
   PRERENDER_STATIC_PAGES,
 ];
 
