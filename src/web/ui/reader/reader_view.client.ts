@@ -273,8 +273,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   readonly #translationCache = new Map<string, string>();
 
   /**
-   * Page turns for a host that renders its own pages (so its frame has no
-   * `#pager-prev` / `#pager-next` to swap server pages from).
+   * Page turns for a host that renders its own pages (the Experimental Texts
+   * reader, whose frame has no `#pager-prev` / `#pager-next` to swap server
+   * pages from).
    * When set, swipes and the `[` / `]` shortcuts turn pages through it.
    */
   public pageTurner: ReaderPageTurner | null = null;

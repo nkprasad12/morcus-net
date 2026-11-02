@@ -9,9 +9,10 @@
  *
  * Shared by the server-rendered readers (`reader.server.ts`,
  * `reader_dialogs.server.ts`, and through them `external/external.server.ts`)
- * and readers rendered on the client, so `<morcus-reader-view>`,
- * `<morcus-reader-settings>`, and `ReaderPanelController` enhance all of them
- * the same way.
+ * and the client-rendered Experimental Texts reader
+ * (`experimental_texts/experimental_text_view_adapter.client.ts`), so
+ * `<morcus-reader-view>`, `<morcus-reader-settings>`, and
+ * `ReaderPanelController` enhance all of them the same way.
  *
  * Like `reader_toc.common.ts`, this reaches the client bundle, so it must not
  * import `he`, `renderIconSvg` / `ICON_PATHS`, or any `.server.ts` module.

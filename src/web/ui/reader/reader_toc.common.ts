@@ -4,8 +4,9 @@
  * (`#reader-toc-drawer`) it opens.
  *
  * Rendered by the server readers (`reader_toc.server.ts` and
- * `reader.server.ts`, for library and external texts), and browser-safe so
- * that a reader which renders its pages in the browser can render the same
+ * `reader.server.ts`, for library and external texts) and by the
+ * client-rendered Experimental Texts reader
+ * (`experimental_texts/experimental_text_view_adapter.client.ts`), so every reader has the same
  * contents dialog, which `ReaderTocController` (`reader_toc.client.ts`)
  * enhances the same way.
  *
@@ -246,9 +247,9 @@ export interface PageListTocDrawerOptions {
 }
 
 /**
- * The contents dialog for a work read as a flat list of pages (Migne columns,
- * Latin Library pages), one `.reader-toc-item` per page with the page being
- * read marked active.
+ * The contents dialog for a work read as a flat list of pages (the
+ * Experimental Texts reader: Migne columns, Latin Library pages), one
+ * `.reader-toc-item` per page with the page being read marked active.
  */
 export function renderPageListTocDrawerHtml(
   options: PageListTocDrawerOptions
