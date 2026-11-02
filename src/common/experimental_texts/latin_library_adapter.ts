@@ -1,0 +1,425 @@
+/**
+ * Browser-safe adapter converting Latin Library HTML pages (`extractLenientPage`)
+ * into the Experimental Texts `ExperimentalTextDocument` model (`src/common/experimental_texts/experimental_text_document.ts`).
+ *
+ * Must remain 100% browser-safe (no `fs`, `path`, `crypto`, `node:*`, or `parse5`).
+ */
+
+import type {
+  ExperimentalTextBlock,
+  ExperimentalTextDocument,
+  ExperimentalTextPage,
+  ExperimentalTextRun,
+  ExperimentalTextSectionMarker,
+  ExperimentalTextSegment,
+  ExperimentalTextStyle,
+} from "@/common/experimental_texts/experimental_text_document";
+import {
+  extractLenientPage,
+  extractTextWithMarks,
+  getAttr,
+  type DetectedMarker,
+  type HtmlBodyParser,
+  type MinimalElementNode,
+  type PageBlock,
+} from "@/common/thelatinlibrary";
+
+export const DEFAULT_CHUNK_CHARS = 6000;
+
+export interface LatinLibraryPageInput {
+  /** Relative file path, e.g. `"raw/columba1.html"`. */
+  readonly path: string;
+  /** Decoded HTML string (decoded via `decodeLatinLibraryHtmlBytes`). */
+  readonly html: string;
+}
+
+export interface LatinLibraryAdapterOptions {
+  readonly title?: string;
+  readonly author?: string;
+  readonly parser?: HtmlBodyParser;
+  readonly chunkTargetChars?: number;
+}
+
+function styleForElement(
+  el: MinimalElementNode,
+  parent: ExperimentalTextStyle | undefined
+): ExperimentalTextStyle | undefined {
+  const tag = el.tagName;
+  let italic = parent?.italic;
+  let bold = parent?.bold;
+  let smallCaps = parent?.smallCaps;
+  let superscript = parent?.superscript;
+  let subscript = parent?.subscript;
+
+  if (tag === "i" || tag === "em" || tag === "cite") {
+    italic = true;
+  } else if (tag === "b" || tag === "strong") {
+    bold = true;
+  } else if (tag === "sup") {
+    superscript = true;
+  } else if (tag === "sub") {
+    subscript = true;
+  } else if (tag === "small") {
+    smallCaps = true;
+  }
+
+  const inlineStyle = getAttr(el, "style");
+  if (inlineStyle && /font-variant\s*:\s*small-caps/i.test(inlineStyle)) {
+    smallCaps = true;
+  }
+
+  if (!italic && !bold && !smallCaps && !superscript && !subscript) {
+    return undefined;
+  }
+  return {
+    ...(italic ? { italic: true } : {}),
+    ...(bold ? { bold: true } : {}),
+    ...(smallCaps ? { smallCaps: true } : {}),
+    ...(superscript ? { superscript: true } : {}),
+    ...(subscript ? { subscript: true } : {}),
+  };
+}
+
+function stylesEqual(
+  a: ExperimentalTextStyle | undefined,
+  b: ExperimentalTextStyle | undefined
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.italic === b.italic &&
+    a.bold === b.bold &&
+    a.smallCaps === b.smallCaps &&
+    a.superscript === b.superscript &&
+    a.subscript === b.subscript
+  );
+}
+
+/**
+ * Extracts per-character `ExperimentalTextStyle` aligned 1-to-1 with `extractText(root, { preserveLineBreaks: true })`.
+ * Returns `undefined` when the element contains no inline styling.
+ */
+function extractAlignedStyles(
+  root: MinimalElementNode
+): (ExperimentalTextStyle | undefined)[] | undefined {
+  return extractTextWithMarks<never, ExperimentalTextStyle>(
+    root,
+    { preserveLineBreaks: true },
+    undefined,
+    styleForElement
+  ).charStates;
+}
+
+function sliceToRuns(
+  text: string,
+  start: number,
+  end: number,
+  alignedStyles: readonly (ExperimentalTextStyle | undefined)[] | undefined
+): ExperimentalTextRun[] {
+  if (end <= start) return [];
+  if (!alignedStyles || alignedStyles.length < end) {
+    return [{ kind: "text", text: text.slice(start, end) }];
+  }
+
+  const runs: ExperimentalTextRun[] = [];
+  let runStart = start;
+  let currentStyle = alignedStyles[start];
+
+  for (let i = start + 1; i < end; i++) {
+    const st = alignedStyles[i];
+    if (!stylesEqual(st, currentStyle)) {
+      runs.push({
+        kind: "text",
+        text: text.slice(runStart, i),
+        ...(currentStyle ? { style: currentStyle } : {}),
+      });
+      runStart = i;
+      currentStyle = st;
+    }
+  }
+
+  runs.push({
+    kind: "text",
+    text: text.slice(runStart, end),
+    ...(currentStyle ? { style: currentStyle } : {}),
+  });
+  return runs;
+}
+
+function deduplicateMarkers(
+  markers: readonly DetectedMarker[]
+): DetectedMarker[] {
+  const sorted = [...markers].sort((a, b) => a.offset - b.offset);
+  const result: DetectedMarker[] = [];
+  for (const m of sorted) {
+    const prev = result[result.length - 1];
+    if (prev && prev.offset === m.offset && prev.value === m.value) {
+      // Prefer non-anchor marker over bare anchor when both sit at the same offset.
+      if (prev.kind === "anchor" && m.kind !== "anchor") {
+        result[result.length - 1] = m;
+      }
+      continue;
+    }
+    result.push(m);
+  }
+  return result;
+}
+
+function buildSegmentsForRange(
+  text: string,
+  rangeStart: number,
+  rangeEnd: number,
+  markers: readonly DetectedMarker[],
+  alignedStyles: readonly (ExperimentalTextStyle | undefined)[] | undefined
+): ExperimentalTextSegment[] {
+  const segments: ExperimentalTextSegment[] = [];
+  let cursor = rangeStart;
+
+  for (const marker of markers) {
+    const pos = Math.max(rangeStart, Math.min(rangeEnd, marker.offset));
+    if (pos > cursor) {
+      segments.push(...sliceToRuns(text, cursor, pos, alignedStyles));
+      cursor = pos;
+    }
+    const sectionMarker: ExperimentalTextSectionMarker = {
+      kind: "section",
+      label: marker.value,
+    };
+    segments.push(sectionMarker);
+
+    // Strip leading raw bracketed/bare marker token (e.g. "[1] " or "1. ") at rangeStart
+    // so the section number is not rendered twice (once in gutter, once inline).
+    if (
+      marker.offset === rangeStart &&
+      (marker.kind === "bracketed_number" || marker.kind === "bare_number") &&
+      marker.raw.length > 0 &&
+      text.startsWith(marker.raw, cursor)
+    ) {
+      cursor += marker.raw.length;
+      while (cursor < rangeEnd && text[cursor] === " ") {
+        cursor += 1;
+      }
+    }
+  }
+
+  if (cursor < rangeEnd) {
+    segments.push(...sliceToRuns(text, cursor, rangeEnd, alignedStyles));
+  }
+
+  return segments;
+}
+
+function convertPageBlock(block: PageBlock): ExperimentalTextBlock[] {
+  const text = block.text;
+  if (text.length === 0) return [];
+
+  const alignedStyles = extractAlignedStyles(block.element);
+  const markers = deduplicateMarkers(block.markers);
+
+  if (block.kind === "heading") {
+    const segments = buildSegmentsForRange(
+      text,
+      0,
+      text.length,
+      markers,
+      alignedStyles
+    );
+    return segments.length > 0 ? [{ kind: "heading", segments }] : [];
+  }
+
+  if (block.kind === "verse" || text.includes("\n")) {
+    const lineBlocks: ExperimentalTextBlock[] = [];
+    let lineStart = 0;
+    let lineIdx = 0;
+
+    while (lineStart <= text.length) {
+      const nlIdx = text.indexOf("\n", lineStart);
+      const lineEnd = nlIdx === -1 ? text.length : nlIdx;
+      const lineText = text.slice(lineStart, lineEnd);
+
+      if (lineText.trim().length > 0) {
+        const lineMarkers = markers.filter(
+          (m) =>
+            m.offset >= lineStart &&
+            (m.offset < lineEnd || (nlIdx === -1 && m.offset === lineEnd))
+        );
+        const segments = buildSegmentsForRange(
+          text,
+          lineStart,
+          lineEnd,
+          lineMarkers,
+          alignedStyles
+        );
+        if (segments.length > 0) {
+          lineBlocks.push({
+            kind: "line",
+            segments,
+            ...(lineIdx === 0 ? { stanzaStart: true } : {}),
+          });
+          lineIdx += 1;
+        }
+      }
+
+      if (nlIdx === -1) break;
+      lineStart = nlIdx + 1;
+    }
+
+    return lineBlocks;
+  }
+
+  const segments = buildSegmentsForRange(
+    text,
+    0,
+    text.length,
+    markers,
+    alignedStyles
+  );
+  return segments.length > 0 ? [{ kind: "paragraph", segments }] : [];
+}
+
+function blockPlainText(block: ExperimentalTextBlock): string {
+  return block.segments.map((s) => (s.kind === "text" ? s.text : "")).join("");
+}
+
+function chunkBlocksIntoPages(
+  blocks: readonly ExperimentalTextBlock[],
+  docTitle: string,
+  targetChars: number
+): ExperimentalTextPage[] {
+  if (blocks.length === 0) return [];
+
+  const chunks: ExperimentalTextBlock[][] = [];
+  let current: ExperimentalTextBlock[] = [];
+  let currentChars = 0;
+
+  for (const block of blocks) {
+    const len = blockPlainText(block).length;
+    const shouldBreak =
+      current.length > 0 &&
+      (currentChars >= targetChars ||
+        (block.kind === "heading" && currentChars >= targetChars * 0.5));
+
+    if (shouldBreak) {
+      chunks.push(current);
+      current = [];
+      currentChars = 0;
+    }
+
+    current.push(block);
+    currentChars += len;
+  }
+
+  if (current.length > 0) {
+    chunks.push(current);
+  }
+
+  return chunks.map((chunkBlocks, idx) => {
+    const firstBlock = chunkBlocks[0];
+    const headingLabel =
+      firstBlock?.kind === "heading"
+        ? blockPlainText(firstBlock).trim()
+        : undefined;
+    const defaultLabel = chunks.length === 1 ? docTitle : `Part ${idx + 1}`;
+    return {
+      id: String(idx + 1),
+      label:
+        headingLabel && headingLabel.length > 0 ? headingLabel : defaultLabel,
+      blocks: chunkBlocks,
+      notes: [],
+    };
+  });
+}
+
+/**
+ * Converts one or more decoded Latin Library HTML pages into an `ExperimentalTextDocument`.
+ */
+export function parseLatinLibraryExperimentalText(
+  pages: readonly LatinLibraryPageInput[],
+  options?: LatinLibraryAdapterOptions
+): ExperimentalTextDocument {
+  const warnings: string[] = [];
+  const parsedPages = pages.map((page) => {
+    const lenient = extractLenientPage(page.html, {
+      parser: options?.parser,
+      preserveLineBreaks: true,
+    });
+    for (const w of lenient.warnings) {
+      warnings.push(pages.length > 1 ? `${page.path}: ${w}` : w);
+    }
+    return { path: page.path, lenient };
+  });
+
+  const firstLenient = parsedPages[0]?.lenient;
+  const title =
+    options?.title?.trim() ||
+    firstLenient?.pageTitle ||
+    firstLenient?.headings[0] ||
+    "Untitled";
+  const author = options?.author?.trim() || undefined;
+
+  if (parsedPages.length === 0) {
+    return {
+      title,
+      ...(author ? { author } : {}),
+      pagination: "chunks",
+      pages: [],
+      warnings,
+    };
+  }
+
+  if (parsedPages.length > 1) {
+    const docPages: ExperimentalTextPage[] = parsedPages.map(
+      ({ lenient }, idx) => {
+        let blocks = lenient.blocks.flatMap(convertPageBlock);
+        if (blocks.length === 0 && lenient.bodyText.trim().length > 0) {
+          blocks = lenient.bodyText
+            .split(/\n\s*\n/)
+            .map((chunk) => chunk.trim())
+            .filter((chunk) => chunk.length > 0)
+            .map((text) => ({
+              kind: "paragraph" as const,
+              segments: [{ kind: "text" as const, text }],
+            }));
+        }
+        return {
+          id: String(idx + 1),
+          label: lenient.pageTitle || lenient.headings[0] || `Page ${idx + 1}`,
+          blocks,
+          notes: [],
+        };
+      }
+    );
+
+    return {
+      title,
+      ...(author ? { author } : {}),
+      pagination: "pageBreaks",
+      pages: docPages,
+      warnings,
+    };
+  }
+
+  const singleLenient = parsedPages[0].lenient;
+  let allBlocks = singleLenient.blocks.flatMap(convertPageBlock);
+  if (allBlocks.length === 0 && singleLenient.bodyText.trim().length > 0) {
+    allBlocks = singleLenient.bodyText
+      .split(/\n\s*\n/)
+      .map((chunk) => chunk.trim())
+      .filter((chunk) => chunk.length > 0)
+      .map((text) => ({
+        kind: "paragraph" as const,
+        segments: [{ kind: "text" as const, text }],
+      }));
+  }
+
+  const targetChars = options?.chunkTargetChars ?? DEFAULT_CHUNK_CHARS;
+  const docPages = chunkBlocksIntoPages(allBlocks, title, targetChars);
+
+  return {
+    title,
+    ...(author ? { author } : {}),
+    pagination: "chunks",
+    pages: docPages,
+    warnings,
+  };
+}

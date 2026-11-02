@@ -170,44 +170,57 @@ export interface TextMark<T> {
 const WS = /[\s\u00a0]/;
 
 /**
- * Extracts text and maps "marks" (elements selected by `markWhere`) to their
- * offsets in the normalized text. Shared by `extractText` and the marker
- * detector (for `<a name>` anchor offsets).
+ * Extracts text, maps "marks" (elements selected by `markWhere`) to their
+ * offsets in the normalized text, and optionally derives per-character state
+ * (`charStates`, 1-to-1 with `text`) via `deriveCharState`. Shared by
+ * `extractText`, the marker detector, and the inline-style extractor.
  */
-export function extractTextWithMarks<T>(
+export function extractTextWithMarks<T, S = never>(
   node: MinimalChildNode,
   options: ExtractTextOptions | undefined,
-  markWhere?: (el: MinimalElementNode) => T | undefined
-): { text: string; marks: TextMark<T>[] } {
+  markWhere?: (el: MinimalElementNode) => T | undefined,
+  deriveCharState?: (
+    el: MinimalElementNode,
+    parent: S | undefined
+  ) => S | undefined
+): { text: string; marks: TextMark<T>[]; charStates?: (S | undefined)[] } {
   const preserve = options?.preserveLineBreaks === true;
   const parts: string[] = [];
   let rawLength = 0;
   const rawMarks: { data: T; rawIndex: number }[] = [];
-  const push = (s: string) => {
+  const rawStates: (S | undefined)[] | undefined =
+    deriveCharState !== undefined ? [] : undefined;
+  let hasAnyState = false;
+  const push = (s: string, state?: S) => {
     parts.push(s);
     rawLength += s.length;
+    if (rawStates !== undefined) {
+      for (let i = 0; i < s.length; i++) {
+        rawStates.push(state);
+      }
+    }
   };
 
   // Iterative walk. `pre` depth tracks whether we are inside a `<pre>`.
   // A `separator` frame stands for the end of a block-level element.
   type Frame =
-    | { node: MinimalChildNode; inPre: boolean }
-    | { separator: true; inPre: boolean };
-  const stack: Frame[] = [{ node, inPre: false }];
+    | { node: MinimalChildNode; inPre: boolean; state: S | undefined }
+    | { separator: true; inPre: boolean; state: S | undefined };
+  const stack: Frame[] = [{ node, inPre: false, state: undefined }];
   while (stack.length > 0) {
     const frame = stack.pop()!;
     if ("separator" in frame) {
-      push(" ");
+      push(" ", frame.state);
       continue;
     }
-    const { node: n, inPre } = frame;
+    const { node: n, inPre, state } = frame;
     if (isText(n)) {
-      push(preserve && inPre ? n.value.replace(/\r?\n/g, BR) : n.value);
+      push(preserve && inPre ? n.value.replace(/\r?\n/g, BR) : n.value, state);
       continue;
     }
     if (!isElement(n)) continue;
     if (n.tagName === "br") {
-      push(preserve ? BR : " ");
+      push(preserve ? BR : " ", state);
       continue;
     }
     if (INVISIBLE_TAGS.has(n.tagName)) continue;
@@ -215,14 +228,23 @@ export function extractTextWithMarks<T>(
       const data = markWhere(n);
       if (data !== undefined) rawMarks.push({ data, rawIndex: rawLength });
     }
+    const nextState =
+      deriveCharState !== undefined ? deriveCharState(n, state) : undefined;
+    if (nextState !== undefined) {
+      hasAnyState = true;
+    }
     const childInPre = inPre || n.tagName === "pre";
     if (TEXT_BOUNDARY_TAGS.has(n.tagName)) {
       // Block boundaries separate words: `<td>Liber I</td><td>Liber II</td>`.
-      push(" ");
-      stack.push({ separator: true, inPre });
+      push(" ", state);
+      stack.push({ separator: true, inPre, state });
     }
     for (let i = n.childNodes.length - 1; i >= 0; i--) {
-      stack.push({ node: n.childNodes[i], inPre: childInPre });
+      stack.push({
+        node: n.childNodes[i],
+        inPre: childInPre,
+        state: nextState,
+      });
     }
   }
   const raw = parts.join("");
@@ -230,8 +252,11 @@ export function extractTextWithMarks<T>(
   // Normalize, recording for each raw index the output offset of the next
   // visible character.
   let out = "";
+  const outStates: (S | undefined)[] | undefined =
+    rawStates !== undefined && hasAnyState ? [] : undefined;
   let pendingSpace = false;
   let pendingBreaks = 0;
+  let pendingState: S | undefined;
   // A mark at raw index i resolves to the output offset of the first visible
   // raw char at or after i (or the end of the text).
   const resolved = new Map<number, number>();
@@ -241,19 +266,32 @@ export function extractTextWithMarks<T>(
   );
   for (let i = 0; i < raw.length; i++) {
     const ch = raw[i];
+    const st = rawStates?.[i];
     if (ch === BR) {
       pendingBreaks += 1;
+      pendingState = st;
       continue;
     }
     if (WS.test(ch)) {
       pendingSpace = true;
+      pendingState = st;
       continue;
     }
     if (out.length > 0) {
       if (pendingBreaks > 0) {
         out += pendingBreaks >= 2 ? "\n\n" : "\n";
+        if (outStates !== undefined) {
+          if (pendingBreaks >= 2) {
+            outStates.push(pendingState, pendingState);
+          } else {
+            outStates.push(pendingState);
+          }
+        }
       } else if (pendingSpace) {
         out += " ";
+        if (outStates !== undefined) {
+          outStates.push(pendingState);
+        }
       }
     }
     pendingSpace = false;
@@ -266,6 +304,9 @@ export function extractTextWithMarks<T>(
       markCursor += 1;
     }
     out += ch;
+    if (outStates !== undefined) {
+      outStates.push(st);
+    }
   }
   while (markCursor < sortedMarkIdx.length) {
     resolved.set(sortedMarkIdx[markCursor], out.length);
@@ -277,6 +318,7 @@ export function extractTextWithMarks<T>(
       data: m.data,
       offset: resolved.get(m.rawIndex) ?? out.length,
     })),
+    ...(outStates !== undefined ? { charStates: outStates } : {}),
   };
 }
 
