@@ -1,4 +1,6 @@
 import type { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_types";
+import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
+import { convertTheLatinLibraryWork } from "@/common/library/process_thelatinlibrary";
 import * as loader from "@/web/ui/reader/reader_loader.server";
 import { createReaderRoutes } from "@/web/ui/reader/reader_routes.server";
 import express from "express";
@@ -125,8 +127,42 @@ const MEDEA: V2PreprocessedWork = {
   ],
 };
 
+// A Roman-law work, rendered by the real preprocessor so its gutters carry
+// the alias anchors (`1.1.1pr`, `30.79.1`) that jumps must see through.
+const DIGEST: V2PreprocessedWork = preprocessWorkToV2(
+  convertTheLatinLibraryWork({
+    workId: "thelatinlibrary-justinian-digesta",
+    author: "Justinian",
+    title: "Digesta",
+    source: {
+      url: "https://www.thelatinlibrary.com/justinian.html",
+      retrieved: "2026-10-30",
+      sha256: "abc",
+      statedEdition: null,
+    },
+    textParts: ["book", "title", "lex", "paragraph"],
+    citationStyle: "roman_law",
+    pageDepth: 2,
+    rows: [
+      [["1", "1"], "De iustitia et iure.", "heading"],
+      [["1", "1", "1", "pr"], "Iuri operam daturum."],
+      [["1", "1", "1", "1"], "Cuius merito."],
+      [["30", "0"], "De legatis et fideicommissis.", "heading"],
+      [["30", "0", "79", "1"], "Si quis legaverit."],
+    ],
+  }),
+  {
+    author: "Justinian",
+    name: "Digesta",
+    id: "thelatinlibrary-justinian-digesta",
+    urlAuthor: "justinian",
+    urlName: "digesta",
+    attribution: "theLatinLibrary",
+  }
+);
+
 beforeAll(() => {
-  loader.saveV2LibraryDb(mockLibDir, [DE_CLEMENTIA, BRUTUS, MEDEA]);
+  loader.saveV2LibraryDb(mockLibDir, [DE_CLEMENTIA, BRUTUS, MEDEA, DIGEST]);
 });
 
 afterAll(() => {
@@ -270,5 +306,32 @@ describe("non-canonical page ids", () => {
     const res = await request(app()).get("/work/cicero/brutus/999");
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe("Roman-law citation jumps", () => {
+  test.each([
+    ["1.1.1pr", "/work/justinian/digesta/1.1#sec-1.1.1.pr"],
+    ["Lex 1.1.1pr", "/work/justinian/digesta/1.1#sec-1.1.1.pr"],
+    ["1.1.1", "/work/justinian/digesta/1.1#sec-1.1.1.pr"],
+    ["1.1.1.1", "/work/justinian/digesta/1.1#sec-1.1.1.1"],
+    ["30.79.1", "/work/justinian/digesta/30.0#sec-30.0.79.1"],
+    ["Book 30", "/work/justinian/digesta/30.0"],
+  ])("?jump=%s lands on the canonical section", async (jump, location) => {
+    const res = await request(app()).get(
+      `/work/justinian/digesta?jump=${encodeURIComponent(jump)}`
+    );
+
+    expect(res.status).toBe(302);
+    expect(res.header.location).toBe(location);
+  });
+
+  test("an alias page id redirects to the canonical section", async () => {
+    const res = await request(app()).get("/work/justinian/digesta/30.79.1");
+
+    expect(res.status).toBe(302);
+    expect(res.header.location).toBe(
+      "/work/justinian/digesta/30.0#sec-30.0.79.1"
+    );
   });
 });

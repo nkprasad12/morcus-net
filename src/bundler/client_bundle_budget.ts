@@ -57,7 +57,7 @@ export interface V2BundleBudget {
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
     "common.js": { maxBrotliBytes: 19.75 * 1024 },
-    "reader.js": { maxBrotliBytes: 12.5 * 1024 },
+    "reader.js": { maxBrotliBytes: 13 * 1024 },
     "dict.js": { maxBrotliBytes: 8.5 * 1024 },
     "corpus.js": { maxBrotliBytes: 5.5 * 1024 },
     "external.js": { maxBrotliBytes: 4 * 1024 },

@@ -9,7 +9,10 @@ import {
 import { ReadOnlyDb } from "@/common/sql_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
-import { isRetiredFrontMatterId } from "@/web/ui/reader/reader_types.server";
+export {
+  resolvePageInWork,
+  type ResolvedPage,
+} from "@/web/ui/reader/reader_resolve.server";
 import fs from "fs";
 import path from "path";
 
@@ -284,6 +287,7 @@ export function saveV2LibraryDb(
       editor: v2Work.editor,
       textParts: v2Work.textParts,
       paginationDepth: v2Work.paginationDepth,
+      citationStyle: v2Work.citationStyle,
       pageCount: v2Work.pages.length,
       firstPageId,
     };
@@ -431,141 +435,4 @@ export function getV2Work(
   store.worksById.set(targetId, work);
   store.worksById.set(work.id, work);
   return Promise.resolve(work);
-}
-
-export function resolvePageInWork(
-  work: V2PreprocessedWork,
-  pageIdOrCitation?: string | string[]
-): {
-  page: V2PreprocessedPage;
-  index: number;
-  pageIndex: number;
-  matched: boolean;
-} {
-  if (!pageIdOrCitation || work.pages.length === 0) {
-    return { page: work.pages[0], index: 0, pageIndex: 0, matched: true };
-  }
-
-  const rawNeedle = Array.isArray(pageIdOrCitation)
-    ? pageIdOrCitation.join(".")
-    : pageIdOrCitation.trim();
-
-  if (!rawNeedle) {
-    return { page: work.pages[0], index: 0, pageIndex: 0, matched: true };
-  }
-
-  const k =
-    work.paginationDepth ||
-    (work.textParts.length > 1 ? work.textParts.length - 1 : 1);
-
-  const tryResolve = (
-    needle: string
-  ): {
-    page: V2PreprocessedPage;
-    index: number;
-    pageIndex: number;
-    matched: true;
-  } | null => {
-    // 1. Exact string match against page.id (e.g. "1.1" === "1.1")
-    const exactIdx = work.pages.findIndex((p) => {
-      const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
-      return pIdStr === needle;
-    });
-    if (exactIdx !== -1) {
-      return {
-        page: work.pages[exactIdx],
-        index: exactIdx,
-        pageIndex: exactIdx,
-        matched: true,
-      };
-    }
-
-    // 2. Prefix match if user typed a deeper citation (e.g. "1.2.3" -> page "1.2")
-    const tokens = needle.split(".").filter((t) => t.length > 0);
-    const pageTokens = tokens.slice(0, k);
-    const pageTokenStr = pageTokens.join(".");
-
-    const prefixIdx = work.pages.findIndex((p) => {
-      const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
-      return pIdStr === pageTokenStr;
-    });
-    if (prefixIdx !== -1) {
-      return {
-        page: work.pages[prefixIdx],
-        index: prefixIdx,
-        pageIndex: prefixIdx,
-        matched: true,
-      };
-    }
-
-    // 3. Segment-delimited prefix match (e.g. "2" -> "2.1" or "1.5.10" -> "1.5",
-    //    never "1.55" -> "1.5")
-    const startsWithIdx = work.pages.findIndex((p) => {
-      const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
-      return needle.startsWith(pIdStr + ".") || pIdStr.startsWith(needle + ".");
-    });
-    if (startsWithIdx !== -1) {
-      return {
-        page: work.pages[startsWithIdx],
-        index: startsWithIdx,
-        pageIndex: startsWithIdx,
-        matched: true,
-      };
-    }
-
-    return null;
-  };
-
-  const direct = tryResolve(rawNeedle);
-  if (direct) return direct;
-
-  // Strip optional leading label word (e.g. Zero-JS `?jump=Book+2` -> "2")
-  const stripped = rawNeedle
-    .replace(/^(book|liber|chapter|caput|section|elegy|poem|carmen)\s+/i, "")
-    .trim();
-  if (stripped && stripped !== rawNeedle) {
-    const afterStrip = tryResolve(stripped);
-    if (afterStrip) return afterStrip;
-  }
-
-  // 4. A section on some page. A work cited by line alone (`["line"]`) has a
-  //    single page `1`, so `?jump=57` has to find the page holding `sec-57`.
-  //    This reads page HTML, so it only runs once everything else has missed.
-  for (const needle of new Set([rawNeedle, stripped])) {
-    if (!/^[^\s"'<>&]+$/.test(needle)) continue;
-    const anchor = `id="sec-${needle}"`;
-    const sectionIdx = work.pages.findIndex((p) =>
-      p.singleHtml.includes(anchor)
-    );
-    if (sectionIdx !== -1) {
-      return {
-        page: work.pages[sectionIdx],
-        index: sectionIdx,
-        pageIndex: sectionIdx,
-        matched: true,
-      };
-    }
-    if (!needle.includes(".")) {
-      const compoundIdx = work.pages.findIndex((p) => {
-        const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
-        return p.singleHtml.includes(`id="sec-${pIdStr}.${needle}"`);
-      });
-      if (compoundIdx !== -1) {
-        return {
-          page: work.pages[compoundIdx],
-          index: compoundIdx,
-          pageIndex: compoundIdx,
-          matched: true,
-        };
-      }
-    }
-  }
-
-  // 5. Front matter that used to be a page of its own (`sigla`, `arg`, as in
-  //    `/work/cicero/brutus/sigla` or `sigla.1`) now opens the first page.
-  if (isRetiredFrontMatterId(rawNeedle)) {
-    return { page: work.pages[0], index: 0, pageIndex: 0, matched: true };
-  }
-
-  return { page: work.pages[0], index: 0, pageIndex: 0, matched: false };
 }

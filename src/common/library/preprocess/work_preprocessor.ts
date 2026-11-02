@@ -1,5 +1,6 @@
 import { assert } from "@/common/assert";
 import type {
+  CitationStyle,
   LibraryWorkMetadata,
   ProcessedWork2,
   ProcessedWorkContentNodeType,
@@ -9,15 +10,22 @@ import type {
   V2PreprocessedWork,
 } from "@/common/library/preprocess/preprocessed_types";
 import { BLOCK_CONTENT_KINDS } from "@/common/library/process_work";
-import { formatSectionPath } from "@/common/library/section_labels";
+import {
+  formatRomanLawGutter,
+  formatSectionPath,
+} from "@/common/library/section_labels";
 import { areArraysEqual } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
 import * as he from "he";
 
-function formatPageTitle(pageId: string[], textParts: string[]): string {
+function formatPageTitle(
+  pageId: string[],
+  textParts: string[],
+  citationStyle?: CitationStyle
+): string {
   if (pageId.length === 0) return "Preface";
-  return formatSectionPath(textParts, pageId);
+  return formatSectionPath(textParts, pageId, citationStyle);
 }
 
 /**
@@ -155,12 +163,6 @@ function getSectionLocalId(secId: string[], pageId: string[]): string {
   return localTokens.length > 0
     ? localTokens.join(".")
     : secId[secId.length - 1] ?? "";
-}
-
-function getSectionPrefix(secId: string[], pageId: string[]): string {
-  const full = secId.join(".");
-  const local = getSectionLocalId(secId, pageId);
-  return full.slice(0, full.length - local.length);
 }
 
 /** A critical apparatus note referenced from the page being rendered. */
@@ -428,11 +430,16 @@ function renderXmlNodeCleanHtml(
   // before (nothing of its own).
   const isVersePara = wantsVersePara && childrenHtml.trim() !== "";
   const isBlock = node.getAttr("block") === "1" || isVersePara;
-  // Editorial matter inside a row (a letter's dateline) looks like the text
-  // around it but is not tokenized for lookup, as the corpus does not index
-  // it. A whole editorial row is marked by `markUntokenizedRow` instead.
+  const isSmallcapsEditorial =
+    kind === "editorial" && node.getAttr("style") === "smallcaps";
+  // Editorial matter inside a row (a letter's dateline, or a Roman-law jurist
+  // inscription) looks like the text around it but is not tokenized for lookup,
+  // as the corpus does not index it. A whole editorial row is marked by
+  // `markUntokenizedRow` instead.
   const noTokenize =
-    kind === "editorial" && !isRowRoot ? ' data-no-tokenize="true"' : "";
+    (kind === "editorial" && !isRowRoot) || isSmallcapsEditorial
+      ? ' data-no-tokenize="true"'
+      : "";
 
   if (tag === "head" || isSectionHead) {
     return `<h3 class="reader-subheading"${noTokenize}>${childrenHtml}</h3>`;
@@ -458,6 +465,9 @@ function renderXmlNodeCleanHtml(
 
   // Handle attributes and renditions
   const classes: string[] = [];
+  if (isSmallcapsEditorial) {
+    classes.push("reader-editorial-smallcaps");
+  }
   if (isLine) classes.push("reader-line");
   if (isBlock) classes.push("reader-block");
   if (rends.has("italic")) classes.push("italic");
@@ -527,7 +537,10 @@ function renderPassageContent(
     renderXmlNodeCleanHtml(node, notes, isVerseWork, true, rowClass),
     isVerseWork
   );
-  return node.getAttr("kind") === "editorial" ? markUntokenizedRow(html) : html;
+  return node.getAttr("kind") === "editorial" &&
+    node.getAttr("style") !== "smallcaps"
+    ? markUntokenizedRow(html)
+    : html;
 }
 
 /**
@@ -789,6 +802,7 @@ export function preprocessWorkToV2(
   translationWork?: ProcessedWork2
 ): V2PreprocessedWork {
   const textParts = work.textParts;
+  const citationStyle = work.info.citationStyle;
   const isVerseWork =
     textParts.length > 0 &&
     textParts[textParts.length - 1].toLowerCase() === "line";
@@ -822,6 +836,7 @@ export function preprocessWorkToV2(
     const singleSectionsHtml: string[] = [];
     const citationIds: string[] = [];
     const citationLocalIds: string[] = [];
+    const usedAnchorIds = new Set<string>();
     const textNotes = createNoteCollector(work.notes, "n", "numeric");
     const translationNotes = createNoteCollector(
       translationWork?.notes,
@@ -834,11 +849,19 @@ export function preprocessWorkToV2(
 
     for (let j = startIdx; j < endIdx; j++) {
       const [secId, node] = work.rows[j];
-      const dotId = secId.join(".");
-      const localId = getSectionLocalId(secId, pageId);
-      const prefix = getSectionPrefix(secId, pageId);
+      const { dotId, localId, prefix, aliasIds } = formatRomanLawGutter(
+        secId,
+        pageId,
+        citationStyle,
+        textParts
+      );
       const isFullDepthLeaf = secId.length === textParts.length;
-      const isLeafRow = isFullDepthLeaf || j === shallowLeafRow;
+      const isRomanLawLeaf =
+        citationStyle === "roman_law" &&
+        secId.length > pageId.length &&
+        !isHeadingOrSpacerRow(node);
+      const isLeafRow =
+        isFullDepthLeaf || isRomanLawLeaf || j === shallowLeafRow;
       // Rendered once and reused by both views, so a note keeps the same label
       // whether the reader is in single or parallel mode.
       const latinHtml = renderPassageContent(
@@ -862,16 +885,28 @@ export function preprocessWorkToV2(
         ? "section-anchor latent"
         : "section-anchor";
 
+      const extraAnchorSpans: string[] = [];
       if (isLeafRow) {
+        usedAnchorIds.add(dotId);
         citationIds.push(dotId);
         citationLocalIds.push(localId);
+        for (const aliasId of aliasIds) {
+          if (!usedAnchorIds.has(aliasId)) {
+            usedAnchorIds.add(aliasId);
+            extraAnchorSpans.push(
+              `<span id="sec-${he.escape(aliasId)}"></span>`
+            );
+          }
+        }
       }
 
       const prefixHtml = prefix
         ? `<span class="cite-prefix">${he.escape(prefix)}</span>`
         : "";
       const gutterHtml = isLeafRow
-        ? `<div class="reader-gutter"><a href="#sec-${dotId}" class="${anchorClass}">${prefixHtml}<span class="cite-local">${he.escape(
+        ? `<div class="reader-gutter">${extraAnchorSpans.join(
+            ""
+          )}<a href="#sec-${dotId}" class="${anchorClass}">${prefixHtml}<span class="cite-local">${he.escape(
             localId
           )}</span></a></div>`
         : '<div class="reader-gutter"></div>';
@@ -894,8 +929,8 @@ export function preprocessWorkToV2(
     const pageTitle =
       isLineOnly && pageId.length === textParts.length
         ? formatLineRangeTitle(citationLocalIds) ??
-          formatPageTitle(pageId, textParts)
-        : formatPageTitle(pageId, textParts);
+          formatPageTitle(pageId, textParts, citationStyle)
+        : formatPageTitle(pageId, textParts, citationStyle);
     if (isLineOnly) {
       tocLabels.set(dotPageId, pageTitle);
     }
@@ -965,10 +1000,13 @@ export function preprocessWorkToV2(
         ? perseusLicence(work.info.licence)
         : work.info.attribution === "hypotactic"
         ? "Hypotactic Latin Metron (Public / Educational)"
+        : work.info.attribution === "theLatinLibrary"
+        ? "Presented as public domain by The Latin Library"
         : "Public Domain",
     sourceRepo: work.info.sourceRef?.[0],
     textParts,
     paginationDepth,
+    citationStyle,
     navTree: work.navTree,
     tocHtml: preRenderTocItemsHtml({
       pages: v2Pages,
@@ -978,6 +1016,7 @@ export function preprocessWorkToV2(
         pages: v2Pages,
         textParts,
         navTree: work.navTree,
+        citationStyle,
       },
       nodeLabels: tocLabels,
     }),

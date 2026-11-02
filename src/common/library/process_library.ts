@@ -24,6 +24,7 @@ import {
 } from "@/common/library/library_types";
 import { processHypotactic } from "@/common/library/process_hypotactic";
 import { processPhiJson } from "@/common/library/process_phi_json";
+import { processTheLatinLibrary } from "@/common/library/process_thelatinlibrary";
 import { processTei2 } from "@/common/library/process_work";
 import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
 import type { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_types";
@@ -447,11 +448,17 @@ export async function processLibrary({
   works = LOCAL_REPO_WORK_PATHS,
   shouldBuildCorpus = false,
   corpusInputDir = LIB_CORPUS_INPUT_DIR,
+  theLatinLibraryRoot,
 }: {
   outputDir?: string;
   works?: string[];
   shouldBuildCorpus?: boolean;
   corpusInputDir?: string;
+  /**
+   * The Latin Library checkout to read `works/` from. The prod build passes
+   * its clone of the pinned commit; otherwise `THELATINLIBRARY_ROOT`.
+   */
+  theLatinLibraryRoot?: string;
 } = {}) {
   fs.rmSync(corpusInputDir, { recursive: true, force: true });
   fs.mkdirSync(corpusInputDir, { recursive: true });
@@ -470,6 +477,7 @@ export async function processLibrary({
 
   processPhiJson().forEach(processGenericWork);
   processHypotactic().forEach(processGenericWork);
+  processTheLatinLibrary(theLatinLibraryRoot).forEach(processGenericWork);
 
   allWorkIds.push(
     ...preprocessPerseusWorks(works, {

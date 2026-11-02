@@ -10,7 +10,6 @@ import {
   getV2Work,
   resolvePageInWork,
 } from "@/web/ui/reader/reader_loader.server";
-import { isRetiredFrontMatterId } from "@/web/ui/reader/reader_types.server";
 import { createAsyncRegistrars } from "@/web/ui/core/server/async_handler.server";
 import { renderNotFoundPageHtml } from "@/web/ui/library/not_found.server";
 import {
@@ -45,23 +44,7 @@ function redirectReaderJump(
   const pageId = Array.isArray(resolved.page.id)
     ? resolved.page.id.join(".")
     : resolved.page.id;
-  const cleanJump = jump
-    .replace(/^(book|liber|chapter|caput|section|elegy|poem|carmen)\s+/i, "")
-    .trim();
-  let hash = "";
-  if (
-    cleanJump &&
-    cleanJump !== pageId &&
-    !pageId.startsWith(cleanJump + ".") &&
-    // Retired front matter has no section of its own to scroll to.
-    !isRetiredFrontMatterId(cleanJump)
-  ) {
-    hash =
-      !cleanJump.includes(".") &&
-      resolved.page.singleHtml.includes(`id="sec-${pageId}.${cleanJump}"`)
-        ? `#sec-${pageId}.${cleanJump}`
-        : `#sec-${cleanJump}`;
-  }
+  const hash = resolved.sectionId ? `#sec-${resolved.sectionId}` : "";
   res.redirect(
     302,
     `/work/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}${hash}`

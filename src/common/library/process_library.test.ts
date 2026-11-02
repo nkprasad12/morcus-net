@@ -42,6 +42,16 @@ function setupFakePhiDir() {
   });
 }
 
+// The Latin Library works come from the root passed to `processLibrary`, as
+// in the prod build: an empty `works/` here. THELATINLIBRARY_ROOT points
+// nowhere, so these builds fail if they read it instead.
+const THE_LATIN_LIBRARY_ROOT = fs.mkdtempSync("thelatinlibrary-testdata-");
+fs.mkdirSync(`${THE_LATIN_LIBRARY_ROOT}/works`);
+replaceEnvVar("THELATINLIBRARY_ROOT", "thelatinlibrary-testdata-absent");
+afterAll(() => {
+  fs.rmSync(THE_LATIN_LIBRARY_ROOT, { recursive: true, force: true });
+});
+
 setupFakeHypotacticData();
 setupFakePhiDir();
 
@@ -63,6 +73,7 @@ afterAll(() => {
 describe("Library Processing", () => {
   test("stores works and pages in SQLite that load by id", async () => {
     await processLibrary({
+      theLatinLibraryRoot: THE_LATIN_LIBRARY_ROOT,
       outputDir: LIB_DIR,
       corpusInputDir: CORPUS_INPUT_DIR,
       works: [DBG_PATH],
@@ -77,6 +88,7 @@ describe("Library Processing", () => {
 
   test("indexes works by author and name slug", async () => {
     await processLibrary({
+      theLatinLibraryRoot: THE_LATIN_LIBRARY_ROOT,
       outputDir: LIB_DIR,
       corpusInputDir: CORPUS_INPUT_DIR,
       works: [DBG_PATH],
@@ -87,6 +99,7 @@ describe("Library Processing", () => {
 
   test("returns sorted work summaries", async () => {
     await processLibrary({
+      theLatinLibraryRoot: THE_LATIN_LIBRARY_ROOT,
       outputDir: LIB_DIR,
       corpusInputDir: CORPUS_INPUT_DIR,
       works: [DBG_PATH],
@@ -105,6 +118,7 @@ describe("Library Processing", () => {
   test("includes the work id when a work fails to process", async () => {
     await expect(
       processLibrary({
+        theLatinLibraryRoot: THE_LATIN_LIBRARY_ROOT,
         outputDir: LIB_DIR,
         corpusInputDir: CORPUS_INPUT_DIR,
         works: ["texts/latin/perseus/data/missing.work.perseus-lat1.xml"],

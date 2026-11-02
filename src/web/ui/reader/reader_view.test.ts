@@ -1452,6 +1452,29 @@ describe("MorcusReaderView desktop splitter drag", () => {
     expect(toast.textContent).toBe("Copied permalink: § 1");
   });
 
+  test.each([
+    ["1.1.1.pr", "1.1.", "1pr", "1.1.1pr"],
+    ["30.0.79.1", "30.79.", "1", "30.79.1"],
+  ])(
+    "the permalink toast shows the citation the gutter shows (%s -> %s%s), not the canonical id",
+    (secId, prefix, local, shown) => {
+      const passageHtml = `
+        <div class="reader-section" id="sec-${secId}">
+          <div class="reader-gutter"><a href="#sec-${secId}" class="section-anchor"><span class="cite-prefix">${prefix}</span><span class="cite-local">${local}</span></a></div>
+          <div class="reader-passage">Text</div>
+        </div>
+      `;
+      const el = createReaderView(passageHtml);
+      delete el.dataset.work;
+
+      el.querySelector<HTMLAnchorElement>("a.section-anchor")!.click();
+
+      expect(document.getElementById("toast")!.textContent).toBe(
+        `Copied permalink: § ${shown}`
+      );
+    }
+  );
+
   test.each([{ ctrlKey: true }, { metaKey: true }])(
     "leaves a modified click (%o) on section anchors and note refs to the browser",
     (init) => {
@@ -4498,6 +4521,30 @@ describe("section jump highlighting", () => {
     expect(sec.classList.contains("target-highlight")).toBe(true);
     jest.advanceTimersByTime(3000);
     expect(sec.classList.contains("target-highlight")).toBe(false);
+  });
+
+  test("a link to an alias id (a Roman-law bare lex) reveals the section holding the alias", () => {
+    // `1.1.1` is an alias of `1.1.1.pr`: an empty span in that section's gutter.
+    const el = createReaderView(`
+      <div class="reader-section" id="sec-1.1.1.pr">
+        <div class="reader-gutter"><span id="sec-1.1.1pr"></span><span id="sec-1.1.1"></span><a href="#sec-1.1.1.pr" class="section-anchor"><span class="cite-prefix">1.1.</span><span class="cite-local">1pr</span></a></div>
+        <div class="reader-passage"><p class="reader-paragraph">Iuri operam daturum.</p></div>
+      </div>
+      <div class="reader-section" id="sec-1.1.1.1">
+        <div class="reader-gutter"><a href="#sec-1.1.1.1" class="section-anchor"><span class="cite-prefix">1.1.1.</span><span class="cite-local">1</span></a></div>
+        <div class="reader-passage"><p class="reader-paragraph">Est autem a iustitia appellatum.</p></div>
+      </div>
+    `);
+    clickLink(el, "#sec-1.1.1");
+    const sec = document.getElementById("sec-1.1.1.pr")!;
+    expect(scrollSpy).toHaveBeenCalledTimes(1);
+    expect(scrollSpy.mock.contexts[0]).toBe(sec);
+    expect(sec.classList.contains("target-highlight")).toBe(true);
+    expect(
+      document
+        .getElementById("sec-1.1.1")!
+        .classList.contains("target-highlight")
+    ).toBe(false);
   });
 
   test("a link to the passage's only section scrolls but doesn't highlight", () => {

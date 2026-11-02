@@ -2,8 +2,15 @@ import {
   V2PreprocessedPage,
   V2PreprocessedWork,
 } from "@/common/library/preprocess/preprocessed_types";
-import { NavTreeNode } from "@/common/library/library_types";
-import { formatSectionLabel } from "@/common/library/section_labels";
+import {
+  type CitationStyle,
+  NavTreeNode,
+} from "@/common/library/library_types";
+import {
+  formatCitationId,
+  formatSectionLabel,
+  formatSectionPath,
+} from "@/common/library/section_labels";
 import { citationToString } from "@/web/ui/reader/reader_types.server";
 import * as he from "he";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
@@ -38,6 +45,7 @@ interface PreRenderTocItemsOptions {
     pages?: V2PreprocessedPage[];
     textParts?: string[];
     navTree?: NavTreeNode;
+    citationStyle?: CitationStyle;
   };
   /**
    * Labels that replace the default `formatSectionLabel` label, keyed by the
@@ -92,6 +100,7 @@ export function preRenderTocItemsHtml(
   const { work } = options;
   const pages = options.pages ?? work.pages ?? [];
   const textParts = work.textParts ?? [];
+  const citationStyle = work.citationStyle;
 
   const pageMap = new Map<string, V2PreprocessedPage>();
   for (const p of pages) {
@@ -104,22 +113,47 @@ export function preRenderTocItemsHtml(
       : buildNavTreeFromPages(pages);
 
   function renderNode(node: NavTreeNode): string {
+    // In Roman law works (Digest Books 30–32), a book with a single synthetic
+    // `Title 0` leaf child collapses directly to the leaf page item (`Book 30`)
+    // instead of rendering a redundant `Title 0` child.
+    if (
+      citationStyle === "roman_law" &&
+      node.children.length === 1 &&
+      node.children[0].children.length === 0
+    ) {
+      const onlyChild = node.children[0];
+      const childPart = textParts[onlyChild.id.length - 1] ?? "";
+      const childCoord = onlyChild.id[onlyChild.id.length - 1] ?? "";
+      if (childPart.toLowerCase() === "title" && childCoord === "0") {
+        return renderNode(onlyChild);
+      }
+    }
+
     const key = node.id.join(".");
     const escapedKey = he.escape(key);
+    const displayKey = he.escape(
+      formatCitationId(node.id, citationStyle, textParts)
+    );
     const partName = textParts[node.id.length - 1] || "section";
     const coord = node.id[node.id.length - 1] || "";
+    const singleLabel = coord
+      ? formatSectionLabel(
+          partName,
+          coord,
+          node.id[node.id.length - 2],
+          citationStyle
+        )
+      : "Contents";
     const label =
       options.nodeLabels?.get(key) ??
-      (coord
-        ? formatSectionLabel(partName, coord, node.id[node.id.length - 2])
-        : "Contents");
+      (singleLabel || formatSectionPath(textParts, node.id, citationStyle));
 
     if (node.children.length === 0) {
       const page = pageMap.get(key);
       const pageUrl = buildReaderPageUrl(work, page ?? null);
       return `<a href="${pageUrl}" class="reader-toc-item" data-page-id="${escapedKey}"><span class="reader-toc-item-title">${he.escape(
         label
-      )}</span><span class="reader-toc-item-id">&sect; ${escapedKey}</span></a>`;
+      )}</span><span class="reader-toc-item-id">&sect; ${displayKey}</span></a>`;
     }
 
     const childrenHtml = node.children

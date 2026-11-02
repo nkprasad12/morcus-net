@@ -143,6 +143,19 @@ function isOnlySection(section: HTMLElement): boolean {
 }
 
 /**
+ * The citation a section anchor shows (its `.cite-prefix` and `.cite-local`),
+ * e.g. `1.1.1pr` or `30.79.1` in a Roman-law work, whose canonical ids are
+ * `1.1.1.pr` and `30.0.79.1`. Falls back to `secId` for anchors without them.
+ */
+function displayedSectionCitation(
+  anchor: HTMLAnchorElement,
+  secId: string
+): string {
+  if (!anchor.querySelector(".cite-local")) return secId;
+  return anchor.textContent?.trim() || secId;
+}
+
+/**
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
  *
  * Without JS:
@@ -519,6 +532,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       e.preventDefault();
       const href = secAnchor.getAttribute("href") || "";
       const secId = href.replace(/^#sec-/, "");
+      const citation = displayedSectionCitation(secAnchor, secId);
       const fullUrl = `${window.location.origin}${window.location.pathname}${window.location.search}#sec-${secId}`;
       const secEl =
         document.getElementById(`sec-${secId}`) ??
@@ -528,7 +542,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         // The anchor is on screen: flash the section without scrolling to it.
         if (secEl) this.#revealSection(secEl, { scroll: false });
         this.#saveCurrentSpot(secId);
-        showToast(`Copied permalink: § ${secId}`);
+        showToast(`Copied permalink: § ${citation}`);
       };
 
       if (!this.dataset.work) {
@@ -539,7 +553,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       openSectionActionMenu({
         anchor: secAnchor,
         sectionId: secId,
-        label: `§ ${secId}`,
+        label: `§ ${citation}`,
         reportUrl: fullUrl,
         onCopy: copyPermalink,
         getContentNodes: () => {
@@ -1410,7 +1424,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const targetEl = document.getElementById(targetId);
     if (!targetEl) return;
     if (targetId.startsWith("sec-")) {
-      this.#revealSection(targetEl);
+      // An alias id (`sec-1.1.1` for `1.1.1.pr`) is an empty span in the
+      // section's gutter: reveal the section it belongs to.
+      this.#revealSection(
+        targetEl.closest<HTMLElement>(".reader-section") ?? targetEl
+      );
     } else if (typeof targetEl.scrollIntoView === "function") {
       targetEl.scrollIntoView({
         behavior: "smooth",

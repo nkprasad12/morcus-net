@@ -1,4 +1,5 @@
 import type {
+  CitationStyle,
   DocumentAttribution,
   NavTreeNode,
 } from "@/common/library/library_types";
@@ -63,6 +64,8 @@ export interface V2PreprocessedWork {
   textParts: string[];
   /** Depth at which text is paginated, e.g. 2 for chapter, 1 for book/poem */
   paginationDepth: number;
+  /** Optional citation formatting and lookup style (e.g. "roman_law") */
+  citationStyle?: CitationStyle;
   /** Full multi-level hierarchical outline tree for drawer TOC */
   navTree?: NavTreeNode;
   /** Pre-rendered HTML for the TOC drawer list (without active/open state) */
@@ -87,6 +90,7 @@ export interface V2WorkSummary {
   editor?: string;
   textParts: string[];
   paginationDepth: number;
+  citationStyle?: CitationStyle;
   pageCount: number;
   firstPageId: string[];
 }

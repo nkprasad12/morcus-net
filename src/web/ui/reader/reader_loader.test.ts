@@ -3,6 +3,8 @@ import {
   WORK_ID_ALIASES,
 } from "@/common/library/library_constants";
 import type { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_types";
+import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
+import { convertTheLatinLibraryWork } from "@/common/library/process_thelatinlibrary";
 import {
   getV2Work,
   LEGACY_AUTHOR_SLUGS,
@@ -231,5 +233,196 @@ describe("resolvePageInWork section fallback", () => {
       pageIndex: 1,
       matched: true,
     });
+  });
+
+  test("resolves roman_law compact pr and Digest Books 30–32 Title 0 elided citations", async () => {
+    const digest: V2PreprocessedWork = {
+      ...fakeWork("tll.justinian.digest", "digest"),
+      author: "Justinian",
+      urlAuthor: "justinian",
+      textParts: ["book", "title", "lex", "paragraph"],
+      paginationDepth: 2,
+      citationStyle: "roman_law",
+      pages: [
+        {
+          id: ["1", "1"],
+          title: "Book 1, Title 1",
+          sectionCount: 2,
+          citationRange: ["1.1.1pr", "1.1.1.1"],
+          singleHtml:
+            '<div class="reader-section" id="sec-1.1.1pr"><span id="sec-1.1.1.pr"></span></div>',
+        },
+        {
+          id: ["30", "0"],
+          title: "Book 30",
+          sectionCount: 3,
+          citationRange: ["30.1pr", "30.79.1"],
+          singleHtml:
+            '<div class="reader-section" id="sec-30.1pr"><span id="sec-30.0.1.pr"></span></div><div class="reader-section" id="sec-30.79.1"><span id="sec-30.0.79.1"></span></div>',
+        },
+        {
+          id: ["31", "0"],
+          title: "Book 31",
+          sectionCount: 1,
+          citationRange: ["31.1.1", "31.1.1"],
+          singleHtml: '<div class="reader-section" id="sec-31.1.1"></div>',
+        },
+        {
+          id: ["32", "0"],
+          title: "Book 32",
+          sectionCount: 1,
+          citationRange: ["32.1.1", "32.1.1"],
+          singleHtml: '<div class="reader-section" id="sec-32.1.1"></div>',
+        },
+      ],
+    };
+
+    for (const q of ["1.1.1pr", "1.1.1.pr"]) {
+      expect(resolvePageInWork(digest, q)).toMatchObject({
+        pageIndex: 0,
+        matched: true,
+      });
+    }
+
+    for (const q of ["30.79.1", "30.79", "30.1pr", "30.0.1.pr", "30.0.79.1"]) {
+      expect(resolvePageInWork(digest, q)).toMatchObject({
+        pageIndex: 1,
+        matched: true,
+      });
+    }
+
+    expect(resolvePageInWork(digest, "31.1.1")).toMatchObject({
+      pageIndex: 2,
+      matched: true,
+    });
+    expect(resolvePageInWork(digest, "32.1.1")).toMatchObject({
+      pageIndex: 3,
+      matched: true,
+    });
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "reader-digest-"));
+    try {
+      const summaries = saveV2LibraryDb(tmpDir, [digest]);
+      expect(summaries[0].citationStyle).toBe("roman_law");
+      const loaded = await getV2Work("justinian/digest", tmpDir);
+      expect(loaded?.citationStyle).toBe("roman_law");
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+
+    // Non-roman_law work does not apply Roman-law alias rewrites even if textParts has "title"
+    const defaultWork: V2PreprocessedWork = {
+      ...digest,
+      citationStyle: undefined,
+      pages: [
+        {
+          id: ["30", "0"],
+          title: "Book 30, Title 0",
+          sectionCount: 1,
+          citationRange: ["30.0.79.1", "30.0.79.1"],
+          singleHtml: '<div class="reader-section" id="sec-30.0.79.1"></div>',
+        },
+      ],
+    };
+    expect(resolvePageInWork(defaultWork, "30.79.1").matched).toBe(false);
+  });
+});
+
+describe("resolvePageInWork sectionId", () => {
+  // Rendered by the real preprocessor, so the alias anchors in the gutter
+  // are exactly what the reader serves.
+  function renderedDigest(): V2PreprocessedWork {
+    const processed = convertTheLatinLibraryWork({
+      workId: "thelatinlibrary-justinian-digesta",
+      author: "Justinian",
+      title: "Digesta",
+      source: {
+        url: "https://www.thelatinlibrary.com/justinian.html",
+        retrieved: "2026-10-30",
+        sha256: "abc",
+        statedEdition: null,
+      },
+      textParts: ["book", "title", "lex", "paragraph"],
+      citationStyle: "roman_law",
+      pageDepth: 2,
+      rows: [
+        [["1", "1"], "De iustitia et iure.", "heading"],
+        [["1", "1", "1", "pr"], "Iuri operam daturum."],
+        [["1", "1", "1", "1"], "Cuius merito."],
+        [["1", "1", "2"], "Huius studii."],
+        [["30", "0"], "De legatis et fideicommissis.", "heading"],
+        [["30", "0", "1", "pr"], "Per omnia exaequata sunt legata."],
+        [["30", "0", "79", "1"], "Si quis legaverit."],
+      ],
+    });
+    return preprocessWorkToV2(processed, {
+      author: "Justinian",
+      name: "Digesta",
+      id: "thelatinlibrary-justinian-digesta",
+      urlAuthor: "justinian",
+      urlName: "digesta",
+      attribution: "theLatinLibrary",
+    });
+  }
+
+  test("an alias citation gives the canonical section, not its anchor", () => {
+    const digest = renderedDigest();
+    const cases: [string, number, string][] = [
+      ["1.1.1pr", 0, "1.1.1.pr"],
+      ["1.1.1.pr", 0, "1.1.1.pr"],
+      ["1.1.1", 0, "1.1.1.pr"],
+      ["Lex 1.1.1pr", 0, "1.1.1.pr"],
+      ["1.1.1.1", 0, "1.1.1.1"],
+      ["1.1.2", 0, "1.1.2"],
+      ["30.79.1", 1, "30.0.79.1"],
+      ["30.1pr", 1, "30.0.1.pr"],
+      ["30.1", 1, "30.0.1.pr"],
+    ];
+    for (const [citation, pageIndex, sectionId] of cases) {
+      expect(resolvePageInWork(digest, citation)).toMatchObject({
+        pageIndex,
+        matched: true,
+        sectionId,
+      });
+      const html = digest.pages[pageIndex].singleHtml;
+      expect(html).toContain(`class="reader-section" id="sec-${sectionId}"`);
+    }
+  });
+
+  test("a citation of the page itself or a level above names no section", () => {
+    const digest = renderedDigest();
+    for (const citation of ["1.1", "1", "Book 30", "30", "30.0"]) {
+      const resolved = resolvePageInWork(digest, citation);
+      expect(resolved.matched).toBe(true);
+      expect(resolved.sectionId).toBeUndefined();
+    }
+  });
+
+  test("a section the page lacks names no section", () => {
+    const digest = renderedDigest();
+    expect(resolvePageInWork(digest, "1.1.9")).toMatchObject({
+      pageIndex: 0,
+      matched: true,
+      sectionId: undefined,
+    });
+  });
+
+  test("a bare section number on a chapter page gives the full id", () => {
+    const work: V2PreprocessedWork = {
+      ...fakeWork("phi0474.phi038.perseus-lat2", "brutus"),
+      textParts: ["chapter", "section"],
+      pages: [
+        {
+          id: ["41"],
+          title: "Chapter 41",
+          sectionCount: 1,
+          citationRange: ["41.150", "41.150"],
+          singleHtml: '<p id="sec-41.150">Tum Brutus</p>',
+        },
+      ],
+    };
+    expect(resolvePageInWork(work, "150").sectionId).toBe("41.150");
+    expect(resolvePageInWork(work, "41.150").sectionId).toBe("41.150");
+    expect(resolvePageInWork(work, "41").sectionId).toBeUndefined();
   });
 });

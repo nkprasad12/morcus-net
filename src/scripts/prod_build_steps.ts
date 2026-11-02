@@ -27,6 +27,8 @@ import { buildStaticPagesDb } from "@/web/ui/static_pages_seed.server";
 import { pinnedDownload, upstreamSource } from "@/scripts/upstream/lock";
 
 const CANONICAL_LATINLIT_DIR = "canonical-latinlit";
+// The directories `cloneRepo` creates for these pinned upstreams.
+const THELATINLIBRARY_DIR = "TheLatinLibrary";
 
 const SETUP_DIRS: StepConfig = {
   operation: () => createCleanDir(LIB_DEFAULT_DIR).then(() => {}),
@@ -87,6 +89,7 @@ const PROCESS_LAT_LIB: StepConfig = {
       works: ALL_SUPPORTED_WORKS.map(
         (resource) => `${CANONICAL_LATINLIT_DIR}/${resource}`
       ),
+      theLatinLibraryRoot: THELATINLIBRARY_DIR,
       shouldBuildCorpus: true,
     }),
   label: "Latin library processing",
@@ -95,6 +98,7 @@ const PROCESS_LAT_LIB: StepConfig = {
       upstreamSource("canonical-latinlit"),
       upstreamSource("hypotactic"),
       upstreamSource("phi-public-domain-json"),
+      upstreamSource("thelatinlibrary"),
     ],
   },
 };

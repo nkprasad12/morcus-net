@@ -10,7 +10,7 @@ Morcus.net is an integrated digital platform and toolkit for Latin language stud
 
 - **Dictionary Search & Aggregation**: Fused multi-dictionary engine combining Latin-English, English-Latin, Latin-French, Latin-German, Latin-Spanish, Latin-Latin, and numeral references.
 - **Morphological Analysis (Morceus)**: Algorithmic cruncher that resolves inflected Latin tokens into constituent stems, endings, grammatical annotations, and lemmata.
-- **Library Reader**: Structured reader for classical texts (sourced from Perseus, Hypotactic, and PHI) with hierarchical navigation, chunked sectioning, and interlinear lookup capabilities.
+- **Library Reader**: Structured reader for classical texts (sourced from Perseus, Hypotactic, PHI, and The Latin Library) with hierarchical navigation, chunked sectioning, and interlinear lookup capabilities.
 - **Corpus Query Engine**: High-performance indexed search engine in Rust for searching syntax, lemmata, grammatical features, and word patterns across millions of Latin tokens.
 - **Macronizer**: Tool reconstructing classical vowel lengths (macrons) combining rule-based candidate generation (Morceus) with machine-learning disambiguation (LatinCy / spaCy, Stanza, Alatius).
 - **Installable PWA**: Web app manifest and an Android TWA. There is no offline mode today; `/serviceworker.js` only removes the retired V1 offline worker from returning browsers.
@@ -130,7 +130,7 @@ A specialized engine designed to query massive Latin textual corpora with comple
 ### 3.5. Library & Text Processing (`src/common/library/`, `texts/`)
 
 - **Text Pipeline**:
-  - Raw sources: Perseus TEI XML, Hypotactic JSON, PHI (Packard Humanities Institute).
+  - Raw sources: Perseus TEI XML, Hypotactic JSON, PHI (Packard Humanities Institute), and works converted from The Latin Library (see 3.8).
   - `process_library.ts`, `process_phi_json.ts`, `process_hypotactic.ts` normalize raw formats into `ProcessedWork2` structures (`library_types.ts`).
   - Hierarchical tree structure: works contain books, chapters, sections, and chunked paragraphs (`NavTreeNode`, `WorkPage`).
   - Output lands in `build/library_processed/`; `src/common/library/preprocess/` preprocesses it further into the pages the reader serves.
@@ -155,11 +155,12 @@ A specialized engine designed to query massive Latin textual corpora with comple
 - **Client code**: Light DOM custom elements, bundled by Rsbuild into route-aligned chunks in `build/client/` (hashed, immutable, precompressed).
 - **Testing**: [`src/web/ui/docs/TESTING.md`](src/web/ui/docs/TESTING.md) (Jest under jsdom, Playwright functional and visual suites).
 
-### 3.8. The Latin Library (`src/common/thelatinlibrary/`)
+### 3.8. The Latin Library (`src/common/thelatinlibrary/`, `src/scripts/thelatinlibrary/`)
 
 Texts from thelatinlibrary.com come from a snapshot repository (`thelatinlibrary` in `upstream_sources.lock.json`), never from the live site at build or request time.
 
 - **Page layer (`src/common/thelatinlibrary/`)**: browser-safe parsing of the site's HTML pages: charset detection, a small DOM adapter over `parse5` (Node) or `DOMParser` (browser), section-marker detection and lenient page extraction. Nothing here may import Node built-ins or `parse5` (enforced by ESLint).
+- **Onboarding (`src/scripts/thelatinlibrary/onboard.ts`, `src/scripts/thelatinlibrary/converters/`)**: `onboard.ts` converts selected pages into `works/<id>.json` in the snapshot, with per-work converters in `converters/` for texts that need special handling (such as Gaius and the Digest). During the library build, `src/common/library/process_thelatinlibrary.ts` turns these into ordinary library works.
 
 ---
 

@@ -51,6 +51,7 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["Augustine, Saint", "Augustine"],
   ["T. Maccius Plautus", "Plautus"],
   ["Publius Terentius Afer (Terence)", "Terence"],
+  ["Pompeius Trogus", "Trogus"],
 ]);
 
 /** Exported for testing. */
