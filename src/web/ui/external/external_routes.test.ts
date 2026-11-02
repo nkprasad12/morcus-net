@@ -31,6 +31,7 @@ describe("GET /externalReader", () => {
     expect(res.text).toContain('action="/externalReader"');
     expect(res.text).toContain('method="get"');
     expect(res.text).toContain('name="url"');
+    expect(res.text).toContain('placeholder="example.org/page.html"');
     expect(res.text).toMatch(/value="keep" checked/);
     expect(scrape).not.toHaveBeenCalled();
   });

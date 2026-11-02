@@ -51,6 +51,61 @@ const SKIPPED_TAGS = new Set([
   "input",
 ]);
 
+/**
+ * Page chrome (site navigation and sidebars) rather than the page's own text.
+ * Dropped with their subtree, like {@link SKIPPED_TAGS}. `<header>` and
+ * `<footer>` are only page-level chrome outside sectioning content and `<main>`
+ * (matching HTML's `banner`/`contentinfo` landmark scoping), so article/section
+ * headers and footers with titles or attribution survive.
+ */
+const CHROME_TAGS = new Set(["nav", "aside"]);
+
+/**
+ * Sectioning content and `<main>`: inside these, `<header>` and `<footer>` are
+ * section headers/footers rather than page-level `banner`/`contentinfo` chrome.
+ */
+const SECTIONING_OR_MAIN_TAGS = new Set([
+  "article",
+  "aside",
+  "main",
+  "nav",
+  "section",
+]);
+
+/** ARIA landmark roles of page chrome. */
+const CHROME_ROLES = new Set([
+  "navigation",
+  "banner",
+  "contentinfo",
+  "complementary",
+]);
+
+/** Whether `node` is page chrome, by tag or by ARIA landmark role. */
+function isPageChrome(
+  node: XmlNode,
+  tag: string,
+  inSectionOrMain: boolean
+): boolean {
+  if (CHROME_TAGS.has(tag)) {
+    return true;
+  }
+  if (!inSectionOrMain && (tag === "header" || tag === "footer")) {
+    return true;
+  }
+  for (const [key, value] of node.attrs) {
+    if (key.toLowerCase() !== "role") {
+      continue;
+    }
+    // `role` is a whitespace-separated token list; any chrome role matches.
+    for (const role of value.toLowerCase().split(/\s+/)) {
+      if (CHROME_ROLES.has(role)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /** Elements that start a new line. Anything else is traversed as inline. */
 const BLOCK_TAGS = new Set([
   "p",
@@ -60,8 +115,6 @@ const BLOCK_TAGS = new Set([
   "main",
   "header",
   "footer",
-  "nav",
-  "aside",
   "blockquote",
   "pre",
   "ul",
@@ -134,16 +187,19 @@ export function scrapeUrlText(url: string): Promise<string> {
   return scrapeUrlTextWith(url, safeFetchText);
 }
 
-function htmlToText(root: XmlNode): string {
+function htmlToText(root: XmlNode, inSectionOrMain = false): string {
   const tag = root.name.toLowerCase();
   if (
     SKIPPED_TAGS.has(tag) ||
+    isPageChrome(root, tag, inSectionOrMain) ||
     root.name.startsWith("!") ||
     root.name.startsWith("?") ||
     root.name === "#comment"
   ) {
     return "";
   }
+  const childInSectionOrMain =
+    inSectionOrMain || SECTIONING_OR_MAIN_TAGS.has(tag);
   const result: string[] = [];
   // Include br here since fast-xml-parser doesn't handle it correctly and
   // includes text inside.
@@ -151,7 +207,11 @@ function htmlToText(root: XmlNode): string {
     result.push("\n");
   }
   for (const child of root.children) {
-    result.push(isString(child) ? he.decode(child) : htmlToText(child));
+    result.push(
+      isString(child)
+        ? he.decode(child)
+        : htmlToText(child, childInSectionOrMain)
+    );
   }
   if (BLOCK_TAGS.has(tag)) {
     result.push("\n");

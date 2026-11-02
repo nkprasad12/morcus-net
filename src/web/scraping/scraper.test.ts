@@ -83,6 +83,85 @@ describe("Scraper", () => {
     expect(result.trim()).toBe("virumque");
   });
 
+  test("scrapeUrlText drops top-level header/footer and nav/aside with their contents", async () => {
+    const fetcher = fetcherFor(
+      "<html><body>" +
+        "<header><h1>Site Banner</h1><nav><ul><li>Home</li><li>About</li></ul></nav></header>" +
+        "<main><p>Arma virumque cano</p>" +
+        "<aside><p>Related links</p></aside>" +
+        "<p>Troiae qui primus ab oris</p></main>" +
+        "<footer><p>Copyright notice</p></footer>" +
+        "</body></html>"
+    );
+    const result = await scrapeUrlTextWith(PAGE_URL, fetcher);
+    const lines = result
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    expect(lines).toEqual(["Arma virumque cano", "Troiae qui primus ab oris"]);
+  });
+
+  test("scrapeUrlText preserves header and footer inside sectioning elements and main", async () => {
+    const fetcher = fetcherFor(
+      "<html><body>" +
+        "<header><p>Site Banner</p></header>" +
+        "<main>" +
+        "<header><h1>De Bello Gallico</h1></header>" +
+        "<article>" +
+        "<header><h2>Liber I</h2><nav><a href='#1'>Jump</a></nav></header>" +
+        "<section><header><h3>Caput 1</h3></header><p>Gallia est omnis divisa</p><footer><p>Finis capitis</p></footer></section>" +
+        "<footer><p>C. Iulius Caesar</p></footer>" +
+        "</article>" +
+        "</main>" +
+        "<footer><p>Site Footer</p></footer>" +
+        "</body></html>"
+    );
+    const result = await scrapeUrlTextWith(PAGE_URL, fetcher);
+    const lines = result
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    expect(lines).toEqual([
+      "De Bello Gallico",
+      "Liber I",
+      "Caput 1",
+      "Gallia est omnis divisa",
+      "Finis capitis",
+      "C. Iulius Caesar",
+    ]);
+  });
+
+  test.each(["navigation", "banner", "contentinfo", "complementary"])(
+    'scrapeUrlText drops elements with role="%s"',
+    async (role) => {
+      const fetcher = fetcherFor(
+        `<body><div role="${role}"><a href="/">Chrome text</a></div>` +
+          "<div>Gallia est omnis divisa</div></body>"
+      );
+      const result = await scrapeUrlTextWith(PAGE_URL, fetcher);
+      expect(result).toContain("Gallia est omnis divisa");
+      expect(result).not.toContain("Chrome text");
+    }
+  );
+
+  test("scrapeUrlText matches chrome roles case-insensitively and in role lists", async () => {
+    const fetcher = fetcherFor(
+      '<body><div ROLE="Navigation menu">Menu</div>' +
+        '<div role="main">in partes tres</div></body>'
+    );
+    const result = await scrapeUrlTextWith(PAGE_URL, fetcher);
+    expect(result).toContain("in partes tres");
+    expect(result).not.toContain("Menu");
+  });
+
+  test("scrapeUrlText keeps elements with other roles", async () => {
+    const fetcher = fetcherFor(
+      '<body><div role="main"><section role="region">quarum unam</section></div></body>'
+    );
+    const result = await scrapeUrlTextWith(PAGE_URL, fetcher);
+    expect(result.trim()).toBe("quarum unam");
+  });
+
   // The production entry point must go through the SSRF guard. Private
   // literals are refused before any network activity, so this is offline.
   test.each([

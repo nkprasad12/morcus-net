@@ -165,7 +165,7 @@ export function renderExternalLandingContentHtml(
                    autocapitalize="off"
                    autocorrect="off"
                    spellcheck="false"
-                   placeholder="thelatinlibrary.com/cicero/cat1.shtml"
+                   placeholder="example.org/page.html"
                    value="${he.escape(options.url ?? "")}"${describedBy}>
           </div>
 
