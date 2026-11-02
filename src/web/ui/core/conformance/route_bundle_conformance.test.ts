@@ -53,6 +53,14 @@ import {
 import { buildExternalReaderUrl } from "@/web/ui/external/external_url.common";
 import { renderLibraryPageHtml } from "@/web/ui/library/library.server";
 import { renderNotFoundPageHtml } from "@/web/ui/library/not_found.server";
+import {
+  SEED_EXPERIMENTAL_TEXTS_CATALOG_BUNDLE,
+  findExperimentalTextCatalogEntry,
+} from "@/common/experimental_texts/catalog_loader";
+import {
+  renderExperimentalTextReaderPageHtml,
+  renderExperimentalTextsCatalogPageHtml,
+} from "@/web/ui/experimental_texts/experimental_texts.server";
 import { resolveInitialResult } from "@/web/ui/macronizer/macronizer_apply.server";
 import {
   renderMacronizerPage,
@@ -560,6 +568,25 @@ describe("Route-to-Bundle Conformance Harness", () => {
         name: "/library (catalog)",
         url: "/library",
         fullHtml: await renderLibraryPageHtml(),
+      },
+      {
+        name: "/experimentalTexts (catalog)",
+        url: "/experimentalTexts",
+        fullHtml: renderExperimentalTextsCatalogPageHtml(
+          SEED_EXPERIMENTAL_TEXTS_CATALOG_BUNDLE
+        ),
+      },
+      {
+        name: "/experimentalTexts?open=... (Experimental Texts client reader)",
+        url: "/experimentalTexts?open=ll/abbo-passio-sancti-edmundi",
+        fullHtml: renderExperimentalTextReaderPageHtml({
+          ...findExperimentalTextCatalogEntry(
+            "ll/abbo-passio-sancti-edmundi",
+            SEED_EXPERIMENTAL_TEXTS_CATALOG_BUNDLE
+          )!,
+          backHref: "/experimentalTexts",
+        }),
+        expectDictPrefetch: true,
       },
       {
         name: "/work/caesar/de_bello_gallico (single + page-turn slot partials)",

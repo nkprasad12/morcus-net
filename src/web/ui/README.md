@@ -129,6 +129,21 @@ The rule block lives in [`critical.css`](critical.css), so it's correct from fir
 
 There is no global "JS is on" flag. [`core/conformance/gate_conformance.test.ts`](core/conformance/gate_conformance.test.ts) fails on `<noscript>`, `.has-js`, `:defined` and `.js-only` classes, and ratchets the number of `[data-upgraded]` rules per CSS file. **Exceptions and ratchet increases require human review**; do not add one to make the test pass.
 
+### JS-only exception: Experimental Texts
+
+The Experimental Texts catalog (`/experimentalTexts`) and reader (`/experimentalTexts?open=<id>`, `experimental_texts/experimental_text_reader.client.ts`) are the one reading surface that is **JS-only by design**, an explicit exception to the Zero-JS Baseline. Experimental Texts ship only catalog metadata: the text itself is fetched in the browser from its pinned upstream commit (`raw.githubusercontent.com`, falling back to `cdn.jsdelivr.net`), parsed on the reader's device (`parseTeiDocument` for Patrologia Latina TEI, `parseLatinLibraryExperimentalText` for Latin Library HTML), and cached in IndexedDB (`experimental_text_storage.client.ts`). The server never has the text, so it cannot render it.
+
+What still holds:
+
+- **The No-JS pages are honest.** The reader's server renders only the `<morcus-experimental-text-reader>` host (`renderExperimentalTextReaderHostHtml` in `experimental_texts/experimental_texts_contract.common.ts`). Its `data-nojs-only` note says the text needs JavaScript and links to the upstream source and back to the catalog.
+- **Why the catalog is JS-only too.** The server could render the catalog's list, but No-JS visitors couldn't read anything from it: every work it lists opens in the reader above. So its search, filter pills, summary and list are `data-js-only`, and a `data-nojs-only` note under the banner says browsing and reading Experimental Texts requires JavaScript.
+- **The catalog filters like the Library.** The server renders the full Author → Works list; `<morcus-experimental-texts-view>` (`experimental_texts/experimental_texts_view.client.ts`, in `external.js`, which the catalog loads with `route: "external"`) filters it in place by author, title, volume label, source and period, toggling `hidden` and rewriting counts as text. It creates no markup and never changes the URL.
+- **The client renders the library's reader, not a new one.** `experimental_text_view_adapter.client.ts` builds the same `<morcus-reader-view>` frame the server renders for library and external texts (passage sections, sticky bar, dictionary companion panel), so tokenization, dictionary lookup, section permalinks and the drawer behave as everywhere else. The sticky bar, settings, permalink heading and companion panel come from the same renderers as the server's (`reader/reader_frame.common.ts`), as does the contents dialog (`reader/reader_toc.common.ts`). It uses only existing reader and core classes.
+- **DOM writes stay audited.** The frame is written by a single `setHtml` call site (`writeExperimentalTextHtml`, counted in `inventory_ratchet.json`), which also swaps a page's notes; page turns replace the passage through the reader view's `adoptPassage` and patch the surrounding frame in place (text, attributes, and the `hidden` / disabled state of the pager links). Because the frame only exists after the async load, it is outside the SSR fixtures; the host markup is checked through `experimental_texts/experimental_texts_reader_fixtures.ts`.
+- **The URL stays the source of truth.** Page turns update `?page=` (`pushState`), Back and Forward turn pages and restore the scroll position, `#sec-…` permalinks scroll to their section, and the last page read is remembered per work, so `/experimentalTexts?open=<id>` reopens where the reader left off.
+
+Do not extend this exception to other pages: anything the server can render, it must.
+
 ### Hash targets and the reveal protocol
 
 No-JS UI often opens via a link to a fragment (`<a href="#reader-dict">` plus a `:target` rule). Scope such `:target` rules with `:not([data-upgraded] *)` so the component takes over after upgrade, and have the component adopt the state instead of reading `location.hash` itself:

@@ -60,7 +60,17 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     "reader.js": { maxBrotliBytes: 13 * 1024 },
     "dict.js": { maxBrotliBytes: 8.5 * 1024 },
     "corpus.js": { maxBrotliBytes: 5.5 * 1024 },
-    "external.js": { maxBrotliBytes: 4 * 1024 },
+    // Includes the Experimental Texts reader, which parses texts in the
+    // browser: `parseTeiDocument` (`fast-xml-parser`) and
+    // `parseLatinLibraryExperimentalText` (`src/common/thelatinlibrary/`), plus the
+    // `/experimentalTexts` catalog filter (`<morcus-experimental-texts-view>`, ~0.6 KiB) and
+    // the reader markup it shares with the server: the contents button and
+    // dialog (`reader/reader_toc.common.ts`, ~1 KiB), and the sticky bar,
+    // `Aa` settings dialog, permalink heading and companion panel
+    // (`reader/reader_frame.common.ts`). Custom
+    // (`/externalReader`) visitors download it too; a separate chunk for
+    // `/experimentalTexts` would spare them.
+    "external.js": { maxBrotliBytes: 33 * 1024 },
     "macronizer.js": { maxBrotliBytes: 4 * 1024 },
   },
   routes: {
@@ -68,7 +78,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     dicts: { maxBrotliBytes: 27.75 * 1024 },
     corpus: { maxBrotliBytes: 24.75 * 1024 },
     library: { maxBrotliBytes: 32.5 * 1024 },
-    external: { maxBrotliBytes: 35.5 * 1024 },
+    external: { maxBrotliBytes: 65 * 1024 },
     macronizer: { maxBrotliBytes: 23.25 * 1024 },
   },
   maxCssBrotliBytes: 22.25 * 1024,

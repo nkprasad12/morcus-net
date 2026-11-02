@@ -1668,10 +1668,11 @@ describe("app_router integration", () => {
         json: { reportText: "telemetry coverage" },
       },
       { route: "/library", method: "GET", url: "/library" },
+      { route: "/experimentalTexts", method: "GET", url: "/experimentalTexts" },
       { route: "/about", method: "GET", url: "/about" },
     ];
 
-    /** Mounted ahead of the telemetry middleware, so never logged. */
+    /** Never logged: the manifest is mounted ahead of the telemetry middleware. */
     const UNLOGGED_ROUTES = ["GET /assets/manifest.json"];
 
     /** Every `METHOD /pattern` registered in an Express router, recursively. */

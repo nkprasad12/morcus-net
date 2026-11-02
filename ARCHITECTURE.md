@@ -71,7 +71,7 @@ graph TD
   - `src/start_server.ts`: Assembles the services (dictionaries, corpus handler, macronizer engine, telemetry), builds the UI V2 router with them, and starts the HTTP server.
   - `src/web/web_server.ts`: Express pipeline: build-time precompressed `/assets` (Brotli/Gzip), `compression()`, PWA files (`/public`, `/.well-known`, `/favicon.ico`, `/robots.txt`, `/serviceworker.js`), then the UI V2 router at `/`.
 - **UI V2 Router (`src/web/ui/app_router.server.ts`)**: Mounts each slice's routes. Pages are full server-rendered documents; with JS, the same URLs return partials (`?format=partial` / `X-Requested-With: fetch`) for in-place swaps.
-  - Pages: `/dicts`, `/dicts/id/:id`, `/library`, `/work/:author/:name/:page?` (plus legacy `/work/:workId` and `/work?id=` redirects), `/corpus`, `/macronizer`, `/externalReader`, `/about`.
+  - Pages: `/dicts`, `/dicts/id/:id`, `/library`, `/work/:author/:name/:page?` (plus legacy `/work/:workId` and `/work?id=` redirects), `/corpus`, `/macronizer`, `/externalReader`, `/experimentalTexts`, `/about`.
   - Fragments and JSON: `/work/:author/:name/:page/translation`, `/api/completions` (autocomplete chunks), `/api/corpus/lemmata/:letter`, `POST /api/report` (GitHub issues), `POST /macronizer` and `/macronizer/apply`.
   - See [`src/web/ui/README.md`](src/web/ui/README.md) for the architecture and conventions.
 - **Shared plumbing (`src/web/utils/rpc/`)**: `parsing.ts` holds validator combinators (`isString`, `matchesObject`, `isArray`, `maybeUndefined`, ...) and `encodeMessage`/`decodeMessage`. `rpc.ts`/`server_rpc.ts` keep the `ServerMessage` envelope, in which build steps still write library works and corpus suggestion lists. (The V1 JSON-RPC layer is gone.)
@@ -152,7 +152,7 @@ A specialized engine designed to query massive Latin textual corpora with comple
 
 - **Zero-JS baseline**: every page works as plain server-rendered HTML; client code only enhances it. See [`src/web/ui/README.md`](src/web/ui/README.md).
 - **Target suffixes**: `*.server.ts` runs in Node, `*.client.ts` in the browser, `*.common.ts` in both; ESLint enforces the boundaries.
-- **Vertical slices**: `dict/`, `reader/`, `library/`, `corpus/`, `macronizer/`, `external/`, `about/`, plus `shell/`, `dialog/` and `core/`.
+- **Vertical slices**: `dict/`, `reader/`, `library/`, `corpus/`, `macronizer/`, `external/`, `experimental_texts/`, `about/`, plus `shell/`, `dialog/` and `core/`.
 - **Client code**: Light DOM custom elements, bundled by Rsbuild into route-aligned chunks in `build/client/` (hashed, immutable, precompressed).
 - **Testing**: [`src/web/ui/docs/TESTING.md`](src/web/ui/docs/TESTING.md) (Jest under jsdom, Playwright functional and visual suites).
 
@@ -164,13 +164,14 @@ Texts from thelatinlibrary.com come from a snapshot repository (`thelatinlibrary
 - **Onboarding (`src/scripts/thelatinlibrary/onboard.ts`, `src/scripts/thelatinlibrary/converters/`)**: `onboard.ts` converts selected pages into `works/<id>.json` in the snapshot, with per-work converters in `converters/` for texts that need special handling (such as Gaius and the Digest). During the library build, `src/common/library/process_thelatinlibrary.ts` turns these into ordinary library works.
 - **Snapshot crawler (`src/scripts/thelatinlibrary/crawl/`)**: a maintainer-run tool that crawls the site into the snapshot's `raw/` pages, scans each page for provenance statements, and builds `manifest.json` (one entry per page) and `work_index.json` (one entry per work); `src/common/thelatinlibrary/snapshot_types.ts` defines both formats. It is not part of the build.
 
-### 3.9. Experimental Texts (`src/common/experimental_texts/`, `src/scripts/experimental_texts/`)
+### 3.9. Experimental Texts (`src/common/experimental_texts/`, `src/scripts/experimental_texts/`, `src/web/ui/experimental_texts/`)
 
 An uncurated catalog of Latin texts that Morcus does not process or store. Only catalog metadata ships with the site; each text is fetched from its pinned source and parsed on the reader's device.
 
 - **Catalog build (`src/scripts/experimental_texts/catalog_builder.ts`)**: lists the works in the pinned Patrologia Latina repository and Latin Library snapshot, normalizes authors and titles, and writes `build/experimental_texts/experimental_texts_catalog.json`, recording the repository and commit of each source. Run with `./morcus.sh build --build_experimental_texts`; production builds it too.
 - **Catalog loading (`src/common/experimental_texts/catalog_loader.ts`)**: the server reads and validates the built catalog, falling back to a small sample catalog when none has been built.
 - **Parsers (`src/common/experimental_texts/`)**: browser-safe parsers that turn Patrologia Latina TEI XML and Latin Library HTML into one document format (`experimental_text_document.ts`).
+- **Catalog and reader (`src/web/ui/experimental_texts/`)**: `/experimentalTexts` renders the catalog on the server, with search and source and period filters. `/experimentalTexts?open=<id>` renders a host for `<morcus-experimental-text-reader>`, which fetches the work's files from the pinned commit (raw.githubusercontent.com, falling back to jsDelivr), parses them in the browser, caches the result in IndexedDB, and shows it in the same reader frame as the Library, using the shared `*.common.ts` renderers in `src/web/ui/reader/`.
 
 ---
 

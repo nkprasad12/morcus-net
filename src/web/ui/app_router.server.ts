@@ -6,6 +6,7 @@ import { asyncHandler } from "@/web/ui/core/server/async_handler.server";
 import { createDictRoutes } from "@/web/ui/dict/dict_routes.server";
 import { createReaderRoutes } from "@/web/ui/reader/reader_routes.server";
 import { createExternalRoutes } from "@/web/ui/external/external_routes.server";
+import { createExperimentalTextsRoutes } from "@/web/ui/experimental_texts/experimental_texts_routes.server";
 import { createApiRoutes, ApiRoutesOptions } from "@/web/ui/api_routes.server";
 import { createCorpusRoutes } from "@/web/ui/corpus/corpus_routes.server";
 import type { CorpusEngine } from "@/web/ui/corpus/corpus_query.server";
@@ -89,6 +90,7 @@ export function createV2Router(
     createMacronizerRoutes({ engine: options?.macronizer, staticPages })
   );
   router.use(createExternalRoutes({ staticPages }));
+  router.use(createExperimentalTextsRoutes());
   router.use(createApiRoutes(fusedDict, options));
 
   // Library Catalog route
