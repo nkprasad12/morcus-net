@@ -7,6 +7,14 @@ import { run, sleep, tryRun } from "@/scripts/helper_images/docker";
 
 /** Mongo image used by `smokeTestPruner`. */
 const TEST_MONGO_IMAGE = "mongo:8.0";
+/**
+ * Lets glibc own `rseq`, so `mongod`'s TCMalloc falls back from its per-CPU
+ * caches. The `mongo:8.0` image sets `glibc.pthread.rseq=0` so TCMalloc can
+ * use `rseq` itself, and that mode crashes `mongod` on Linux 7.0 kernels
+ * (e.g. the GitHub `ubuntu-24.04` runners since 2026-10-25). `mongod` only
+ * logs a performance warning in this mode, which is fine for a smoke test.
+ */
+const TEST_MONGO_ENV = "GLIBC_TUNABLES=glibc.pthread.rseq=1";
 
 const NET = "pruner-test-net";
 const MONGO_CONTAINER = "pruner-mongo-test";
@@ -178,6 +186,8 @@ export async function smokeTestPruner(imageRef: string): Promise<void> {
       MONGO_CONTAINER,
       "--network",
       NET,
+      "-e",
+      TEST_MONGO_ENV,
       TEST_MONGO_IMAGE,
     ]);
 
@@ -266,23 +276,50 @@ export async function smokeTestPruner(imageRef: string): Promise<void> {
 
     // Wait for Mongo to accept connections and seed 1 expired + 1 recent doc.
     let seeded = false;
+    let lastSeedError = "";
     for (let attempt = 0; attempt < 30; attempt++) {
-      const out = tryRun("docker", [
-        "exec",
-        MONGO_CONTAINER,
-        "mongosh",
-        "--quiet",
-        "mongodb://127.0.0.1:27017/morcus",
-        "--eval",
-        `db.ApiCalls.insertMany([{ _id: ObjectId("${EXPIRED_S3_ID}"), name: "/dicts-expired" }, { _id: new ObjectId(), name: "/dicts-recent" }]); print("SEEDED_OK");`,
-      ]);
-      if (out && out.includes("SEEDED_OK")) {
+      const res = spawnSync(
+        "docker",
+        [
+          "exec",
+          MONGO_CONTAINER,
+          "mongosh",
+          "--quiet",
+          "mongodb://127.0.0.1:27017/morcus",
+          "--eval",
+          `db.ApiCalls.insertMany([{ _id: ObjectId("${EXPIRED_S3_ID}"), name: "/dicts-expired" }, { _id: new ObjectId(), name: "/dicts-recent" }]); print("SEEDED_OK");`,
+        ],
+        { encoding: "utf8" }
+      );
+      if (res.status === 0 && res.stdout.includes("SEEDED_OK")) {
         seeded = true;
         break;
       }
+      lastSeedError = `${res.error ?? ""}${res.stdout ?? ""}${
+        res.stderr ?? ""
+      }`;
       await sleep(1000);
     }
-    check(seeded, `Timed out waiting for ${MONGO_CONTAINER} to start.`);
+    if (!seeded) {
+      const state = tryRun("docker", [
+        "inspect",
+        "-f",
+        "status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}}",
+        MONGO_CONTAINER,
+      ]);
+      const logs = spawnSync(
+        "docker",
+        ["logs", "--tail", "50", MONGO_CONTAINER],
+        {
+          encoding: "utf8",
+        }
+      );
+      check(
+        false,
+        `Timed out waiting for ${MONGO_CONTAINER} to start (${state}).`,
+        `Last seed attempt:\n${lastSeedError}\n--- docker logs ${MONGO_CONTAINER} ---\n${logs.stdout}${logs.stderr}`
+      );
+    }
 
     // 2. S3/R2 backup
     const s3Run = runPruner(
