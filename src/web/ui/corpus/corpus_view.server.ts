@@ -89,12 +89,6 @@ function renderSummary(view: CorpusSearchView): SafeHtml {
       >`
     );
   }
-  items.push(
-    html`<span class="corpus-scope-text"
-      >~3M words / ½ classical corpus indexed (<a href="/library">view works</a
-      >)</span
-    >`
-  );
   if (timingMs !== undefined) {
     items.push(
       html`<span class="corpus-timing" data-volatile
@@ -180,8 +174,7 @@ function renderResultsBody(view: CorpusSearchView): SafeHtml {
             About the classical corpus search engine
           </div>
           <p class="corpus-welcome-detail">
-            This tool allows you to search over 3 million words indexed across
-            classical Latin literature. You can search for exact words (e.g.
+            Search across classical Latin literature for exact words (e.g.
             <code>amoris</code>), inflected grammatical forms
             (<code>@case:genitive</code>), proximity constraints
             (<code>~3</code>), or author scopes (<code>#Caesar</code>). Explore

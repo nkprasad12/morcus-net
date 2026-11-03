@@ -115,7 +115,7 @@ describe("corpus page", () => {
         ?.getAttribute("href")
     ).toBe("/corpus?q=omnis&contextLen=20&pageSize=50");
     expect(text(doc, ".corpus-summary-detail")).toContain(
-      "~3M words / ½ classical corpus indexed"
+      "Showing results 1 to 1"
     );
     expect(doc.querySelector(".corpus-syntax-link")?.textContent).toContain(
       "Syntax guide"

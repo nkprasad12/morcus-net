@@ -380,7 +380,6 @@
 
 .guide-example-link:hover,
 .guide-categories-summary:hover,
-.corpus-scope-text a:hover,
 .corpus-syntax-link:hover {
   color: var(--link-hover);
   text-decoration: underline;
@@ -509,13 +508,10 @@
   min-width: 12ch;
   font-variant-numeric: tabular-nums;
 }
-.corpus-scope-text a,
 .corpus-syntax-link {
   color: var(--corpus-citation-link);
   text-decoration: underline;
   text-underline-offset: 2px;
-}
-.corpus-syntax-link {
   font-weight: 500;
   display: inline-flex;
   align-items: center;
