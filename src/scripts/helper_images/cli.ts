@@ -28,8 +28,10 @@ import { dockerBuild } from "@/scripts/helper_images/build";
 import {
   imageExistsInRegistry,
   inspectDigest,
+  inspectRawManifest,
   REGISTRY_PREFIX,
   runInherit,
+  servesImage,
   sleep,
 } from "@/scripts/helper_images/docker";
 import {
@@ -152,6 +154,23 @@ async function waitForDigest(ref: string, deadline: number): Promise<string> {
 }
 
 /**
+ * Whether `latest` (whose digest is `latestDigest`, or null if it doesn't
+ * exist) already serves the image manifest `candidateDigest`. See
+ * `servesImage` for why the digests alone aren't enough.
+ */
+function latestServes(
+  latest: string,
+  latestDigest: string | null,
+  candidateDigest: string
+): boolean {
+  if (latestDigest === null) {
+    return false;
+  }
+  const raw = inspectRawManifest(latest);
+  return raw !== null && servesImage(latestDigest, raw, candidateDigest);
+}
+
+/**
  * Points each image's `:latest` at its current tag, but only once that tag
  * has passed the current smoke test (its `tested-` tag exists). With
  * `dryRun`, only reports what would happen and changes nothing.
@@ -168,7 +187,6 @@ async function promoteAll(dryRun: boolean): Promise<void> {
     if (dryRun) {
       const testedDigest = inspectDigest(tested);
       const candidateDigest = inspectDigest(candidate);
-      const latestDigest = inspectDigest(latest);
       if (!testedDigest || !candidateDigest) {
         throw new Error(
           `${name}: ${
@@ -177,7 +195,7 @@ async function promoteAll(dryRun: boolean): Promise<void> {
         );
       }
       console.log(
-        candidateDigest === latestDigest
+        latestServes(latest, inspectDigest(latest), candidateDigest)
           ? `${name}: up to date (${candidate}).`
           : `${name}: WOULD PROMOTE ${candidate} -> ${latest} (redeploys on the next main release).`
       );
@@ -187,9 +205,9 @@ async function promoteAll(dryRun: boolean): Promise<void> {
     await waitForDigest(tested, deadline);
     const candidateDigest = await waitForDigest(candidate, deadline);
     const latestDigest = inspectDigest(latest);
-    if (candidateDigest === latestDigest) {
+    if (latestServes(latest, latestDigest, candidateDigest)) {
       console.log(
-        `${latest} is already at ${candidate} (${candidateDigest}); skipping.`
+        `${latest} already serves ${candidate} (${candidateDigest}); skipping.`
       );
       continue;
     }
