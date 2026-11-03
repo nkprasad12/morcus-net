@@ -242,6 +242,39 @@ describe("findShadowedDeclarations", () => {
     ]);
   });
 
+  it("flags a declaration in entry1 shadowed by a duplicate in entry2 across combined cascades", () => {
+    const files: Record<string, string> = {
+      "v2/critical.css": ".nav-link { color: red; display: inline-flex; }",
+      "v2/app.css": '@import "./app_bar.css";',
+      "v2/app_bar.css": ".nav-link { color: red; }",
+    };
+    const read = (rel: string): string => {
+      const text = files[rel];
+      if (text === undefined) throw new Error(`no fixture ${rel}`);
+      return text;
+    };
+    const combined = collectDeclarations(
+      loadCascadeOrder(["v2/critical.css", "v2/app.css"], read)
+    );
+    const findings = findShadowedDeclarations(combined).filter(
+      (f) => f.kind === "dead"
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      kind: "dead",
+      selectors: [".nav-link"],
+      earlier: {
+        file: "v2/critical.css",
+        line: 1,
+        prop: "color",
+        value: "red",
+      },
+      laterSites: [
+        { file: "v2/app_bar.css", line: 1, prop: "color", value: "red" },
+      ],
+    });
+  });
+
   it("flags same-file shadowing too, but never within one rule", () => {
     expect(
       dead({ "a.css": ".x { color: red; } .x { color: blue; }" })

@@ -47,11 +47,7 @@ export function setupModalDialog(
     // Opens this dialog via showModal() in place of the trigger's default
     // action
     e?.preventDefault();
-    if (typeof dialog.showModal === "function") {
-      dialog.showModal();
-    } else {
-      dialog.setAttribute("open", "");
-    }
+    dialog.showModal();
     for (const t of triggers) {
       t.setAttribute("aria-expanded", "true");
     }
@@ -62,13 +58,7 @@ export function setupModalDialog(
     // Closes this dialog via close() in place of the close button's / backdrop
     // click's default action
     e?.preventDefault();
-    if (typeof dialog.close === "function") {
-      dialog.close();
-    } else if (dialog.hasAttribute("open")) {
-      dialog.removeAttribute("open");
-      // Native close() fires `close`; keep onClose working where it's missing (e.g. JSDOM).
-      dialog.dispatchEvent(new Event("close"));
-    }
+    dialog.close();
   };
 
   let lastPointerDownTarget: EventTarget | null = null;

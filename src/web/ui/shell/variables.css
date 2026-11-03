@@ -4,18 +4,18 @@
  * NOTE ON CRITICAL TOKENS:
  * Core above-the-fold design tokens (body background/text, system font, and app-bar
  * colors for light/dark themes) are defined in `./critical_variables.css` and
- * imported below.
+ * imported by `../critical.css` (not re-imported here).
  *
  * WHY SEPARATE?
  * `critical_variables.css` is inlined into a <style> tag in the HTML <head> on
  * every page response via `critical.css` to prevent theme FOUC. Keeping it
- * separate ensures we do not bloat every SSR response with all 40+ component tokens.
+ * separate ensures we do not bloat every SSR response with all 40+ component tokens,
+ * nor duplicate the critical tokens in `app.css`.
  *
  * Any new design tokens that are NOT needed for initial above-the-fold paint
  * (e.g. dictionary highlights, reader colors, cards, toasts, borders) should be
  * added to THIS file.
  */
-@import "./critical_variables.css";
 
 :root,
 :root[data-theme="light"],

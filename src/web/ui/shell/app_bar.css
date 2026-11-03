@@ -24,11 +24,8 @@
 }
 
 .nav-link {
-  text-decoration: none;
-  color: var(--app-bar-nav-text);
   font-weight: 500;
   font-size: 0.95rem;
-  padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-md);
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }

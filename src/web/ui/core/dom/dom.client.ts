@@ -76,10 +76,7 @@ export function assertConnected(el: Element, hostRoot?: ParentNode): void {
  * Escapes an element ID for safe use in CSS selector queries.
  */
 export function escapeId(id: string): string {
-  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
-    return CSS.escape(id);
-  }
-  return id.replace(/([ #;&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
+  return CSS.escape(id);
 }
 
 /**
@@ -272,5 +269,5 @@ export function scrollToElement(
 
 /** Whether the OS / browser asks for reduced motion (`prefers-reduced-motion: reduce`). */
 export function prefersReducedMotion(): boolean {
-  return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }

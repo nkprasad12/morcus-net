@@ -264,9 +264,7 @@ export class ComboboxController<T = unknown> extends BaseController {
       activeEl.setAttribute("aria-selected", "true");
       activeEl.classList.add("active");
       this.#input?.setAttribute("aria-activedescendant", activeEl.id);
-      if (typeof activeEl.scrollIntoView === "function") {
-        activeEl.scrollIntoView({ block: "nearest" });
-      }
+      activeEl.scrollIntoView({ block: "nearest" });
     } else {
       this.#input?.removeAttribute("aria-activedescendant");
     }

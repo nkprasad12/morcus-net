@@ -36,7 +36,7 @@ class MorcusAppearanceMenu extends BaseElement {
   #appearance: Appearance = resolveAppearance({});
   #modal: ModalDialogHandle | null = null;
   /** The OS scheme, which decides the theme on screen under "System". */
-  #darkQuery: MediaQueryList | null = null;
+  #darkQuery!: MediaQueryList;
 
   get #panel() {
     return this.scope.$<HTMLDialogElement>("#appearance-popover");
@@ -57,10 +57,7 @@ class MorcusAppearanceMenu extends BaseElement {
   protected override onConnect() {
     this.#appearance = appearanceStore.get();
     applyAppearance(this.#appearance);
-    this.#darkQuery =
-      typeof window.matchMedia === "function"
-        ? window.matchMedia("(prefers-color-scheme: dark)")
-        : null;
+    this.#darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
     this.#syncControls();
     this.#syncThemeColor();
 
@@ -138,13 +135,10 @@ class MorcusAppearanceMenu extends BaseElement {
     // With no saved theme the OS scheme applies; keep the meta tags, the
     // "System" option's meaning and the theme the contrast row edits in step
     // when it changes.
-    const mq = this.#darkQuery;
-    if (typeof mq?.addEventListener === "function") {
-      this.scope.listen(mq, "change", () => {
-        this.#syncThemeColor();
-        this.#syncControls();
-      });
-    }
+    this.scope.listen(this.#darkQuery, "change", () => {
+      this.#syncThemeColor();
+      this.#syncControls();
+    });
   }
 
   /** Saves `patch` and applies it live. */
@@ -162,9 +156,7 @@ class MorcusAppearanceMenu extends BaseElement {
   /** Whether the dark theme is on screen: saved, or the OS's under "System". */
   #isDark(): boolean {
     const theme = this.#appearance.theme;
-    return theme === "system"
-      ? this.#darkQuery?.matches === true
-      : theme === "dark";
+    return theme === "system" ? this.#darkQuery.matches : theme === "dark";
   }
 
   #radios(name: string): HTMLInputElement[] {

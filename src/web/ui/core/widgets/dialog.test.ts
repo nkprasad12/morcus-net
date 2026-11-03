@@ -22,18 +22,8 @@ describe("setupModalDialog client coordination", () => {
     triggerBtn = document.querySelector<HTMLButtonElement>("#open-btn")!;
     closeBtn = document.querySelector<HTMLButtonElement>("#close-btn")!;
 
-    // Mock HTMLDialogElement methods in jsdom
-    if (!dialog.showModal) {
-      dialog.showModal = jest.fn(() => {
-        dialog.setAttribute("open", "");
-      });
-    }
-    if (!dialog.close) {
-      dialog.close = jest.fn(() => {
-        dialog.removeAttribute("open");
-        dialog.dispatchEvent(new Event("close"));
-      });
-    }
+    jest.spyOn(dialog, "showModal");
+    jest.spyOn(dialog, "close");
   });
 
   afterEach(() => {

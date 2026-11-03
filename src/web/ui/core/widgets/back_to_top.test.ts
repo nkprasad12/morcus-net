@@ -226,7 +226,7 @@ describe("setupBackToTop", () => {
       expect(replaceStateSpy).not.toHaveBeenCalled();
     });
 
-    test("supports custom threshold, getTargetTop, and scrollTop fallback when scrollTo is absent", () => {
+    test("supports custom threshold and getTargetTop", () => {
       document.body.innerHTML = `
         <div id="panel">
           <button type="button" id="panel-top">Top</button>
@@ -234,9 +234,6 @@ describe("setupBackToTop", () => {
       `;
       const panel = document.getElementById("panel")!;
       const btn = document.getElementById("panel-top")!;
-      // Remove scrollTo to exercise scrollTop assignment fallback
-      // @ts-expect-error testing fallback when scrollTo is undefined
-      panel.scrollTo = undefined;
 
       Object.defineProperty(panel, "scrollTop", {
         value: 150,

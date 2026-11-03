@@ -73,8 +73,7 @@ export class ReaderTocController extends BaseController {
               );
               // Touch: don't raise the keyboard; start at the current section.
               const isCoarsePointer =
-                typeof window !== "undefined" &&
-                window.matchMedia?.("(pointer: coarse)").matches;
+                window.matchMedia("(pointer: coarse)").matches;
               return (
                 (!isCoarsePointer && this.searchInput) ||
                 active ||
@@ -181,11 +180,7 @@ export class ReaderTocController extends BaseController {
       list.getBoundingClientRect().top +
       list.scrollTop;
     const targetTop = Math.max(0, top - list.clientHeight / 2);
-    if (typeof list.scrollTo === "function") {
-      list.scrollTo({ top: targetTop, behavior: "instant" });
-    } else {
-      list.scrollTop = targetTop;
-    }
+    list.scrollTop = targetTop;
   }
 
   public resetFilter(): void {
@@ -429,7 +424,7 @@ export class ReaderTocController extends BaseController {
     if (target) {
       target.classList.add("is-filter-selected");
       target.setAttribute("aria-selected", "true");
-      target.scrollIntoView?.({ block: "nearest" });
+      target.scrollIntoView({ block: "nearest" });
     }
   }
 

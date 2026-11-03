@@ -2,15 +2,19 @@
  * Conformance check for UI V2 stylesheets (see `css_audit.ts`).
  *
  * Two zero-baseline invariants:
- * 1. No declaration is dead because a later rule with the same selector,
- *    context and importance (and at least the same specificity) resets it.
+ * 1. No declaration across `critical.css + app.css` is dead because a later
+ *    rule with the same selector, context and importance (and at least the same
+ *    specificity) resets it. For a same-sheet finding, delete the earlier dead
+ *    declaration; for a `critical.css` declaration shadowed by `app.css`,
+ *    `critical.css` owns the above-the-fold rule so delete the duplicate in
+ *    `app.css`.
  * 2. Every class, `data-*` attribute and `morcus-*` element named in CSS is
  *    referenced from non-test TypeScript source.
  *
  * ALLOWLIST ENTRIES REQUIRE HUMAN REVIEW. Do not add one to make this test
- * pass: delete the dead declaration, or write the class name as a literal.
- * If a genuine exception is needed, ask a human and leave a comment at the
- * site explaining why.
+ * pass: delete the dead/duplicate declaration, or write the class name as a
+ * literal. If a genuine exception is needed, ask a human and leave a comment
+ * at the site explaining why.
  */
 
 import * as path from "path";
@@ -35,8 +39,9 @@ describe("UI V2 CSS audit", () => {
     if (result.shadowed.length > 0) {
       throw new Error(
         `${result.shadowed.length} declaration(s) can never apply because a ` +
-          `later rule on the same selector resets them. Delete them (or move ` +
-          `the surviving value next to its owner):\n\n${report}`
+          `later rule on the same selector resets them. Delete the dead ` +
+          `earlier declaration (or, when app.css duplicates a rule owned by ` +
+          `inlined critical.css, delete the later app.css duplicate):\n\n${report}`
       );
     }
     expect(result.staleShadowAllowlist).toEqual([]);

@@ -992,7 +992,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   #scrollTargetAboveDrawer(targetEl: HTMLElement, ensureVisible = false): void {
     if (targetEl.closest(".reader-dict-panel")) {
-      if (ensureVisible && typeof targetEl.scrollIntoView === "function") {
+      if (ensureVisible) {
         targetEl.scrollIntoView({
           behavior: "smooth",
           block: "center",
@@ -1023,11 +1023,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
               panelRect.top -
               textPanel.clientHeight / 3
           );
-          if (typeof textPanel.scrollTo === "function") {
-            textPanel.scrollTo({ top: targetTop, behavior: "instant" });
-          } else {
-            textPanel.scrollTop = targetTop;
-          }
+          textPanel.scrollTop = targetTop;
         } else {
           scrollToElement(targetEl, "instant");
         }
@@ -1159,11 +1155,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       ".reader-panel-about",
     ]) {
       const el = this.querySelector<HTMLElement>(sel);
-      if (typeof el?.scrollTo === "function") {
-        el.scrollTo({ top: 0, behavior: "instant" });
-      } else if (el) {
-        el.scrollTop = 0;
-      }
+      if (el) el.scrollTop = 0;
     }
   }
 
@@ -1217,13 +1209,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   #phoneQuery: MediaQueryList | null = null;
 
   #initPhoneQuery() {
-    if (typeof window.matchMedia !== "function") return;
     const mq = window.matchMedia(PHONE_QUERY);
-    if (!mq) return;
     this.#phoneQuery = mq;
-    if (typeof mq.addEventListener === "function") {
-      this.scope.listen(mq, "change", () => this.#applyDictScale());
-    }
+    this.scope.listen(mq, "change", () => this.#applyDictScale());
   }
 
   #applyDictScale() {
@@ -1453,7 +1441,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       this.#revealSection(
         targetEl.closest<HTMLElement>(".reader-section") ?? targetEl
       );
-    } else if (typeof targetEl.scrollIntoView === "function") {
+    } else {
       targetEl.scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -1475,7 +1463,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     options: { scroll?: boolean } = {}
   ): void {
     const { scroll = true } = options;
-    if (scroll && typeof section.scrollIntoView === "function") {
+    if (scroll) {
       section.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -1519,13 +1507,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       const section = firstMatch.closest<HTMLElement>(".reader-section");
       if (!section?.id || hash !== `#${section.id}`) return false;
     }
-    if (typeof firstMatch.scrollIntoView === "function") {
-      firstMatch.scrollIntoView({
-        behavior: "instant",
-        block: "center",
-        inline: "nearest",
-      });
-    }
+    firstMatch.scrollIntoView({
+      behavior: "instant",
+      block: "center",
+      inline: "nearest",
+    });
     return true;
   }
 
@@ -1727,10 +1713,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   #setPageScroll(top: number): void {
     window.scrollTo({ top, left: 0, behavior: "instant" });
     const panel = this.#textPanel;
-    if (typeof panel?.scrollTo === "function") {
-      panel.scrollTo({ top, left: 0, behavior: "instant" });
-    } else if (panel) {
+    if (panel) {
       panel.scrollTop = top;
+      panel.scrollLeft = 0;
     }
   }
 

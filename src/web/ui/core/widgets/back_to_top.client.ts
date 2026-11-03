@@ -112,11 +112,7 @@ export function bindBackToTop(
     } else {
       const el = getContainer();
       if (!el) return;
-      if (typeof el.scrollTo === "function") {
-        el.scrollTo({ top, behavior: "instant" });
-      } else {
-        el.scrollTop = top;
-      }
+      el.scrollTo({ top, behavior: "instant" });
     }
 
     if (clearHash && win.location.hash) {

@@ -3,10 +3,10 @@
  * (`css_audit_cascade`, `css_audit_shadowing`, `css_audit_sources`,
  * `css_audit_unreferenced`) to the working tree.
  *
- * - Check A (shadowed declarations) runs separately on each stylesheet entry
- *   point, because `critical.css` is inlined and `app.css` is linked, and a
- *   rule that appears in both is deliberate (the inlined copy is what prevents
- *   a flash of unstyled content).
+ * - Check A (shadowed declarations) runs over the combined cascade
+ *   `[critical.css, app.css]` in document order (`critical.css` is inlined in
+ *   `<head>` before the linked `app.css` on every page, so duplicating a
+ *   declaration in `app.css` shadows the inlined rule).
  * - Check B (unreferenced names) runs on the union of both entry points
  *   against every tracked non-test `.ts` file under `src/`.
  */
@@ -17,7 +17,6 @@ import * as path from "path";
 import {
   collectDeclarations,
   loadCascadeOrder,
-  type DeclarationEntry,
 } from "@/web/ui/tools/css_audit/css_audit_cascade";
 import {
   findShadowedDeclarations,
@@ -33,8 +32,8 @@ import {
   type UnreferencedReport,
 } from "@/web/ui/tools/css_audit/css_audit_unreferenced";
 
-/** Each entry point is its own cascade for Check A. */
-const CSS_ENTRY_POINTS: readonly string[] = [
+/** Stylesheet entry points in document cascade order (`critical.css` precedes `app.css`). */
+const CSS_ENTRY_POINTS: readonly [string, string] = [
   "src/web/ui/critical.css",
   "src/web/ui/app.css",
 ];
@@ -95,13 +94,6 @@ export interface CssAuditResult {
   readonly unreferenced: UnreferencedReport;
 }
 
-function loadEntryDeclarations(
-  repoRoot: string,
-  entry: string
-): DeclarationEntry[] {
-  return collectDeclarations(loadCascadeOrder([entry], readRepoFile(repoRoot)));
-}
-
 function scanRepoSources(repoRoot: string): SourceReferences {
   return scanSourceReferences(
     listTrackedSourceFiles(repoRoot).map((rel) => ({
@@ -112,13 +104,11 @@ function scanRepoSources(repoRoot: string): SourceReferences {
 }
 
 export function runCssAudit(repoRoot: string = process.cwd()): CssAuditResult {
-  const perEntry = CSS_ENTRY_POINTS.map((entry) =>
-    loadEntryDeclarations(repoRoot, entry)
+  const read = readRepoFile(repoRoot);
+  const declarations = collectDeclarations(
+    loadCascadeOrder(CSS_ENTRY_POINTS, read)
   );
-
-  const allShadowed = perEntry.flatMap((entries) =>
-    findShadowedDeclarations(entries)
-  );
+  const allShadowed = findShadowedDeclarations(declarations);
   const dead = allShadowed.filter((f) => f.kind === "dead");
   const deadKeys = new Set(dead.map((f) => f.key));
   const shadowed = dead.filter((f) => !(f.key in SHADOW_ALLOWLIST));
@@ -126,11 +116,15 @@ export function runCssAudit(repoRoot: string = process.cwd()): CssAuditResult {
     (key) => !deadKeys.has(key)
   );
 
-  const names = collectCssNames(perEntry.flat());
+  const names = collectCssNames(declarations);
   const unreferenced = findUnreferencedCssNames(
     names,
     scanRepoSources(repoRoot)
   );
 
-  return { shadowed, staleShadowAllowlist, unreferenced };
+  return {
+    shadowed,
+    staleShadowAllowlist,
+    unreferenced,
+  };
 }

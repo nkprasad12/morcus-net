@@ -10,6 +10,8 @@
  * 3. Non-Critical Tokens: Do NOT add page-, component-, or feature-specific tokens
  *    here (e.g., dictionary accents, reader words, modals, cards, toasts).
  *    Those belong in variables.css.
+ * 4. Single Inclusion: Inlined via critical.css only; do NOT @import this file
+ *    from the app.css cascade (e.g. variables.css), or its rules will ship twice.
  */
 
 :root,

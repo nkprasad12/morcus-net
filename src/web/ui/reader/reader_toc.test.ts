@@ -852,18 +852,13 @@ describe("ReaderTocController", () => {
         y: 600,
         toJSON: () => ({}),
       });
-      const scrollToSpy = jest.fn();
-      list.scrollTo = scrollToSpy;
       const activeScrollIntoViewSpy = jest.fn();
       active.scrollIntoView = activeScrollIntoViewSpy;
 
       controller.open();
 
       // top = (600 - 100) + 50 = 550; targetTop = 550 - 300 / 2 = 400
-      expect(scrollToSpy).toHaveBeenCalledWith({
-        top: 400,
-        behavior: "instant",
-      });
+      expect(list.scrollTop).toBe(400);
       expect(activeScrollIntoViewSpy).not.toHaveBeenCalled();
 
       controller.dispose();

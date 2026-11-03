@@ -372,10 +372,6 @@ describe("ReaderPanelController", () => {
     it("recounts notes, resets notes scroll to top, and keeps the Notes view", () => {
       controller.setTab("notes");
       const view = $(container, "#panel-view-notes");
-      const scrollSpy = jest.fn((opts: ScrollToOptions) => {
-        view.scrollTop = opts.top ?? 0;
-      });
-      view.scrollTo = scrollSpy as typeof view.scrollTo;
       view.scrollTop = 180;
 
       swapNotes(
@@ -387,7 +383,6 @@ describe("ReaderPanelController", () => {
       expect(controller.noteCount).toBe(1);
       expect(controller.activeTab).toBe("notes");
       expect($(container, "#panel-view-notes")).toBe(view);
-      expect(scrollSpy).toHaveBeenCalledWith({ top: 0, behavior: "instant" });
       expect(view.scrollTop).toBe(0);
     });
 

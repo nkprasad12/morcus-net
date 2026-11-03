@@ -1,19 +1,45 @@
 /**
- * jsdom shims for element layout and visibility APIs.
+ * jsdom shims for layout, visibility, scrolling, media-query, dialog and
+ * CSSOM APIs omitted by jsdom:
  *
- * jsdom does not implement a CSS layout or rendering engine, so `offsetParent`
- * is always `null` and `getClientRects()` always returns `[]` (`length === 0`).
- *
- * These shims provide lightweight, attribute- and style-aware fallback behavior
- * in jsdom tests so visibility checks (e.g. `el.offsetParent !== null || el.getClientRects().length > 0`)
- * work accurately without needing `navigator.userAgent.includes("jsdom")` checks
- * in shipped client code.
+ * - `HTMLElement.prototype.getClientRects` and `offsetParent`: attribute- and
+ *   style-aware layout stubs so visibility checks work without user-agent
+ *   branching in client code.
+ * - `CSS.escape`: spec-compliant CSSOM identifier serializer.
+ * - `HTMLDialogElement.prototype.showModal` / `close`: toggles the `open`
+ *   attribute and dispatches `close` synchronously on `close()`. (Note:
+ *   intentionally more lenient than browsers — `showModal()` does not throw
+ *   `InvalidStateError` on disconnected or already-open `<dialog>` elements so
+ *   isolated unit tests can exercise dialogs without full document scaffolding,
+ *   and `close()` fires `close` synchronously rather than queuing a task.)
+ * - `window.matchMedia`: returns a `MediaQueryList` EventTarget with
+ *   `matches: false` by default.
+ * - `window.scrollTo` / `scrollBy`, `Element.prototype.scrollTo` (updates
+ *   `scrollTop` and `scrollLeft`), and `Element.prototype.scrollIntoView`.
+ * - `HTMLIFrameElement.prototype.contentWindow`: tracks `location.replace` /
+ *   `location.assign` navigations.
  */
 
 class MockDOMRectList extends Array<DOMRect> implements DOMRectList {
   item(index: number): DOMRect | null {
     return this[index] ?? null;
   }
+}
+
+class MockMediaQueryList extends EventTarget implements MediaQueryList {
+  readonly matches = false;
+  readonly media: string;
+  onchange:
+    | ((this: MediaQueryList, ev: MediaQueryListEvent) => unknown)
+    | null = null;
+
+  constructor(media: string) {
+    super();
+    this.media = media;
+  }
+
+  addListener(): void {}
+  removeListener(): void {}
 }
 
 function createSingleRectList(): MockDOMRectList {
@@ -68,9 +94,119 @@ export function installLayoutShims(): void {
     },
   });
 
+  // CSSOM §2.1 "Serialize an identifier" (https://drafts.csswg.org/cssom/#serialize-an-identifier).
+  const escapeCssIdent = (value: string): string => {
+    const str = String(value);
+    const len = str.length;
+    if (len === 0) return "";
+    const firstCodeUnit = str.charCodeAt(0);
+    if (len === 1 && firstCodeUnit === 0x002d) return "\\-";
+    let result = "";
+    for (let i = 0; i < len; i++) {
+      const codeUnit = str.charCodeAt(i);
+      if (codeUnit === 0x0000) {
+        result += "\uFFFD";
+      } else if (
+        (codeUnit >= 0x0001 && codeUnit <= 0x001f) ||
+        codeUnit === 0x007f ||
+        (i === 0 && codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+        (i === 1 &&
+          codeUnit >= 0x0030 &&
+          codeUnit <= 0x0039 &&
+          firstCodeUnit === 0x002d)
+      ) {
+        result += `\\${codeUnit.toString(16)} `;
+      } else if (
+        codeUnit >= 0x0080 ||
+        codeUnit === 0x002d ||
+        codeUnit === 0x005f ||
+        (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+        (codeUnit >= 0x0041 && codeUnit <= 0x005a) ||
+        (codeUnit >= 0x0061 && codeUnit <= 0x007a)
+      ) {
+        result += str.charAt(i);
+      } else {
+        result += `\\${str.charAt(i)}`;
+      }
+    }
+    return result;
+  };
+  if (typeof globalThis.CSS === "undefined") {
+    Object.defineProperty(globalThis, "CSS", {
+      configurable: true,
+      writable: true,
+      value: { escape: escapeCssIdent },
+    });
+  } else if (typeof CSS.escape !== "function") {
+    CSS.escape = escapeCssIdent;
+  }
+
+  if (typeof HTMLDialogElement !== "undefined") {
+    if (
+      typeof Reflect.get(HTMLDialogElement.prototype, "showModal") !==
+      "function"
+    ) {
+      Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+        configurable: true,
+        writable: true,
+        value: function (this: HTMLDialogElement): void {
+          this.setAttribute("open", "");
+        },
+      });
+    }
+    if (
+      typeof Reflect.get(HTMLDialogElement.prototype, "close") !== "function"
+    ) {
+      Object.defineProperty(HTMLDialogElement.prototype, "close", {
+        configurable: true,
+        writable: true,
+        value: function (this: HTMLDialogElement): void {
+          if (this.hasAttribute("open")) {
+            this.removeAttribute("open");
+            this.dispatchEvent(new Event("close"));
+          }
+        },
+      });
+    }
+  }
+
   if (typeof window !== "undefined") {
     window.scrollTo = () => {};
     window.scrollBy = () => {};
+    if (typeof window.matchMedia !== "function") {
+      window.matchMedia = (query: string): MediaQueryList =>
+        new MockMediaQueryList(query);
+    }
+    if (typeof Reflect.get(Element.prototype, "scrollTo") !== "function") {
+      Object.defineProperty(Element.prototype, "scrollTo", {
+        configurable: true,
+        writable: true,
+        value: function (
+          this: Element,
+          optionsOrX?: ScrollToOptions | number,
+          y?: number
+        ): void {
+          if (typeof optionsOrX === "number") {
+            this.scrollLeft = optionsOrX;
+            if (typeof y === "number") this.scrollTop = y;
+          } else if (optionsOrX && typeof optionsOrX === "object") {
+            if (typeof optionsOrX.top === "number")
+              this.scrollTop = optionsOrX.top;
+            if (typeof optionsOrX.left === "number")
+              this.scrollLeft = optionsOrX.left;
+          }
+        },
+      });
+    }
+    if (
+      typeof Reflect.get(Element.prototype, "scrollIntoView") !== "function"
+    ) {
+      Object.defineProperty(Element.prototype, "scrollIntoView", {
+        configurable: true,
+        writable: true,
+        value: (): void => {},
+      });
+    }
   }
 
   if (typeof HTMLIFrameElement !== "undefined") {

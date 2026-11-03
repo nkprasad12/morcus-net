@@ -182,11 +182,7 @@ export class ReaderPanelController extends BaseController {
       swappedRoot.matches(notesSlot) ||
       swappedRoot.querySelector(notesSlot)
     ) {
-      if (typeof this.notesView?.scrollTo === "function") {
-        this.notesView.scrollTo({ top: 0, behavior: "instant" });
-      } else if (this.notesView) {
-        this.notesView.scrollTop = 0;
-      }
+      if (this.notesView) this.notesView.scrollTop = 0;
       this.#syncNotes();
       this.#syncTabVisibility();
       if (this.#activeTab === "notes" && !this.hasNotes) {
@@ -416,9 +412,7 @@ export class ReaderPanelController extends BaseController {
   #highlightNote(target: HTMLElement, opts: { focus?: boolean }): void {
     this.#clearActiveNotes();
     target.classList.add("note-active");
-    if (typeof target.scrollIntoView === "function") {
-      target.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
+    target.scrollIntoView({ behavior: "smooth", block: "nearest" });
     if (opts.focus) {
       const link = target.querySelector<HTMLElement>("a") || target;
       link.focus?.();

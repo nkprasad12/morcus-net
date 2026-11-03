@@ -668,9 +668,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     const pane = this.querySelector<HTMLElement>(".mac-left");
     // `.mac-left` only scrolls on wide screens; on narrow ones the page does.
     if (!pane || pane.scrollHeight <= pane.clientHeight) {
-      if (typeof wordEl.scrollIntoView === "function") {
-        wordEl.scrollIntoView({ block: "center" });
-      }
+      wordEl.scrollIntoView({ block: "center" });
       return;
     }
     const paneRect = pane.getBoundingClientRect();

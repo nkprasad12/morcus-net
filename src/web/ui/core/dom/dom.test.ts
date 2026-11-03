@@ -225,10 +225,12 @@ describe("core/dom.client", () => {
   });
 
   describe("escapeId", () => {
-    it("escapes special characters using CSS.escape or regex fallback", () => {
+    it("escapes CSS identifier characters via CSS.escape", () => {
       expect(escapeId("sec-1.2.3")).toBe("sec-1\\.2\\.3");
       expect(escapeId("item:4")).toBe("item\\:4");
       expect(escapeId("entry#1")).toBe("entry\\#1");
+      expect(escapeId("1a")).toBe("\\31 a");
+      expect(escapeId("-1a")).toBe("-\\31 a");
     });
   });
 
@@ -722,13 +724,6 @@ describe("core/dom.client", () => {
 
       Object.defineProperty(window, "matchMedia", {
         value: jest.fn(() => ({ matches: false })),
-        configurable: true,
-        writable: true,
-      });
-      expect(prefersReducedMotion()).toBe(false);
-
-      Object.defineProperty(window, "matchMedia", {
-        value: undefined,
         configurable: true,
         writable: true,
       });

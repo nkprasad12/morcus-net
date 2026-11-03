@@ -2024,31 +2024,19 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     });
     const notesView = el.querySelector<HTMLElement>("#panel-view-notes")!;
     const aboutView = el.querySelector<HTMLElement>("#panel-view-about")!;
-    const notesScrollSpy = jest.fn();
-    const aboutScrollSpy = jest.fn();
-    notesView.scrollTo = notesScrollSpy;
-    aboutView.scrollTo = aboutScrollSpy;
 
     notesView.scrollTop = 180;
     aboutView.scrollTop = 95;
 
     // Resizing / restoring the drawer should preserve scroll positions
     el.restoreDrawer(68);
-    expect(notesScrollSpy).not.toHaveBeenCalled();
-    expect(aboutScrollSpy).not.toHaveBeenCalled();
     expect(notesView.scrollTop).toBe(180);
     expect(aboutView.scrollTop).toBe(95);
 
     // Minimizing the drawer still resets scroll positions
     el.minimizeDrawer();
-    expect(notesScrollSpy).toHaveBeenCalledWith({
-      top: 0,
-      behavior: "instant",
-    });
-    expect(aboutScrollSpy).toHaveBeenCalledWith({
-      top: 0,
-      behavior: "instant",
-    });
+    expect(notesView.scrollTop).toBe(0);
+    expect(aboutView.scrollTop).toBe(0);
   });
 
   test("switching companion tabs clears .marker-active away from Notes and restores .word-active on Dictionary tab (RDR-11)", () => {
@@ -3550,10 +3538,6 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     const el = createNavigableReaderView({ pageId: "1" });
     // On desktop the panel, not the window, scrolls the passage.
     const textPanel = el.querySelector<HTMLElement>(".reader-text-panel")!;
-    const panelScrollTo = jest.fn((opts: ScrollToOptions) => {
-      textPanel.scrollTop = opts.top ?? 0;
-    });
-    textPanel.scrollTo = panelScrollTo as typeof textPanel.scrollTo;
     textPanel.scrollTop = 640;
 
     window.fetch = jest.fn().mockResolvedValue({
@@ -3563,11 +3547,6 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     await el.swapPage("/work/caesar/de-bello-gallico/2");
 
     expect(el.dataset.page).toBe("2");
-    expect(panelScrollTo).toHaveBeenLastCalledWith({
-      top: 0,
-      left: 0,
-      behavior: "instant",
-    });
     expect(textPanel.scrollTop).toBe(0);
 
     // The page 1 entry saved the panel's offset, not `window.scrollY`.
@@ -3593,11 +3572,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     swapSpy.mockRestore();
 
     expect(el.dataset.page).toBe("1");
-    expect(panelScrollTo).toHaveBeenLastCalledWith({
-      top: 640,
-      left: 0,
-      behavior: "instant",
-    });
+    expect(textPanel.scrollTop).toBe(640);
   });
 
   test("swapPage to bare work URL (/work/:author/:work) resolves newPageId from first TOC item and updates dataset.page, TOC active state, and Translation tab", async () => {
