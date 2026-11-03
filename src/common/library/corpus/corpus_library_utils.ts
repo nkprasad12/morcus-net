@@ -203,9 +203,10 @@ function assembleRowText(node: XmlNode | string): string {
  *    `editorial`) are not text: they contribute no words, but break like a
  *    marker. See `UNTOKENIZED_CONTENT_KINDS`.
  *
- * A review of every seam in the library where this rule changes the tokens
- * (9,661) found about 10 errors, all missing spaces in the source TEI. See
- * `src/web/ui/corpus/TODOS.md`, "Word-boundary rule".
+ * A review of every seam where this rule changes the tokens, in the 125 works
+ * of the library at the time (9,661 seams), found about 10 errors, all missing
+ * spaces in the source TEI. See `src/web/ui/corpus/TODOS.md`, "Word-boundary
+ * rule".
  */
 export function extractRowText(node: XmlNode | string): string {
   return (

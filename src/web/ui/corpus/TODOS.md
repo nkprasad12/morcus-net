@@ -2,6 +2,8 @@
 
 Open corpus work across the Rust query engine (`corpus_rust/`), corpus builder (`src/common/library/corpus/`), and V2 web UI (`src/web/ui/corpus/`). See [`README.md`](README.md) for how the UI slice is built.
 
+**Sizing examples.** Cost estimates below assume a theoretical corpus of **8M tokens and ~350k unique words**, a stand-in for a reasonably large library, not the size of the current build (which changes as works are added). At that size a full-corpus bitmask is 8M / 8 = 1 MB.
+
 ---
 
 ## Word-boundary rule
@@ -15,15 +17,16 @@ Editorial tags (`<add>`, `<corr>`, `<hi>`, …) wrap whatever stretch of text th
 3. **Exception to 2:** if the first tag ends in `-`, it's a word hyphenated across a line break, so join: Pliny `<hi>lon-</hi><hi>gitudo</hi>`.
 4. **Structure always breaks:** lines, blocks, headings, `br`, and note, gap and space markers.
 
-**Review.** Every seam in the library where the rule changes the tokens (a tag meeting text or another tag, with word characters on both sides; 9,661 seams in 125 works) was checked against Morceus: is the joined form a word, the split pieces, or both? Everything ambiguous or contradicting the rule was then read by hand (checking the raw TEI where needed), and a sample of the rest.
+**Review.** Every seam in the library at the time of the review (125 works) where the rule changes the tokens (a tag meeting text or another tag, with word characters on both sides; 9,661 seams) was checked against Morceus: is the joined form a word, the split pieces, or both? Everything ambiguous or contradicting the rule was then read by hand (checking the raw TEI where needed), and a sample of the rest. Works added since haven't been reviewed ([4.6](#46-recheck-word-boundaries-on-the-full-library)).
 
 | Seam                          | Count | Result                                                                                                                                                                                                            |
 | :---------------------------- | :---- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Tag meets tag (rule 2: split) | 143   | 125 correct, 17 are manuscript sigla (`R²E²v`) in Pliny's main text where it doesn't matter, 1 hyphenation miss (now rule 3)                                                                                      |
 | Tag meets text (rule 1: join) | 9,518 | All correct except ≈10, which are missing spaces in the source TEI ([below](#45-source-typos-missing-space-after-a-tag)). Includes 90 numeral + `vir` forms (`<num>x</num>viros`, _decemviros_), correctly joined |
 
-**Where the rule is implemented.** Library-wide, no row's corpus word offsets disagree with the
-V2 reader's word count (0 of 146,951 rows). Keep these three in step:
+**Where the rule is implemented.** At the time of the review (125 works), no row's corpus word
+offsets disagreed with the V2 reader's word count (0 of 146,951 rows); not yet rechecked on the
+full library ([4.6](#46-recheck-word-boundaries-on-the-full-library)). Keep these three in step:
 
 - **Indexer:** [`extractRowText`](../../../common/library/corpus/corpus_library_utils.ts)
   concatenates siblings directly, relying on the source's own whitespace, and adds breaks only at
@@ -89,7 +92,7 @@ Our engine indexes `@feature → token_id` (Stage 1: set operations on `IndexSli
 
 ### 3.1 Token negation (`!`) — Anchored only
 
-- **Why unanchored `!atom` is rejected:** A standalone `!et` or `!@case:gen` matches ~99% of the 8M-token corpus, materializing a ~1 MB dense `BitMask` and forcing all span operations onto the slow full-corpus bitmask path. Every inverted-index engine requires a positive anchor.
+- **Why unanchored `!atom` is rejected:** A standalone `!et` or `!@case:gen` matches ~99% of the corpus, materializing a dense full-corpus `BitMask` (1 MB at the theoretical 8M tokens) and forcing all span operations onto the slow full-corpus bitmask path. Every inverted-index engine requires a positive anchor.
 - **Why `A and !B` is subtle on `@lemma`/`@inflection`:**
   - For `!word` inside a conjunction (e.g. `(@lemma:amo and !amor)`), `@word` is a token property, so Stage 1 set-difference (`apply_and_not`) is exact and $O(|A|)$.
   - For `!@inflection` or `!@lemma` (e.g. `(@lemma:amo and !@case:gen)`), Stage 1 **cannot** subtract `Index(@case:gen)` at the token level without dropping multi-analysis tokens like _amoris_ that have both a genitive analysis and a non-genitive analysis. Instead, Stage 1 must keep the positive anchor (`@lemma:amo`) as a conservative superset and let Stage 2 (`does_inflection_match`) check the negation per analysis.
@@ -118,20 +121,20 @@ Our engine indexes `@feature → token_id` (Stage 1: set operations on `IndexSli
 
 ### 3.4 Prefix / suffix matching (`am*`, `*or`, `am*or`)
 
-- **Context:** PHI searches raw character strings with `#` for word boundaries; our engine indexes whole tokens and lemmata (`204,674` unique words across `2,989,605` tokens in the current 125-work build; ~300k–350k unique words at 300 works).
+- **Context:** PHI searches raw character strings with `#` for word boundaries; our engine indexes whole tokens and lemmata (~350k unique words at the theoretical 8M tokens).
 - **Syntax & guardrails:**
   - Allow `*` on bare word atoms: prefix (`bell*`), suffix (`*tio`), or prefix+suffix (`in*bilis`).
   - Require at least 2–3 literal ASCII letters alongside `*` in `errorsForToken` (`"wildcard terms must have at least 2 letters"`).
 - **Step 1 — Vocabulary lookup (matching unique word IDs in `id_table["word"]`):**
   - Neither option requires changing the serialized corpus format on disk:
-    - **Option A (Zero-index linear scan):** Scan `id_table["word"]` keys with `starts_with` / `ends_with`. Takes **~1–1.5 ms** in Rust for 205k words, **0 extra RAM**, and trivially supports `am*`, `*or`, `am*or`, and even `*mor*`.
-    - **Option B (Two sorted arrays built at `CorpusQueryEngine::new` init):** Build `forward_vocab` (sorted lexicographically) and `reverse_vocab` (sorted by reversed chars) once at engine startup (~50 ms, ~4 MB RAM). Prefix and suffix lookups become $O(\log V + M)$ binary-search `partition_point` slices (**~200 ns**).
+    - **Option A (Zero-index linear scan):** Scan `id_table["word"]` keys with `starts_with` / `ends_with`. Takes **~2 ms** in Rust for ~350k words (measured at ~1–1.5 ms for 205k), **0 extra RAM**, and trivially supports `am*`, `*or`, `am*or`, and even `*mor*`.
+    - **Option B (Two sorted arrays built at `CorpusQueryEngine::new` init):** Build `forward_vocab` (sorted lexicographically) and `reverse_vocab` (sorted by reversed chars) once at engine startup (~100 ms, ~7 MB RAM for ~350k words). Prefix and suffix lookups become $O(\log V + M)$ binary-search `partition_point` slices (**~200 ns**).
 - **Step 2 — Single-pass union of the $M$ matched word indices (avoiding pairwise AST `OR`):**
   - Do **not** rewrite `bell*` into a syntactic `(w1 or w2 or ... or wM)` `TokenConstraint::Composed` node, which would fold `apply_or_to_indices` $M$ times and reallocate/copy `Vec<u32>` $O(M^2)$ times.
   - Instead, add `TokenConstraintAtom::Affix` (or `Wildcard`) and merge the $M$ `IndexSlice`s in a **single pass** inside `index_for_atom(range)`:
     1. Slice each of the $M$ word indices to `range` (`IndexSlice::from`) and sum their lengths into `total_hits`.
     2. **Fast Path 1 — `BitMask` accumulator (when `total_hits > 4096` or any matched word is a `BitMask`):**
-       Allocate **one** zeroed `Vec<u64>` of length `(range.end - range.start) / 64` (only 373 KB even for the entire 3M-token corpus; smaller for author/work ranges). Set the bits for each `List` slice (`mask[(id - range.start) / 64] |= 1 << (bit % 64)`) and bitwise-OR any `BitMask` slice in place. Runs in **< 0.5 ms** with a single allocation even if a pattern matches 400k tokens.
+       Allocate **one** zeroed `Vec<u64>` of length `(range.end - range.start) / 64` (at most 1 MB, for the whole theoretical 8M-token corpus; smaller for author/work ranges). Set the bits for each `List` slice (`mask[(id - range.start) / 64] |= 1 << (bit % 64)`) and bitwise-OR any `BitMask` slice in place. Runs in **< 0.5 ms** with a single allocation even if a pattern matches 400k tokens.
     3. **Fast Path 2 — Merging $M$ pre-sorted `List` slices (when `total_hits <= 4096` and all slices are `List`s):**
        Each of the $M$ slices is already sorted and disjoint, so we can merge them in $O(N \log M)$ rather than $O(N \log N)$ — either via a $k$-way merge / balanced pairwise merge of the slices, or by appending the $M$ ascending runs into `Vec::with_capacity(total_hits)` and calling Rust's run-aware `vec.sort()` (`driftsort`, which detects existing sorted runs and merges them in $O(N \log M)$) or `sort_unstable()` (~10–20 µs for $\le 4096$ `u32`s). Keeping the result as a `List` when `total_hits <= 4096` keeps downstream intersections on the fast `List` path.
 - **Step 3 — Stage 2 (`has_matching_inflections`) needs zero changes:**
@@ -192,3 +195,10 @@ Non-leaf rows (e.g. a chapter heading row `1.2` above sections `1.2.1…`) are i
 ¹ Seam taken from the processed work; the raw TEI wasn't checked.
 
 **How to find more.** List every seam where a tag meets text and the characters on both sides are word characters (not `isTextBreakChar`, not whitespace). Keep the ones where Morceus (`MorceusCruncher`) recognizes both split pieces but not the joined form. Drop numeral + `vir` forms and Pliny's Greek names and plant names (the analyzer doesn't know them). This gave 189 candidates, and the rows above are what survived reading them.
+
+### 4.6 Recheck word boundaries on the full library
+
+**Status:** Open. The [word-boundary review](#word-boundary-rule) and the corpus/reader row-parity check covered the 125 works in the library at the time. The library now has many more, mostly from a different source (thelatinlibrary) with its own markup, so neither result has been confirmed for them.
+
+1. Re-run the row-parity check (corpus word offsets vs. the V2 reader's word count, per row) on the full library. Any disagreeing row is a bug in one of the three implementations above.
+2. Re-run the seam review on the new works only, using the method in [4.5](#45-source-typos-missing-space-after-a-tag) ("How to find more"), and add any source typos to that table.
