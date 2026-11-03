@@ -63,10 +63,9 @@ impl<'s> IndexSlice<'s> {
             IndexData::List(list) => {
                 // We use binary search instead of partition_point because we know these are unique.
                 let start_idx = list.binary_search(&range.start).unwrap_or_else(|x| x);
-                // +1 - 1 because: in the case where the number is not found in the index, we want that point
-                // to be the end of the range. If the number *is* found, then the end range is exclusive, so we
-                // want to exclude it (thus the -1).
-                let end_idx = list.binary_search(&range.end).unwrap_or_else(|x| x + 1) - 1;
+                // The end is exclusive, so we want the index of the first element >= `range.end`,
+                // whether or not `range.end` itself is in the list.
+                let end_idx = list.binary_search(&range.end).unwrap_or_else(|x| x);
                 IndexDataRoO::Ref(IndexData::List(&list[start_idx..end_idx]))
             }
         };
@@ -589,6 +588,38 @@ mod tests {
     };
 
     use super::*;
+
+    fn list_slice(list: &[u32], start: u32, end: u32) -> Vec<u32> {
+        let range = IndexRange { start, end };
+        let index = IndexData::List(list);
+        let slice = IndexSlice::from(&index, &range, 0).unwrap();
+        match slice.data.to_ref() {
+            IndexData::List(l) => l.to_vec(),
+            IndexData::BitMask(_) => panic!("expected a list"),
+        }
+    }
+
+    #[test]
+    fn index_slice_from_list_end_not_in_list() {
+        assert_eq!(list_slice(&[3, 64, 100, 130], 64, 128), vec![64, 100]);
+    }
+
+    #[test]
+    fn index_slice_from_list_end_in_list_keeps_previous_element() {
+        // `range.end` (128) is in the list: it is excluded, but 100 must not be.
+        assert_eq!(list_slice(&[3, 64, 100, 128, 130], 64, 128), vec![64, 100]);
+    }
+
+    #[test]
+    fn index_slice_from_list_end_is_first_element() {
+        // Previously underflowed when `range.end` matched `list[0]`.
+        assert_eq!(list_slice(&[64, 100], 0, 64), Vec::<u32>::new());
+    }
+
+    #[test]
+    fn index_slice_from_list_start_in_list_is_included() {
+        assert_eq!(list_slice(&[0, 64, 127, 130], 64, 128), vec![64, 127]);
+    }
 
     #[test]
     fn num_elements_unpacked_should_return_length() {

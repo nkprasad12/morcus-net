@@ -59,16 +59,6 @@ These are bugs in existing functionality and prerequisites for work-level or mul
   3. Add an author query to `AUTHOR_BITMASK_QUERIES` in [`corpus_query_engine.rs`](../../../../corpus_rust/src/corpus_query_engine.rs) that actually hits a leaked boundary token, to verify parity against [`reference_impl.rs`](../../../../corpus_rust/src/corpus_query_engine/reference_impl.rs).
 - **Perf impact:** Zero (O(1) edge mask or two boundary comparisons).
 
-### 1.3 Off-by-one on `IndexData::List` slice upper bound
-
-- **Symptom:** In [`IndexSlice::from`](../../../../corpus_rust/src/corpus_query_engine/index_data.rs):
-  ```rust
-  let end_idx = list.binary_search(&range.end).unwrap_or_else(|x| x + 1) - 1;
-  ```
-  When `range.end` is not present (`Err(x)`), `end_idx` is `x` (correct). When `range.end` **is** present in `list` (`Ok(k)`), `end_idx` evaluates to `k - 1`, turns into `&list[start_idx..k - 1]`, and silently drops `list[k - 1]` — a valid token strictly less than `range.end` (and panics by underflow if `k == 0`).
-- **Fix:** Both `Ok(k)` and `Err(k)` want `end_idx = k` (i.e. `list.partition_point(|&v| v < range.end)` or `.unwrap_or_else(|x| x)`). Add a unit test hitting the exact-match boundary.
-- **Perf impact:** Zero.
-
 ---
 
 ## Phase 2: Author & Work Scope Filtering
