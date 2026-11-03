@@ -126,8 +126,10 @@ export function findExperimentalTextPageIndex(
 // Passage: blocks and segments in the library's section shape
 // ---------------------------------------------------------------------------
 
-/** Languages read as Latin; any other `lang` is skipped by word lookup. */
+/** Languages read as Latin; other languages get an explicit `lang` attribute. */
 const LATIN_LANGS = new Set(["la", "lat"]);
+/** Non-Latin languages eligible for dictionary lookup (Greek via Logeion). */
+const GREEK_LANGS = new Set(["grc", "el", "greek", "gr"]);
 
 function renderRun(run: ExperimentalTextRun): SafeHtml {
   const style = run.style;
@@ -138,10 +140,13 @@ function renderRun(run: ExperimentalTextRun): SafeHtml {
   if (style?.superscript) classes.push("superscript");
   let inner = html`${run.text}`;
   if (style?.subscript) inner = html`<sub>${raw(inner)}</sub>`;
-  const foreign =
-    run.lang !== undefined && !LATIN_LANGS.has(run.lang.toLowerCase());
-  if (foreign) {
-    // Not Latin (e.g. Greek): kept out of dictionary lookup.
+  const lang = run.lang?.toLowerCase();
+  if (lang !== undefined && !LATIN_LANGS.has(lang)) {
+    if (GREEK_LANGS.has(lang)) {
+      return html`<span class="${classes.join(" ")}" lang="${run.lang}"
+        >${raw(inner)}</span
+      >`;
+    }
     return html`<span
       class="${classes.join(" ")}"
       lang="${run.lang}"

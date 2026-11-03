@@ -135,11 +135,31 @@ describe("renderExperimentalTextPassageHtml", () => {
     expect(sections[2].id).toBe("sec-529B");
   });
 
-  it("keeps text in another language out of word lookup", () => {
-    const root = fragment(renderExperimentalTextPassageHtml(DOC.pages[0]));
+  it("allows Greek runs into word lookup while keeping other foreign languages out", () => {
+    const root = fragment(
+      renderExperimentalTextPassageHtml(
+        page({
+          id: "529",
+          blocks: [
+            {
+              kind: "paragraph",
+              segments: [
+                { kind: "text", text: "λόγος", lang: "grc" },
+                { kind: "text", text: " " },
+                { kind: "text", text: "שָׁלוֹם", lang: "heb" },
+              ],
+            },
+          ],
+        })
+      )
+    );
     const greek = root.querySelector('[lang="grc"]');
     expect(text(greek)).toBe("λόγος");
-    expect(greek?.getAttribute("data-no-tokenize")).toBe("true");
+    expect(greek?.hasAttribute("data-no-tokenize")).toBe(false);
+
+    const hebrew = root.querySelector('[lang="heb"]');
+    expect(text(hebrew)).toBe("שָׁלוֹם");
+    expect(hebrew?.getAttribute("data-no-tokenize")).toBe("true");
   });
 
   it("renders verse lines with stanza breaks and gutter markers", () => {

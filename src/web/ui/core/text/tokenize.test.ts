@@ -186,7 +186,7 @@ describe("isLatinWord", () => {
     });
   });
 
-  it("handles combining diacritics and macra", () => {
+  it("handles combining diacritics and macra on Latin words", () => {
     expect(isLatinWord("Mu\u0304sa", true)).toEqual({
       isLatin: true,
       cleanWord: "Musa",
@@ -194,6 +194,17 @@ describe("isLatinWord", () => {
     expect(isLatinWord("M\u016Bsa", true)).toEqual({
       isLatin: true,
       cleanWord: "Musa",
+    });
+  });
+
+  it("identifies Ancient Greek words and preserves polytonic diacritics", () => {
+    expect(isLatinWord("λόγος", true)).toEqual({
+      isLatin: true,
+      cleanWord: "λόγος",
+    });
+    expect(isLatinWord("ὁμοπλοίᾳ", true)).toEqual({
+      isLatin: true,
+      cleanWord: "ὁμοπλοίᾳ",
     });
   });
 
@@ -314,7 +325,7 @@ describe("tokenizeSubtree", () => {
     expect(div.querySelectorAll(".lat-word")).toHaveLength(3);
   });
 
-  it("rejects standard exclusion elements (a, button, summary, script, style, lang=el, data-no-tokenize)", () => {
+  it("rejects standard exclusion elements (a, button, summary, script, style, data-no-tokenize) while tokenizing Greek", () => {
     const div = document.createElement("div");
     div.innerHTML = `
       <p>Before <a href="#">link word</a> middle</p>
@@ -331,9 +342,10 @@ describe("tokenizeSubtree", () => {
     document.body.appendChild(div);
 
     tokenizeSubtree(div, {
-      renderWord: (token) => {
+      renderWord: (token, cleanWord) => {
         const span = document.createElement("span");
         span.className = "lat-word";
+        span.dataset.word = cleanWord;
         span.textContent = token;
         return span;
       },
@@ -342,7 +354,10 @@ describe("tokenizeSubtree", () => {
     const words = Array.from(div.querySelectorAll(".lat-word")).map(
       (w) => w.textContent
     );
-    expect(words).toEqual(["Before", "middle", "After", "text"]);
+    expect(words).toEqual(["Before", "middle", "λόγος", "After", "text"]);
+    expect(
+      div.querySelector('[lang="el"] .lat-word')?.getAttribute("data-word")
+    ).toBe("λόγος");
   });
 
   it("honors caller-provided isExcludedElement", () => {

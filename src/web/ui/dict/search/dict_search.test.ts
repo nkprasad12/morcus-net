@@ -165,9 +165,11 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const emphEl = el.querySelector(".lsEmph")!;
     expect(emphEl.querySelector(".lat-word")).toBeNull();
 
-    // Denylist check: Greek text is NOT wrapped
+    // Greek text in dictionary entries is wrapped for Logeion lookup
     const greekEl = el.querySelector('[lang="el"]')!;
-    expect(greekEl.querySelector(".lat-word")).toBeNull();
+    const greekWord = greekEl.querySelector<HTMLElement>(".lat-word");
+    expect(greekWord?.textContent).toBe("ἵππος");
+    expect(greekWord?.dataset.word).toBe("ἵππος");
 
     // Denylist check: existing anchors are NOT wrapped
     const anchorEl = el.querySelector(".section-anchor")!;

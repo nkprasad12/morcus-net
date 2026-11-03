@@ -69,7 +69,9 @@ interface TokenizeTargetsOptions extends TokenizeWordOptions {
   targetSelector?: string;
 }
 
-const LATIN_LETTER_REGEX = /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/;
+const LOOKUP_LETTER_REGEX =
+  /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF\u0370-\u03FF\u1F00-\u1FFF]/;
+const GREEK_LETTER_REGEX = /[\u0370-\u03FF\u1F00-\u1FFF]/;
 
 /**
  * Classes of the purely presentational `<span>`s the V2 preprocessor emits for
@@ -105,15 +107,18 @@ const UNTOKENIZED_CLASSES = [
 ];
 
 /**
- * Checks whether a processed token constitutes a Latin word eligible for lookup.
+ * Checks whether a processed token constitutes a Latin or Greek word eligible for lookup.
  */
 export function isLatinWord(
   token: string,
   isWord: boolean
 ): { isLatin: boolean; cleanWord: string } {
-  const cleanWord = removeDiacritics(token).replaceAll("-", "").trim();
+  const stripped = GREEK_LETTER_REGEX.test(token)
+    ? token
+    : removeDiacritics(token);
+  const cleanWord = stripped.replaceAll("-", "").trim();
   const isLatin =
-    isWord && !/\d/.test(token) && LATIN_LETTER_REGEX.test(cleanWord);
+    isWord && !/\d/.test(token) && LOOKUP_LETTER_REGEX.test(cleanWord);
   return { isLatin, cleanWord };
 }
 
@@ -289,7 +294,6 @@ function isRejectedElement(
     tag === "summary" ||
     tag === "script" ||
     tag === "style" ||
-    node.getAttribute("lang") === "el" ||
     node.hasAttribute("data-no-tokenize") ||
     node.hasAttribute("data-no-linkify") ||
     node.classList.contains("reader-gap") ||
@@ -368,7 +372,7 @@ interface Segment {
 
 /**
  * Recursively walks `root`, pruning non-tokenizable subtrees (links, buttons,
- * script, style, Greek text, and opted-out elements) and replacing Latin words
+ * script, style, and opted-out elements) and replacing Latin and Greek words
  * in text nodes with elements created by `options.renderWord`.
  */
 export function tokenizeSubtree(
@@ -387,7 +391,7 @@ export function tokenizeSubtree(
   for (const run of runs) {
     const values = run.map((node) => node.nodeValue ?? "");
     const text = values.join("");
-    const hasLatin = LATIN_LETTER_REGEX.test(text);
+    const hasLatin = LOOKUP_LETTER_REGEX.test(text);
 
     // Output nodes for each text node of the run, and whether it gained a word.
     const outputs: Node[][] = run.map(() => []);
