@@ -52,17 +52,6 @@ const PERIOD_FILTER_OPTIONS: readonly PeriodFilterOption[] = [
   { id: "neolatin", label: "Neo-Latin" },
 ];
 
-const PERIOD_LABELS: Readonly<Record<ExperimentalTextPeriod, string>> = {
-  ancient: "Ancient",
-  medieval: "Medieval",
-  neolatin: "Neo-Latin",
-};
-
-const SOURCE_LABELS: Readonly<Record<ExperimentalTextSourceId, string>> = {
-  patrologia_latina: "Patrologia Latina",
-  thelatinlibrary: "The Latin Library",
-};
-
 /** Lowercased aliases of `entry`, without its (shown) author name. */
 function lowerAliases(entry: ExperimentalTextCatalogEntry): string[] {
   const author = entry.author.toLowerCase();
@@ -88,13 +77,6 @@ function renderWorkItemHtml(
   groupAliases: readonly string[]
 ): string {
   const readerHref = buildExperimentalTextsUrl({ open: entry.id });
-  const sourceLabel = SOURCE_LABELS[entry.source];
-
-  const periodChipHtml = entry.period
-    ? ssr`<span class="experimental-texts-meta-chip">${he.escape(
-        PERIOD_LABELS[entry.period]
-      )}</span>`
-    : "";
 
   const partialHtml = entry.partialCoverage
     ? ssr`
@@ -133,19 +115,15 @@ function renderWorkItemHtml(
         ${partialHtml}
       </div>`
     : linkHtml;
+  // The period and source chips are drawn in CSS from `data-period` and
+  // `data-source` (experimental_texts.css), so the badges box is empty here.
+  const periodAttr = entry.period ? ` data-period="${entry.period}"` : "";
   return ssr`
     <li class="experimental-texts-work-item" data-source="${
       entry.source
-    }" data-period="${entry.period}"${volumeAttr}${dataAuthorAttr(
-    ownAliases
-  )}>
+    }"${periodAttr}${volumeAttr}${dataAuthorAttr(ownAliases)}>
       ${mainHtml}
-      <div class="experimental-texts-work-badges">
-        ${periodChipHtml}
-        <span class="experimental-texts-meta-chip">${he.escape(
-          sourceLabel
-        )}</span>
-      </div>
+      <div class="experimental-texts-work-badges"></div>
     </li>
   `;
 }

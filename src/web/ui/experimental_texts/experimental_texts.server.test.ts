@@ -74,17 +74,31 @@ describe("experimental_texts.server", () => {
     );
     expect(html).toContain("De Officiis Ministrorum Libri Tres");
 
-    // Period chips + source chips; no volume chips (e.g. "PL 16").
+    // Period and source chips are drawn in CSS from the row's `data-period`
+    // and `data-source` (see experimental_texts_badges.test.ts), so the
+    // badges box is empty; no volume chips (e.g. "PL 16") either.
     expect(html).not.toContain("PL 16");
-    expect(html).toContain(
-      '<span class="experimental-texts-meta-chip">Ancient</span>'
-    );
-    expect(html).toContain(
-      '<span class="experimental-texts-meta-chip">Patrologia Latina</span>'
-    );
-    expect(html).toContain(
-      '<span class="experimental-texts-meta-chip">The Latin Library</span>'
-    );
+    expect(html).not.toContain("experimental-texts-meta-chip");
+    const doc = new JSDOM(html).window.document;
+    const ambrose = doc
+      .querySelector(
+        'a[href="/experimentalTexts?open=pl%2Fstoa0022.stoa001.opp-lat1"]'
+      )!
+      .closest<HTMLElement>(".experimental-texts-work-item")!;
+    expect(ambrose.dataset.period).toBe("ancient");
+    expect(ambrose.dataset.source).toBe("patrologia_latina");
+    for (const badges of doc.querySelectorAll(
+      ".experimental-texts-work-badges"
+    )) {
+      expect(badges.innerHTML).toBe("");
+    }
+    expect(
+      new Set(
+        [
+          ...doc.querySelectorAll<HTMLElement>(".experimental-texts-work-item"),
+        ].map((li) => li.dataset.source)
+      )
+    ).toEqual(new Set(["patrologia_latina", "thelatinlibrary"]));
 
     // Partial coverage notice & Library link
     const apicius = EXPERIMENTAL_TEXTS_TEST_CATALOG.entries.find(

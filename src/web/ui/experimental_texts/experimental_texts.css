@@ -208,7 +208,12 @@
   text-decoration: underline;
 }
 
-/* Work row metadata chips & source badge */
+/* Work row metadata chips: period, then source. Drawn in CSS from the row's
+   `data-period` / `data-source` (period in ::before, source in ::after)
+   rather than two <span>s per row: ~1,700 rows made that ~300 KB of markup
+   and ~3,400 elements. A row with no matching rule just has no chip. The
+   labels live only here; experimental_texts_badges.test.ts checks that every
+   period and source has one. */
 .experimental-texts-work-badges {
   display: inline-flex;
   flex-wrap: wrap;
@@ -218,7 +223,8 @@
   flex-shrink: 0;
 }
 
-.experimental-texts-meta-chip {
+.experimental-texts-work-badges::before,
+.experimental-texts-work-badges::after {
   padding: 2px var(--space-3);
   border-radius: var(--radius-sm);
   background-color: var(--tag-bg);
@@ -227,6 +233,26 @@
   font-weight: 400;
   color: var(--text-muted);
   white-space: nowrap;
+}
+
+[data-period="ancient"] > .experimental-texts-work-badges::before {
+  content: "Ancient";
+}
+
+[data-period="medieval"] > .experimental-texts-work-badges::before {
+  content: "Medieval";
+}
+
+[data-period="neolatin"] > .experimental-texts-work-badges::before {
+  content: "Neo-Latin";
+}
+
+[data-source="patrologia_latina"] > .experimental-texts-work-badges::after {
+  content: "Patrologia Latina";
+}
+
+[data-source="thelatinlibrary"] > .experimental-texts-work-badges::after {
+  content: "The Latin Library";
 }
 
 @media (width <= 640px) {
