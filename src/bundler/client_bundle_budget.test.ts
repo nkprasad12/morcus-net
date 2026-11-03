@@ -597,6 +597,56 @@ describe("UI V2 Bundle Budget", () => {
       );
       expect(result.errors[0]).toContain("module of reader.js");
     });
+
+    test("fails when any chunk bundles a module from node_modules", () => {
+      const result = checkV2ChunkDuplication({
+        chunks: [
+          {
+            names: ["common"],
+            modules: [{ nameForCondition: "/repo/src/a.ts" }],
+          },
+          {
+            names: ["dict"],
+            modules: [{ nameForCondition: "/repo/src/b.ts" }],
+          },
+          {
+            names: ["reader"],
+            modules: [{ nameForCondition: "/repo/src/c.ts" }],
+          },
+          {
+            names: ["corpus"],
+            modules: [{ nameForCondition: "/repo/src/d.ts" }],
+          },
+          {
+            names: ["external"],
+            modules: [
+              { nameForCondition: "/repo/src/e.ts" },
+              {
+                nameForCondition:
+                  "/repo/node_modules/fast-xml-parser/src/fxp.js",
+              },
+            ],
+          },
+          {
+            names: ["macronizer"],
+            modules: [{ nameForCondition: "/repo/src/f.ts" }],
+          },
+          {
+            names: ["critical"],
+            modules: [
+              {
+                name: "./node_modules/@swc/helpers/esm/_define_property.js",
+              },
+            ],
+          },
+        ],
+      });
+
+      expect(result.errors).toEqual([
+        "Chunk 'external' bundles third-party module '/repo/node_modules/fast-xml-parser/src/fxp.js'. UI V2 client bundles must be 100% first-party code (no node_modules).",
+        "Chunk 'critical' bundles third-party module './node_modules/@swc/helpers/esm/_define_property.js'. UI V2 client bundles must be 100% first-party code (no node_modules).",
+      ]);
+    });
   });
 
   describe("V2_CHUNK_ENTRIES shared modules", () => {

@@ -61,7 +61,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     "dict.js": { maxBrotliBytes: 8.5 * 1024 },
     "corpus.js": { maxBrotliBytes: 5.5 * 1024 },
     // Includes the Experimental Texts reader, which parses texts in the
-    // browser: `parseTeiDocument` (`fast-xml-parser`) and
+    // browser: `parseTeiDocument` (`DOMParser`) and
     // `parseLatinLibraryExperimentalText` (`src/common/thelatinlibrary/`), plus the
     // `/experimentalTexts` catalog filter (`<morcus-experimental-texts-view>`, ~0.6 KiB) and
     // the reader markup it shares with the server: the contents button and
@@ -70,7 +70,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     // (`reader/reader_frame.common.ts`). Custom
     // (`/externalReader`) visitors download it too; a separate chunk for
     // `/experimentalTexts` would spare them.
-    "external.js": { maxBrotliBytes: 33 * 1024 },
+    "external.js": { maxBrotliBytes: 25.5 * 1024 },
     "macronizer.js": { maxBrotliBytes: 4 * 1024 },
   },
   routes: {
@@ -78,7 +78,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     dicts: { maxBrotliBytes: 27.75 * 1024 },
     corpus: { maxBrotliBytes: 24.75 * 1024 },
     library: { maxBrotliBytes: 32.5 * 1024 },
-    external: { maxBrotliBytes: 65 * 1024 },
+    external: { maxBrotliBytes: 57.75 * 1024 },
     macronizer: { maxBrotliBytes: 23.25 * 1024 },
   },
   maxCssBrotliBytes: 22.25 * 1024,
@@ -439,10 +439,13 @@ function collectLeafSourceModules(
   }
 }
 
+const NODE_MODULES_PATH_RE = /(?:^|[\\/])node_modules[\\/]/;
+
 /**
  * Verifies that Rspack's `dependOn` chunk graph produces every expected JS
- * entry chunk (`V2_JS_ENTRY_NAMES`) and that no source module is duplicated
- * across multiple JS chunks.
+ * entry chunk (`V2_JS_ENTRY_NAMES`), that no chunk bundles third-party code
+ * from `node_modules`, and that no source module is duplicated across multiple
+ * JS chunks.
  *
  * Why this guardrail is needed: Rspack's `dependOn: "common"` only deduplicates
  * modules that are reachable from `common` through a used import (a bare
@@ -471,12 +474,25 @@ export function checkV2ChunkDuplication(stats: RspackStatsCompilationLike): {
 
   for (const chunk of chunks) {
     const entryName = V2_JS_ENTRY_NAMES.find((n) => chunk.names?.includes(n));
-    if (!entryName) continue;
-    seenEntries.add(entryName);
+    const isCritical = chunk.names?.includes("critical") === true;
+    if (!entryName && !isCritical) continue;
 
     const leafSet = new Set<string>();
     collectLeafSourceModules(chunk.modules, leafSet);
     const sorted = [...leafSet].sort();
+    const chunkLabel = entryName ?? "critical";
+
+    for (const modPath of sorted) {
+      if (NODE_MODULES_PATH_RE.test(modPath)) {
+        errors.push(
+          `Chunk '${chunkLabel}' bundles third-party module '${modPath}'. ` +
+            `UI V2 client bundles must be 100% first-party code (no node_modules).`
+        );
+      }
+    }
+
+    if (!entryName) continue;
+    seenEntries.add(entryName);
     chunkModules[entryName] = sorted;
 
     if (sorted.length === 0) {

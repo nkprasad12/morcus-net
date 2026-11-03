@@ -1,6 +1,11 @@
-import { XMLParser, XMLValidator, type X2jOptions } from "fast-xml-parser";
+import XMLParser from "fast-xml-parser/src/xmlparser/XMLParser";
+import XMLValidator from "fast-xml-parser/src/validator";
+import type { X2jOptions } from "fast-xml-parser";
 import { assert, assertEqual, assertType, checkPresent } from "@/common/assert";
 import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml/xml_node";
+import { TEI_NAMED_ENTITIES } from "@/common/xml/tei_entities";
+
+export { TEI_NAMED_ENTITIES };
 import {
   type DescendantNode,
   type TextNodeData,
@@ -27,138 +32,6 @@ const PARSE_TRIM_WHITESPACE = {
 const PARSE_KEEP_WHITESPACE = {
   ...BASE_XML_PARSER_OPTIONS,
   trimValues: false,
-};
-
-/**
- * External TEI P4 / ISOpub / ISOlat1 / ISOnum named entities used across Perseus
- * TEI P4 XML texts.
- *
- * Registered directly on XMLParser via `parser.addEntity` rather than decoded
- * post-hoc (e.g. via `he.decode`). In fast-xml-parser's `OrderedObjParser.replaceEntitiesValue`,
- * `addEntity` (`this.lastEntities`) runs before `this.ampEntity` (`&amp;` -> `&`),
- * ensuring an explicit `&amp;dagger;` in source XML is preserved as literal `&dagger;`
- * and never double-decoded.
- */
-export const TEI_NAMED_ENTITIES: Readonly<Record<string, string>> = {
-  // ISOpub / typographical and punctuation symbols
-  dagger: "†",
-  Dagger: "‡",
-  mdash: "—",
-  ndash: "–",
-  lsquo: "‘",
-  rsquo: "’",
-  ldquo: "“",
-  rdquo: "”",
-  sbquo: "‚",
-  bdquo: "„",
-  sect: "§",
-  para: "¶",
-  hellip: "…",
-  bull: "•",
-  prime: "′",
-  Prime: "″",
-  laquo: "«",
-  raquo: "»",
-  deg: "°",
-  cdot: "·",
-
-  // Diacritics and accents
-  acute: "´",
-  grave: "`",
-  circ: "ˆ",
-  tilde: "˜",
-  uml: "¨",
-  macr: "¯",
-  breve: "˘",
-
-  // ISOlat1 diaereses / umlauts
-  auml: "ä",
-  Auml: "Ä",
-  euml: "ë",
-  Euml: "Ë",
-  iuml: "ï",
-  Iuml: "Ï",
-  ouml: "ö",
-  Ouml: "Ö",
-  uuml: "ü",
-  Uuml: "Ü",
-  yuml: "ÿ",
-  Yuml: "Ÿ",
-
-  // Ligatures
-  aelig: "æ",
-  AElig: "Æ",
-  oelig: "œ",
-  OElig: "Œ",
-  szlig: "ß",
-
-  // ISOlat2 macrons
-  amacr: "ā",
-  Amacr: "Ā",
-  emacr: "ē",
-  Emacr: "Ē",
-  imacr: "ī",
-  Imacr: "Ī",
-  omacr: "ō",
-  Omacr: "Ō",
-  umacr: "ū",
-  Umacr: "Ū",
-  ymacr: "ȳ",
-  Ymacr: "Ȳ",
-
-  // ISOlat2 breves
-  abreve: "ă",
-  Abreve: "Ă",
-  ebreve: "ĕ",
-  Ebreve: "Ĕ",
-  ibreve: "ĭ",
-  Ibreve: "Ĭ",
-  obreve: "ŏ",
-  Obreve: "Ŏ",
-  ubreve: "ŭ",
-  Ubreve: "Ŭ",
-
-  // ISOlat1 accented vowels
-  aacute: "á",
-  Aacute: "Á",
-  eacute: "é",
-  Eacute: "É",
-  iacute: "í",
-  Iacute: "Í",
-  oacute: "ó",
-  Oacute: "Ó",
-  uacute: "ú",
-  Uacute: "Ú",
-  yacute: "ý",
-  Yacute: "Ý",
-  agrave: "à",
-  Agrave: "À",
-  egrave: "è",
-  Egrave: "È",
-  igrave: "ì",
-  Igrave: "Ì",
-  ograve: "ò",
-  Ograve: "Ò",
-  ugrave: "ù",
-  Ugrave: "Ù",
-  acirc: "â",
-  Acirc: "Â",
-  ecirc: "ê",
-  Ecirc: "Ê",
-  icirc: "î",
-  Icirc: "Î",
-  ocirc: "ô",
-  Ocirc: "Ô",
-  ucirc: "û",
-  Ucirc: "Û",
-  atilde: "ã",
-  Atilde: "Ã",
-  otilde: "õ",
-  Otilde: "Õ",
-  ntilde: "ñ",
-  Ntilde: "Ñ",
-  ccedil: "ç",
-  Ccedil: "Ç",
 };
 
 /**
@@ -533,52 +406,55 @@ export function modifyInTree(
   return node;
 }
 
-export namespace XmlOperations {
-  /**
-   * Combines the given chunks into the destination chunk, or the
-   * first chunk if no destination is specified.
-   */
-  export function combine(chunks: MatchedChunk[], destination?: MatchedChunk) {
-    if (chunks.length <= 1) {
-      return;
-    }
-    const target = destination || chunks[0];
-    const targetIdx = chunks.indexOf(target);
-    assert(
-      targetIdx > -1,
-      "The destination chunk should be one of the chunks to be combined."
-    );
-    chunks.slice(1).forEach((chunk) => assert(chunk.startIdx === 0));
-    chunks
-      .slice(0, -1)
-      .forEach((chunk) => assert(chunk.endIdx === chunk.data.text.length));
-
-    const allChunks = chunks.map((chunk) => chunk.match).join("");
-    chunks.forEach(removeMatchFromChunk);
-    const leftover = target.data.parent.children[target.data.textIndex];
-    target.data.parent.children[target.data.textIndex] =
-      targetIdx === 0 ? leftover + allChunks : allChunks + leftover;
-
-    for (const chunk of chunks) {
-      const updatedValue = XmlNode.assertIsString(
-        chunk.data.parent.children[chunk.data.textIndex]
-      );
-      if (updatedValue.length === 0) {
-        removeTextNode(chunk.data);
-      }
-    }
+/**
+ * Combines the given chunks into the destination chunk, or the
+ * first chunk if no destination is specified.
+ */
+function combine(chunks: MatchedChunk[], destination?: MatchedChunk) {
+  if (chunks.length <= 1) {
+    return;
   }
+  const target = destination || chunks[0];
+  const targetIdx = chunks.indexOf(target);
+  assert(
+    targetIdx > -1,
+    "The destination chunk should be one of the chunks to be combined."
+  );
+  chunks.slice(1).forEach((chunk) => assert(chunk.startIdx === 0));
+  chunks
+    .slice(0, -1)
+    .forEach((chunk) => assert(chunk.endIdx === chunk.data.text.length));
 
-  export function removeMatchFromChunk(chunk: MatchedChunk) {
-    const textLength = chunk.data.text.length;
-    assert(
-      chunk.startIdx === 0 || chunk.endIdx === textLength,
-      "Cannot remove from middle of chunk."
+  const allChunks = chunks.map((chunk) => chunk.match).join("");
+  chunks.forEach(removeMatchFromChunk);
+  const leftover = target.data.parent.children[target.data.textIndex];
+  target.data.parent.children[target.data.textIndex] =
+    targetIdx === 0 ? leftover + allChunks : allChunks + leftover;
+
+  for (const chunk of chunks) {
+    const updatedValue = XmlNode.assertIsString(
+      chunk.data.parent.children[chunk.data.textIndex]
     );
-
-    const start = chunk.startIdx === 0 ? chunk.endIdx : 0;
-    const end = chunk.startIdx === 0 ? textLength : chunk.startIdx;
-    chunk.data.parent.children[chunk.data.textIndex] =
-      chunk.data.text.substring(start, end);
+    if (updatedValue.length === 0) {
+      removeTextNode(chunk.data);
+    }
   }
 }
+
+function removeMatchFromChunk(chunk: MatchedChunk) {
+  const textLength = chunk.data.text.length;
+  assert(
+    chunk.startIdx === 0 || chunk.endIdx === textLength,
+    "Cannot remove from middle of chunk."
+  );
+
+  const start = chunk.startIdx === 0 ? chunk.endIdx : 0;
+  const end = chunk.startIdx === 0 ? textLength : chunk.startIdx;
+  chunk.data.parent.children[chunk.data.textIndex] =
+    chunk.data.text.substring(start, end);
+}
+
+export const XmlOperations = {
+  combine,
+  removeMatchFromChunk,
+};

@@ -1,3 +1,7 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
@@ -297,5 +301,14 @@ describe("parseTeiDocument", () => {
         )}, got ${actualHash})`
       );
     }
+  });
+
+  it("expands TEI and HTML named entities without double-decoding escaped entities", () => {
+    const doc = parseTeiDocument(
+      tei(
+        `<pb n="1"/><p>&dagger;crux&dagger; &mdash; &lsquo;test&rsquo; &ouml; &aelig; &nbsp; &amp;dagger; <!-- comment --></p>`
+      )
+    );
+    expect(blocks(doc)).toEqual(["†crux† — ‘test’ ö æ &dagger;"]);
   });
 });

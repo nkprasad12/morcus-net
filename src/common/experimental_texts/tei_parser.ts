@@ -19,9 +19,7 @@
  *   mid-sentence; they are lifted out into the page's note list.
  */
 
-import { XMLValidator } from "fast-xml-parser";
-import { COMMENT_NODE, type XmlNode } from "@/common/xml/xml_node";
-import { parseRawXml } from "@/common/xml/xml_utils";
+import { parseXmlRootWithDomParser } from "@/common/xml/dom_xml_parser";
 import type {
   ExperimentalTextBlock,
   ExperimentalTextBlockKind,
@@ -52,14 +50,7 @@ const SPACED_HYPHEN_END = /\p{L}-\s+$/u;
 const STARTS_LOWERCASE = /^\s*\p{Ll}/u;
 
 /** Elements whose content is irrelevant to reading. */
-const SKIPPED = new Set([
-  "teiHeader",
-  COMMENT_NODE,
-  "figure",
-  "graphic",
-  "figDesc",
-  "gap",
-]);
+const SKIPPED = new Set(["teiHeader", "figure", "graphic", "figDesc", "gap"]);
 
 /** Containers that end any open block but otherwise just hold content. */
 const CONTAINERS = new Set([
@@ -137,13 +128,21 @@ export interface ParseTeiOptions {
   chunkChars?: number;
 }
 
+function isElement(node: Node | undefined): node is Element {
+  return node !== undefined && node.nodeType === 1;
+}
+
+function isTextNode(node: Node): boolean {
+  return node.nodeType === 3 || node.nodeType === 4;
+}
+
 function localName(name: string): string {
   const colon = name.indexOf(":");
   return colon < 0 ? name : name.slice(colon + 1);
 }
 
-function attr(node: XmlNode, name: string): string | undefined {
-  return node.attrs.find(([key]) => key === name)?.[1];
+function attr(node: Element, name: string): string | undefined {
+  return node.getAttribute(name) ?? undefined;
 }
 
 function sameInline(
@@ -673,17 +672,19 @@ function noteEndsHyphenated(note: ExperimentalTextNote): boolean {
 }
 
 function collectNote(
-  node: XmlNode,
+  node: Element,
   ctx: InlineContext
 ): ExperimentalTextSegment[] {
   const buffer = new SegmentBuffer();
-  const walkNote = (el: XmlNode, inner: InlineContext) => {
-    for (const child of el.children) {
-      if (typeof child === "string") {
-        buffer.appendText(child, inner);
+  const walkNote = (el: Element, inner: InlineContext) => {
+    for (let i = 0; i < el.childNodes.length; i++) {
+      const child = el.childNodes[i];
+      if (isTextNode(child)) {
+        buffer.appendText(child.nodeValue ?? "", inner);
         continue;
       }
-      const name = localName(child.name);
+      if (!isElement(child)) continue;
+      const name = localName(child.tagName);
       if (SKIPPED.has(name) || name === "pb" || name === "milestone") continue;
       if (name === "lb") {
         buffer.lineBreak();
@@ -715,24 +716,23 @@ function collectNote(
   return segments;
 }
 
-function isNoteElement(child: XmlNode | string | undefined): boolean {
-  return (
-    typeof child !== "string" &&
-    child !== undefined &&
-    localName(child.name) === "note"
-  );
+function isNoteElement(child: Node | undefined): boolean {
+  return isElement(child) && localName(child.tagName) === "note";
 }
 
 /** The nearest non-whitespace sibling in direction `step` (+1 or -1). */
 function neighbor(
-  children: (XmlNode | string)[],
+  children: ArrayLike<Node>,
   index: number,
   step: number
-): XmlNode | string | undefined {
+): Node | undefined {
   for (let i = index + step; i >= 0 && i < children.length; i += step) {
     const child = children[i];
-    if (typeof child === "string" && child.trim().length === 0) continue;
-    return child;
+    if (isTextNode(child)) {
+      if ((child.nodeValue ?? "").trim().length === 0) continue;
+      return child;
+    }
+    if (isElement(child)) return child;
   }
   return undefined;
 }
@@ -741,16 +741,17 @@ class TeiWalker {
   readonly unhandled = new Map<string, number>();
   constructor(private readonly builder: DocumentBuilder) {}
 
-  walkChildren(node: XmlNode, ctx: InlineContext) {
-    const children = node.children;
+  walkChildren(node: Element, ctx: InlineContext) {
+    const children = node.childNodes;
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
-      if (typeof child === "string") {
-        this.builder.text(child, ctx);
+      if (isTextNode(child)) {
+        this.builder.text(child.nodeValue ?? "", ctx);
         continue;
       }
+      if (!isElement(child)) continue;
       if (
-        localName(child.name) === "milestone" &&
+        localName(child.tagName) === "milestone" &&
         isNoteElement(neighbor(children, i, -1)) &&
         isNoteElement(neighbor(children, i, 1))
       ) {
@@ -761,8 +762,8 @@ class TeiWalker {
     }
   }
 
-  private visit(node: XmlNode, ctx: InlineContext) {
-    const name = localName(node.name);
+  private visit(node: Element, ctx: InlineContext) {
+    const name = localName(node.tagName);
     const b = this.builder;
     if (SKIPPED.has(name)) return;
     if (CONTAINERS.has(name)) {
@@ -825,7 +826,7 @@ class TeiWalker {
 
   private block(
     kind: ExperimentalTextBlockKind,
-    node: XmlNode,
+    node: Element,
     ctx: InlineContext
   ) {
     this.builder.openBlock(kind);
@@ -835,25 +836,32 @@ class TeiWalker {
 }
 
 /** An `<ab>` holding only `<title>`s, which PL uses for headings. */
-function isTitleOnly(node: XmlNode): boolean {
+function isTitleOnly(node: Element): boolean {
   let sawTitle = false;
-  for (const child of node.children) {
-    if (typeof child === "string") {
-      if (child.trim().length > 0) return false;
+  for (let i = 0; i < node.childNodes.length; i++) {
+    const child = node.childNodes[i];
+    if (isTextNode(child)) {
+      if ((child.nodeValue ?? "").trim().length > 0) return false;
       continue;
     }
-    if (localName(child.name) !== "title") return false;
+    if (!isElement(child)) continue;
+    if (localName(child.tagName) !== "title") return false;
     sawTitle = true;
   }
   return sawTitle;
 }
 
-function plainText(node: XmlNode): string {
+function plainText(node: Element): string {
   const parts: string[] = [];
-  const walk = (el: XmlNode) => {
-    for (const child of el.children) {
-      if (typeof child === "string") parts.push(child);
-      else if (localName(child.name) !== "note") walk(child);
+  const walk = (el: Element) => {
+    for (let i = 0; i < el.childNodes.length; i++) {
+      const child = el.childNodes[i];
+      if (isTextNode(child)) {
+        const val = child.nodeValue ?? "";
+        if (val.length > 0) parts.push(val);
+      } else if (isElement(child) && localName(child.tagName) !== "note") {
+        walk(child);
+      }
     }
   };
   walk(node);
@@ -865,11 +873,12 @@ function plainText(node: XmlNode): string {
 }
 
 function findFirst(
-  root: XmlNode,
-  predicate: (node: XmlNode) => boolean
-): XmlNode | undefined {
-  for (const child of root.children) {
-    if (typeof child === "string") continue;
+  root: Element,
+  predicate: (node: Element) => boolean
+): Element | undefined {
+  for (let i = 0; i < root.childNodes.length; i++) {
+    const child = root.childNodes[i];
+    if (!isElement(child)) continue;
     if (predicate(child)) return child;
     const found = findFirst(child, predicate);
     if (found !== undefined) return found;
@@ -877,28 +886,28 @@ function findFirst(
   return undefined;
 }
 
-function findMetadata(root: XmlNode) {
-  const header = findFirst(root, (n) => localName(n.name) === "teiHeader");
-  const body = findFirst(root, (n) => localName(n.name) === "body");
+function findMetadata(root: Element) {
+  const header = findFirst(root, (n) => localName(n.tagName) === "teiHeader");
+  const body = findFirst(root, (n) => localName(n.tagName) === "body");
   const edition =
     body &&
     findFirst(
       body,
-      (n) => localName(n.name) === "div" && attr(n, "type") === "edition"
+      (n) => localName(n.tagName) === "div" && attr(n, "type") === "edition"
     );
   const mainTitle =
     body &&
     findFirst(
       body,
-      (n) => localName(n.name) === "title" && attr(n, "type") === "main"
+      (n) => localName(n.tagName) === "title" && attr(n, "type") === "main"
     );
   const head =
     (edition ?? body) &&
-    findFirst(edition ?? body!, (n) => localName(n.name) === "head");
+    findFirst(edition ?? body!, (n) => localName(n.tagName) === "head");
   const headerTitle =
-    header && findFirst(header, (n) => localName(n.name) === "title");
+    header && findFirst(header, (n) => localName(n.tagName) === "title");
   const author =
-    header && findFirst(header, (n) => localName(n.name) === "author");
+    header && findFirst(header, (n) => localName(n.tagName) === "author");
   const title =
     [mainTitle, head, headerTitle]
       .map((n) => (n ? plainText(n) : ""))
@@ -1067,20 +1076,15 @@ export function parseTeiDocument(
   xml: string,
   options?: ParseTeiOptions
 ): ExperimentalTextDocument {
-  const validation = XMLValidator.validate(xml);
-  const xmlWarning =
-    validation === true
-      ? undefined
-      : `Malformed XML: ${validation.err.msg} (line ${validation.err.line})`;
-  let root: XmlNode;
+  let root: Element;
   try {
-    root = parseRawXml(xml, { keepWhitespace: true });
+    root = parseXmlRootWithDomParser(xml);
   } catch (err) {
-    return salvageMalformedTeiXml(xml, xmlWarning ?? err);
+    return salvageMalformedTeiXml(xml, err);
   }
   const builder = new DocumentBuilder();
   const walker = new TeiWalker(builder);
-  const text = findFirst(root, (n) => localName(n.name) === "text") ?? root;
+  const text = findFirst(root, (n) => localName(n.tagName) === "text") ?? root;
   walker.walkChildren(text, {});
   const pending = builder.finish();
 
@@ -1090,11 +1094,8 @@ export function parseTeiDocument(
       ? toPages(pending)
       : toChunks(pending[0], options?.chunkChars ?? DEFAULT_CHUNK_CHARS);
 
-  const warnings = [
-    ...(xmlWarning ? [xmlWarning] : []),
-    ...[...walker.unhandled.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => `Unhandled element <${name}> (${count}×)`),
-  ];
+  const warnings = [...walker.unhandled.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => `Unhandled element <${name}> (${count}×)`);
   return { ...findMetadata(root), pagination, pages, warnings };
 }
