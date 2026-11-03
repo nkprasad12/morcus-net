@@ -16,6 +16,18 @@ impl IndexRange {
     }
 }
 
+/// The exact `[start, end)` token bounds a query is restricted to. An
+/// `IndexRange` is rounded out to 64-token boundaries for zero-copy bitmask
+/// slicing, so candidates must also be clipped to this. Always a whole number
+/// of works (see `MatchIterator::new`).
+#[derive(Debug, PartialEq, Eq)]
+pub struct TokenScope {
+    // The first token in scope, inclusive.
+    pub start: u32,
+    // The end of the scope, exclusive.
+    pub end: u32,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct IndexSlice<'a> {
     // Underlying data representing the matches for a particular index.
@@ -97,6 +109,7 @@ pub(super) enum IndexDataRoO<'a> {
 
 impl IndexData<'_> {
     /// Returns the number of elements in the index.
+    #[cfg(test)]
     pub fn num_elements(&self) -> usize {
         match self {
             IndexData::BitMask(bitmask_data) => {

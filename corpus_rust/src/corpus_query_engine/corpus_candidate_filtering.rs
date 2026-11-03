@@ -3,41 +3,108 @@ use crate::{
     bitmask_utils::{Direction, apply_and_not_with_bitmasks, next_one_bit, smear_bitmask},
     corpus_query_engine::{
         CorpusQueryEngine, IndexData, IndexDataRoO, QueryExecError,
-        index_data::{IndexDataOwned, IndexSlice},
+        index_data::{IndexDataOwned, IndexSlice, TokenScope},
     },
     profiler::TimeProfiler,
 };
 
 pub(super) struct MatchIterator<'a> {
-    /// The candidate to iterate over.
+    /// The candidate to iterate over, already clipped to the query's scope
+    /// (for bitmasks, see `bit_end`).
     candidates: IndexData<'a>,
     /// The current index within the candidate data.
     i: usize,
+    /// For bitmasks, the exclusive end of the in-scope bits.
+    bit_end: usize,
     /// The start token ID for the candidates. For bitmasks, all
     /// IDs are relative to this.
     candidate_start: u32,
     /// The relative offset of the candidate indices.
     candidate_position: u32,
+    /// The number of in-scope candidates.
+    num_candidates: usize,
+}
+
+/// Counts the one bits in `[start, end)` of `bitmask`.
+fn count_ones_in(bitmask: &[u64], start: usize, end: usize) -> usize {
+    if start >= end {
+        return 0;
+    }
+    // Bit `n` is `1 << (n % 64)` of word `n / 64`, matching `next_one_bit`.
+    let (first, last) = (start / 64, (end - 1) / 64);
+    let head = u64::MAX << (start % 64);
+    let tail = u64::MAX >> (63 - (end - 1) % 64);
+    if first == last {
+        return (bitmask[first] & head & tail).count_ones() as usize;
+    }
+    let middle: usize = bitmask[first + 1..last]
+        .iter()
+        .map(|w| w.count_ones() as usize)
+        .sum();
+    (bitmask[first] & head).count_ones() as usize
+        + middle
+        + (bitmask[last] & tail).count_ones() as usize
 }
 
 impl<'a> MatchIterator<'a> {
-    pub(super) fn new(all_candidates: &'a IndexSlice<'a>, page_data: &PageData) -> Self {
-        let candidates = all_candidates.data.to_ref();
-        // Get to the start of the page.
-        let i: usize = match &candidates {
-            IndexData::List(_) => page_data.candidate_index as usize,
-            // `next` yields `bit + candidate_start - candidate_position`, so
-            // invert that to turn the cursor's token ID back into a bit index.
-            IndexData::BitMask(_) => (page_data.result_id + all_candidates.position)
-                .saturating_sub(all_candidates.range.start)
-                as usize,
+    pub(super) fn new(
+        all_candidates: &'a IndexSlice<'a>,
+        page_data: &PageData,
+        scope: &TokenScope,
+    ) -> Self {
+        let position = all_candidates.position;
+        let range_start = all_candidates.range.start;
+        // Yielded IDs are `raw - position`; candidates whose yielded ID falls
+        // outside `scope` are in the padding that word-aligns the range.
+        //
+        // Clipping only the match's anchor is enough as long as `scope` is made
+        // of whole works: a contiguous span can't cross the hard break at the end
+        // of every work (`filter_breaks`), and a multi-span match must fit in one
+        // work (`within_work_bounds`). A finer scope (e.g. a section range) would
+        // need a per-match bounds check as well.
+        let raw_start = scope.start.saturating_add(position);
+        let raw_end = scope.end.saturating_add(position);
+        let (candidates, i, bit_end, num_candidates) = match all_candidates.data.to_ref() {
+            IndexData::List(list) => {
+                let lo = list.partition_point(|&v| v < raw_start);
+                let hi = list.partition_point(|&v| v < raw_end);
+                let list = &list[lo..hi];
+                // `candidate_index` counts from the start of the clipped list.
+                (
+                    IndexData::List(list),
+                    page_data.candidate_index as usize,
+                    0,
+                    list.len(),
+                )
+            }
+            IndexData::BitMask(bitmask) => {
+                let total_bits = bitmask.len() * 64;
+                let to_bit = |raw: u32| (raw.saturating_sub(range_start) as usize).min(total_bits);
+                let (bit_start, bit_end) = (to_bit(raw_start), to_bit(raw_end));
+                // `next` yields `bit + candidate_start - candidate_position`, so
+                // invert that to turn the cursor's token ID back into a bit index.
+                let cursor = to_bit(page_data.result_id.saturating_add(position));
+                (
+                    IndexData::BitMask(bitmask),
+                    cursor.max(bit_start),
+                    bit_end,
+                    count_ones_in(bitmask, bit_start, bit_end),
+                )
+            }
         };
         Self {
-            candidate_start: all_candidates.range.start,
+            candidate_start: range_start,
             candidates,
             i,
-            candidate_position: all_candidates.position,
+            bit_end,
+            candidate_position: position,
+            num_candidates,
         }
+    }
+
+    /// The number of candidates within the query's scope.
+    pub(super) fn num_candidates(&self) -> usize {
+        self.num_candidates
     }
 }
 
@@ -55,11 +122,11 @@ impl<'a> Iterator for MatchIterator<'a> {
                 id
             }
             IndexData::BitMask(bitmask) => match next_one_bit(bitmask, self.i) {
-                Some(v) => {
+                Some(v) if v < self.bit_end => {
                     self.i = v + 1;
                     v as u32 + self.candidate_start
                 }
-                None => return None,
+                _ => return None,
             },
         };
         if token_id < self.candidate_position {
@@ -200,6 +267,25 @@ fn filter_list_breaks(
 mod tests {
     use super::*;
     use crate::bitmask_utils::to_bitmask;
+
+    #[test]
+    fn count_ones_in_matches_naive_count() {
+        let bitmask = [0xF0F0_1234_5678_9ABCu64, u64::MAX, 0x8000_0000_0000_0001];
+        let naive = |s: usize, e: usize| {
+            (s..e)
+                .filter(|&n| next_one_bit(&bitmask, n) == Some(n))
+                .count()
+        };
+        for start in 0..=192 {
+            for end in start..=192 {
+                assert_eq!(
+                    count_ones_in(&bitmask, start, end),
+                    naive(start, end),
+                    "{start}..{end}"
+                );
+            }
+        }
+    }
 
     /// The original formulation: negate the smeared breaks and check bit `s`.
     fn naive(

@@ -45,22 +45,6 @@ V1 is frozen.
 
 ---
 
-## Phase 1: Correctness & Range/Paging Bugs (High Priority)
-
-These are bugs in existing functionality and prerequisites for work-level or multi-range filtering. None of them require giving up 64-token word alignment in bitmask operations.
-
-### 1.2 Author/range 64-token rounding leaks neighbouring tokens
-
-- **Symptom:** [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) rounds the `[start, end)` token range outward to 64-token word boundaries (`(start / 64) * 64` to `end.div_ceil(64) * 64`) so bitmasks can be sliced zero-copy (`&bitmask[start_word..end_word]`), and never clips back. Up to 63 tokens from the preceding and following works can be counted in `total_candidates` and returned as matches.
-- **Why it matters more soon:** Across all of Cicero, ≤126 leaked boundary tokens are rare; on a single short work (e.g. one Catullus poem), 64 tokens of a neighbouring poem is a large fraction of the range.
-- **Fix:** Keep the 64-token aligned `IndexRange` for zero-copy bitmask slicing and kernel operations, and carry the exact `[exact_start, exact_end)` token bounds alongside it:
-  1. In [`MatchIterator`](../../../../corpus_rust/src/corpus_query_engine/corpus_candidate_filtering.rs), skip candidates `< exact_start` and stop at `>= exact_end` (or mask off the leading/trailing edge bits in the first and last `u64` words of the final candidate bitmask / binary-search trim the final `List`).
-  2. Adjust `total_candidates` for any masked edge bits so result estimates stay accurate.
-  3. Add an author query to `AUTHOR_BITMASK_QUERIES` in [`corpus_query_engine.rs`](../../../../corpus_rust/src/corpus_query_engine.rs) that actually hits a leaked boundary token, to verify parity against [`reference_impl.rs`](../../../../corpus_rust/src/corpus_query_engine/reference_impl.rs).
-- **Perf impact:** Zero (O(1) edge mask or two boundary comparisons).
-
----
-
 ## Phase 2: Author & Work Scope Filtering
 
 ### Author filter beyond V1

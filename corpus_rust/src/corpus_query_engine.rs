@@ -15,7 +15,7 @@ use crate::corpus_query_engine::corpus_data_readers::{
     CorpusText, IndexBuffers, InflectionLookup, TokenStarts,
 };
 use crate::corpus_query_engine::corpus_result_resolution::get_match_page;
-use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
+use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange, TokenScope};
 use crate::corpus_query_engine::query_pruning::prune_query;
 use crate::corpus_query_engine::query_validation::is_query_currently_supported;
 use crate::query_parsing_v2::{Query, parse_query};
@@ -58,7 +58,9 @@ impl CorpusQueryEngine {
         })
     }
 
-    fn compute_range(&self, query: &Query) -> Result<IndexRange, QueryExecError> {
+    /// Returns the word-aligned range to slice indices with, and the exact
+    /// token scope that matches must fall within.
+    fn compute_range(&self, query: &Query) -> Result<(IndexRange, TokenScope), QueryExecError> {
         if query.authors.len() > 1 {
             return Err(QueryExecError::new(
                 "Multiple authors in query not currently supported",
@@ -70,7 +72,11 @@ impl CorpusQueryEngine {
                 start: 0,
                 end: num_words * 64,
             };
-            return Ok(range);
+            let scope = TokenScope {
+                start: 0,
+                end: self.corpus.num_tokens,
+            };
+            return Ok((range, scope));
         }
         let author = &query.authors[0];
         let (start, end) = match self.corpus.author_lookup.get(author) {
@@ -84,11 +90,15 @@ impl CorpusQueryEngine {
         let start = self.corpus.work_lookup[start].rows[0].1;
         let end_work_sections = &self.corpus.work_lookup[end].rows;
         let end = end_work_sections[end_work_sections.len() - 1].2;
-        // The range must be aligned to word boundaries.
-        Ok(IndexRange {
-            start: (start / 64) * 64,
-            end: end.div_ceil(64) * 64,
-        })
+        // The range must be aligned to word boundaries; the scope keeps the
+        // exact bounds so the alignment padding doesn't leak matches.
+        Ok((
+            IndexRange {
+                start: (start / 64) * 64,
+                end: end.div_ceil(64) * 64,
+            },
+            TokenScope { start, end },
+        ))
     }
 
     /// Queries the corpus with the given parameters.
@@ -133,7 +143,7 @@ impl CorpusQueryEngine {
         profiler.phase("Parse query");
 
         // Find the candidates for each span individually.
-        let range = self.compute_range(&query)?;
+        let (range, scope) = self.compute_range(&query)?;
         let span_candidates =
             match self.candidates_for_spans(&query_spans, &range, &mut profiler)? {
                 Some(res) => res,
@@ -142,8 +152,8 @@ impl CorpusQueryEngine {
 
         // Find the candidates that could match all spans.
         let candidates = self.compute_query_candidates(&span_candidates)?;
-        let total_candidates = candidates.data.to_ref().num_elements();
-        let mut candidates = MatchIterator::new(&candidates, page_data);
+        let mut candidates = MatchIterator::new(&candidates, page_data, &scope);
+        let total_candidates = candidates.num_candidates();
         profiler.phase("Combined candidates found");
 
         // Finds a page of actual matches from the candidates.
@@ -190,10 +200,7 @@ mod tests {
 
     /// Author-restricted queries whose candidates end up as a bitmask, so paging
     /// exercises the slice-relative bitmask cursor in `MatchIterator::new`.
-    ///
-    /// Note: `compute_range` still rounds the author range out to 64-token
-    /// boundaries and never clips back (TODOS.md §1.2). These queries happen not
-    /// to hit a leaked neighbouring token; they do not cover that bug.
+    /// Exact author bounds are covered by `validate_author_range_is_exact`.
     const AUTHOR_BITMASK_QUERIES: &[&str] = &["[Ovid] @case:dat @case:acc"];
 
     /// (page_size, context_len)
@@ -210,6 +217,33 @@ mod tests {
     #[test]
     fn validate_author_bitmask_queries() {
         walk_pages(AUTHOR_BITMASK_QUERIES);
+    }
+
+    /// Author ranges are rounded out to 64-token boundaries for slicing. A
+    /// common query restricted to each author is very likely to hit the
+    /// padding before the author's first token, so this checks that matches
+    /// and counts are clipped to the exact author range. `et` resolves to a
+    /// `List` of candidates and `@case:dat @case:acc` to a `BitMask` (with a
+    /// non-zero position), so both clipping paths are covered.
+    #[test]
+    fn validate_author_range_is_exact() {
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            None => return,
+        };
+        let mut authors: Vec<&String> = engine.corpus.author_lookup.keys().collect();
+        authors.sort();
+        let options = QueryOptions {
+            page_size: 5,
+            context_len: 5,
+            strict_mode: false,
+        };
+        for author in authors {
+            for query in ["et", "@case:dat @case:acc"] {
+                let query = format!("[{author}] {query}");
+                engine.compare_ref_impl_results(&query, &PageData::default(), &options);
+            }
+        }
     }
 
     fn walk_pages(queries: &[&str]) {
