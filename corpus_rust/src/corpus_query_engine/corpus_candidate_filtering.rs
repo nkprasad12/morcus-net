@@ -26,7 +26,11 @@ impl<'a> MatchIterator<'a> {
         // Get to the start of the page.
         let i: usize = match &candidates {
             IndexData::List(_) => page_data.candidate_index as usize,
-            IndexData::BitMask(_) => page_data.result_id as usize,
+            // `next` yields `bit + candidate_start - candidate_position`, so
+            // invert that to turn the cursor's token ID back into a bit index.
+            IndexData::BitMask(_) => (page_data.result_id + all_candidates.position)
+                .saturating_sub(all_candidates.range.start)
+                as usize,
         };
         Self {
             candidate_start: all_candidates.range.start,

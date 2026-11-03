@@ -49,13 +49,6 @@ V1 is frozen.
 
 These are bugs in existing functionality and prerequisites for work-level or multi-range filtering. None of them require giving up 64-token word alignment in bitmask operations.
 
-### 1.1 Bitmask paging cursor uses absolute `result_id` instead of slice-relative offset
-
-- **Symptom:** Any author-filtered query whose candidates resolve to a `BitMask` (e.g. `#Ovid @case:dat @case:acc`, `#Caesar @case:dat @case:acc`) returns normal results on page 1, then an empty page 2 (`Showing results 51-50 of about 50 matches`).
-- **Root cause:** [`MatchIterator::new`](../../../../corpus_rust/src/corpus_query_engine/corpus_candidate_filtering.rs) initializes the bit index `i` to `page_data.result_id as usize`. `result_id` is an absolute corpus token ID, whereas the bitmask slice starts at `all_candidates.range.start` (`candidate_start`). Unfiltered queries only worked because `candidate_start == 0`.
-- **Fix:** Seed `i` with `page_data.result_id.saturating_sub(all_candidates.range.start) as usize` on the `BitMask` branch.
-- **Perf impact:** Zero.
-
 ### 1.2 Author/range 64-token rounding leaks neighbouring tokens
 
 - **Symptom:** [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) rounds the `[start, end)` token range outward to 64-token word boundaries (`(start / 64) * 64` to `end.div_ceil(64) * 64`) so bitmasks can be sliced zero-copy (`&bitmask[start_word..end_word]`), and never clips back. Up to 63 tokens from the preceding and following works can be counted in `total_candidates` and returned as matches.
@@ -63,7 +56,7 @@ These are bugs in existing functionality and prerequisites for work-level or mul
 - **Fix:** Keep the 64-token aligned `IndexRange` for zero-copy bitmask slicing and kernel operations, and carry the exact `[exact_start, exact_end)` token bounds alongside it:
   1. In [`MatchIterator`](../../../../corpus_rust/src/corpus_query_engine/corpus_candidate_filtering.rs), skip candidates `< exact_start` and stop at `>= exact_end` (or mask off the leading/trailing edge bits in the first and last `u64` words of the final candidate bitmask / binary-search trim the final `List`).
   2. Adjust `total_candidates` for any masked edge bits so result estimates stay accurate.
-  3. Un-ignore `validate_author_bitmask_queries` in [`corpus_query_engine.rs`](../../../../corpus_rust/src/corpus_query_engine.rs) to verify parity against [`reference_impl.rs`](../../../../corpus_rust/src/corpus_query_engine/reference_impl.rs).
+  3. Add an author query to `AUTHOR_BITMASK_QUERIES` in [`corpus_query_engine.rs`](../../../../corpus_rust/src/corpus_query_engine.rs) that actually hits a leaked boundary token, to verify parity against [`reference_impl.rs`](../../../../corpus_rust/src/corpus_query_engine/reference_impl.rs).
 - **Perf impact:** Zero (O(1) edge mask or two boundary comparisons).
 
 ### 1.3 Off-by-one on `IndexData::List` slice upper bound

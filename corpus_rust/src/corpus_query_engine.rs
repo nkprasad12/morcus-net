@@ -188,14 +188,13 @@ mod tests {
         "in @case:abl",
     ];
 
-    /// Author-restricted queries whose candidates end up as a bitmask. Currently
-    /// broken in two ways:
-    /// - `compute_range` rounds the author range out to 64-token boundaries and
-    ///   never clips back, so candidates from neighbouring authors are counted
-    ///   (and can be returned).
-    /// - `MatchIterator::new` seeds the bitmask cursor with the absolute
-    ///   `result_id` rather than one relative to the slice, so page 2 is empty.
-    const KNOWN_BROKEN_AUTHOR_QUERIES: &[&str] = &["[Ovid] @case:dat @case:acc"];
+    /// Author-restricted queries whose candidates end up as a bitmask, so paging
+    /// exercises the slice-relative bitmask cursor in `MatchIterator::new`.
+    ///
+    /// Note: `compute_range` still rounds the author range out to 64-token
+    /// boundaries and never clips back (TODOS.md §1.2). These queries happen not
+    /// to hit a leaked neighbouring token; they do not cover that bug.
+    const AUTHOR_BITMASK_QUERIES: &[&str] = &["[Ovid] @case:dat @case:acc"];
 
     /// (page_size, context_len)
     const TEST_OPTIONS: &[(usize, usize)] = &[(5, 15), (25, 10)];
@@ -209,9 +208,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known prod bugs: author range not clipped; MatchIterator bitmask cursor absolute"]
     fn validate_author_bitmask_queries() {
-        walk_pages(KNOWN_BROKEN_AUTHOR_QUERIES);
+        walk_pages(AUTHOR_BITMASK_QUERIES);
     }
 
     fn walk_pages(queries: &[&str]) {
