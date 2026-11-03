@@ -180,8 +180,10 @@ describe("experimental_texts.server", () => {
         summary.querySelector(".experimental-texts-author-count")
       ).toBeNull();
       expect(summary.querySelector(".author-card-count")).toBeNull();
-      const chevron = summary.querySelector(".author-card-chevron")!;
-      expect(chevron.getAttribute("aria-hidden")).toBe("true");
+      // The chevron is drawn in CSS (`.author-card-header::after`), so the
+      // header holds just the name.
+      expect(summary.children).toHaveLength(1);
+      expect(summary.querySelector("svg")).toBeNull();
     }
   });
 

@@ -169,11 +169,10 @@ describe("library SSR & client hydration", () => {
       const summary = groups[0].firstElementChild!;
       expect(summary.tagName).toBe("SUMMARY");
       expect(summary.classList.contains("library-author-header")).toBe(true);
-      expect(
-        summary
-          .querySelector(".author-card-chevron")
-          ?.getAttribute("aria-hidden")
-      ).toBe("true");
+      // The chevron is drawn in CSS (`.author-card-header::after`), so the
+      // header holds just the name.
+      expect(summary.children).toHaveLength(1);
+      expect(summary.querySelector("svg")).toBeNull();
 
       // Rows are list items holding the card link and its corner tag.
       const rows = [

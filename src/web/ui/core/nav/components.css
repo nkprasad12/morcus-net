@@ -75,21 +75,26 @@
   transition: color 0.15s ease;
 }
 
-.author-card-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-shrink: 0;
-}
+/* The chevron: points down while open, right while folded. Drawn in CSS (the
+   `strokeChevronDown` icon's path as a mask, painted in currentColor) rather
+   than an inline <svg> per card: the catalogs have hundreds of cards, and the
+   SVG cost ~270 bytes and three nodes each. Decorative, so nothing for
+   assistive tech to announce (the <summary> already exposes open/closed).
+   `-webkit-mask` is for Chrome < 120 (and Samsung Internet), in our targets. */
+.author-card-header::after {
+  --author-card-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 
-/* Points down while open, right while folded. */
-.author-card-chevron {
+  content: "";
   flex-shrink: 0;
-  color: var(--text-muted);
+  width: 16px;
+  height: 16px;
+  background-color: var(--text-muted);
+  -webkit-mask: var(--author-card-chevron) center / contain no-repeat;
+  mask: var(--author-card-chevron) center / contain no-repeat;
   transition: transform 0.15s ease;
 }
 
-.author-card:not([open]) .author-card-chevron {
+.author-card:not([open]) > .author-card-header::after {
   transform: rotate(-90deg);
 }
 

@@ -146,13 +146,6 @@ function renderAuthorGroupHtml(
         <h2 class="author-card-name library-author-name">${he.escape(
           author
         )}</h2>
-        <span class="author-card-meta">
-          ${renderIconSvg("strokeChevronDown", {
-            className: "author-card-chevron",
-            width: 16,
-            height: 16,
-          })}
-        </span>
       </summary>
       <ul class="author-card-list library-work-list">
         ${works.map(renderWorkRowHtml).join("\n")}

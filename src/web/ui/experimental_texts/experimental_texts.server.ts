@@ -167,13 +167,6 @@ function renderAuthorGroupHtml(group: ExperimentalTextAuthorGroup): string {
         <h2 class="author-card-name experimental-texts-author-name">${he.escape(
           group.author
         )}</h2>
-        <span class="author-card-meta">
-          ${renderIconSvg("strokeChevronDown", {
-            className: "author-card-chevron",
-            width: 16,
-            height: 16,
-          })}
-        </span>
       </summary>
       <ul class="author-card-list experimental-texts-work-list">
         ${worksHtml}
