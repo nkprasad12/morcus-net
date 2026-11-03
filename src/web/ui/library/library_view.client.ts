@@ -7,9 +7,24 @@ import {
   html,
 } from "@/web/ui/core/index.client";
 import { savedSpotsStore } from "@/web/ui/reader/saved_spots.client";
+import { countLabel } from "@/web/ui/shell/texts_tabs.common";
 
 /** An author's collapsible card (`<details>`), holding its works' rows. */
 const GROUP = "details[data-author-group]";
+
+const ROLES = {
+  shownWorks: "library-shown-works",
+  shownAuthors: "library-shown-authors",
+  toggleAll: "library-toggle-all",
+} as const;
+
+function setText(el: Element | null, text: string) {
+  if (el && el.textContent !== text) el.textContent = text;
+}
+
+function setHidden(el: HTMLElement | null, hidden: boolean) {
+  if (el && el.hidden !== hidden) el.hidden = hidden;
+}
 
 export class MorcusLibraryView extends BaseElement {
   #currentFilter: string = "all";
@@ -92,6 +107,52 @@ export class MorcusLibraryView extends BaseElement {
         this.#setFilter("all");
       });
     }
+
+    const toggleAllBtn = this.scope.$<HTMLButtonElement>(
+      `[data-role="${ROLES.toggleAll}"]`
+    );
+    this.scope.listen(toggleAllBtn, "click", () => {
+      this.#toggleAllGroups();
+    });
+    this.scope.listen(
+      this,
+      "toggle",
+      (e) => {
+        if (
+          e.target instanceof HTMLDetailsElement &&
+          e.target.hasAttribute("data-author-group")
+        ) {
+          if (!e.target.open) this.#autoOpened.delete(e.target);
+          this.#syncToggleAll();
+        }
+      },
+      { capture: true }
+    );
+
+    if (!this.#currentQuery) {
+      this.#syncToggleAll();
+    }
+  }
+
+  #toggleAllGroups() {
+    const groups = this.scope.$$<HTMLDetailsElement>(GROUP);
+    const anyVisibleOpen = groups.some((g) => !g.hidden && g.open);
+    const nextOpen = !anyVisibleOpen;
+    for (const group of groups) {
+      group.open = nextOpen;
+      this.#autoOpened.delete(group);
+    }
+    this.#syncToggleAll();
+  }
+
+  #syncToggleAll() {
+    const btn = this.scope.$<HTMLElement>(`[data-role="${ROLES.toggleAll}"]`);
+    if (!btn) return;
+    const visible = this.scope
+      .$$<HTMLDetailsElement>(GROUP)
+      .filter((g) => !g.hidden);
+    setHidden(btn, visible.length === 0);
+    setText(btn, visible.some((g) => g.open) ? "Collapse all" : "Expand all");
   }
 
   #setFilter(filter: string) {
@@ -133,6 +194,7 @@ export class MorcusLibraryView extends BaseElement {
     // Each author's card: hidden while none of its works match, unfolded (if
     // the user folded it) while filtering, and restored when the filter clears.
     const filtered = tokens.length > 0 || this.#currentFilter !== "all";
+    let visibleAuthors = 0;
     for (const group of this.scope.$$<HTMLDetailsElement>(GROUP)) {
       let visibleInGroup = 0;
       for (const card of Array.from(
@@ -141,6 +203,7 @@ export class MorcusLibraryView extends BaseElement {
         if (!(card.parentElement ?? card).hidden) visibleInGroup++;
       }
       group.hidden = visibleInGroup === 0;
+      if (visibleInGroup > 0) visibleAuthors++;
       if (filtered && visibleInGroup > 0) {
         if (!group.open) {
           group.open = true;
@@ -152,9 +215,18 @@ export class MorcusLibraryView extends BaseElement {
       }
     }
 
+    setText(
+      this.scope.$(`[data-role="${ROLES.shownWorks}"]`),
+      countLabel(visibleCount, "work")
+    );
+    setText(
+      this.scope.$(`[data-role="${ROLES.shownAuthors}"]`),
+      countLabel(visibleAuthors, "author")
+    );
     if (emptyState) {
       emptyState.hidden = visibleCount > 0;
     }
+    this.#syncToggleAll();
   }
 
   /**

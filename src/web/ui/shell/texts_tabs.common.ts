@@ -50,3 +50,8 @@ export const TEXTS_TABS: readonly TextsTabSpec[] = [
     href: "/externalReader",
   },
 ];
+
+/** `"1 work"`, `"1,675 works"`: catalog counts, as server and client write them. */
+export function countLabel(count: number, noun: string): string {
+  return `${count.toLocaleString("en-US")} ${noun}${count === 1 ? "" : "s"}`;
+}

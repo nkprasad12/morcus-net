@@ -40,13 +40,13 @@ interface PeriodFilterOption {
 }
 
 const SOURCE_FILTER_OPTIONS: readonly SourceFilterOption[] = [
-  { id: "all", label: "All sources" },
+  { id: "all", label: "All" },
   { id: "patrologia_latina", label: "Patrologia Latina" },
   { id: "thelatinlibrary", label: "The Latin Library" },
 ];
 
 const PERIOD_FILTER_OPTIONS: readonly PeriodFilterOption[] = [
-  { id: "all", label: "All periods" },
+  { id: "all", label: "All" },
   { id: "ancient", label: "Ancient" },
   { id: "medieval", label: "Medieval" },
   { id: "neolatin", label: "Neo-Latin" },
@@ -185,18 +185,15 @@ export function renderExperimentalTextsCatalogContentHtml(
   const authorGroups = groupExperimentalTextEntriesByAuthor(bundle.entries);
   const workCount = bundle.entries.length;
   const roles = EXPERIMENTAL_TEXTS_CATALOG_ROLES;
-  // The summary's parts the client rewrites (counts) or toggles (the rest).
-  const shownWorksHtml = `<strong data-role="${roles.shownWorks}">${countLabel(
+  // The summary's parts the client rewrites (counts) or toggles.
+  const shownWorksHtml = `<span data-role="${roles.shownWorks}">${countLabel(
     workCount,
     "work"
-  )}</strong>`;
-  const shownAuthorsHtml = `<strong data-role="${
+  )}</span>`;
+  const shownAuthorsHtml = `<span data-role="${
     roles.shownAuthors
-  }">${countLabel(authorGroups.length, "author")}</strong>`;
-  const filteredNoteHtml = `<span data-role="${
-    roles.filteredNote
-  }" hidden> (filtered from ${workCount.toLocaleString("en-US")} total)</span>`;
-  const resetHtml = `<button type="button" class="experimental-texts-reset-link" data-role="${roles.reset}" hidden>Clear filters</button>`;
+  }">${countLabel(authorGroups.length, "author")}</span>`;
+  const toggleAllHtml = `<button type="button" class="experimental-texts-toggle-link" data-role="${roles.toggleAll}">Collapse all</button>`;
 
   return ssr`
     <morcus-experimental-texts-view class="experimental-texts-view">
@@ -234,9 +231,9 @@ export function renderExperimentalTextsCatalogContentHtml(
         </div>
         <div class="experimental-texts-summary-bar" data-js-only>
           <p class="experimental-texts-count" data-role="${roles.count}">
-            Showing ${shownWorksHtml} across ${shownAuthorsHtml}${filteredNoteHtml}
+            ${shownWorksHtml} &middot; ${shownAuthorsHtml}
           </p>
-          ${resetHtml}
+          ${toggleAllHtml}
         </div>
       </header>
       <div id="experimental-texts-empty-state" class="empty-state experimental-texts-empty-state" hidden>

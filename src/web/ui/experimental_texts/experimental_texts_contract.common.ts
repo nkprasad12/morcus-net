@@ -11,6 +11,9 @@ import type {
   ExperimentalTextSourceRepoMeta,
 } from "@/common/experimental_texts/catalog_types";
 import { html, raw, type SafeHtml } from "@/web/ui/core/dom/html.common";
+import { countLabel } from "@/web/ui/shell/texts_tabs.common";
+
+export { countLabel };
 
 /** The route of the Experimental Texts tab: the catalog and the reader. */
 export const EXPERIMENTAL_TEXTS_PATH = "/experimentalTexts";
@@ -27,15 +30,9 @@ export const EXPERIMENTAL_TEXTS_CATALOG_ROLES = {
   count: "experimental-texts-count",
   shownWorks: "experimental-texts-shown-works",
   shownAuthors: "experimental-texts-shown-authors",
-  filteredNote: "experimental-texts-filtered-note",
-  reset: "experimental-texts-reset",
+  toggleAll: "experimental-texts-toggle-all",
   emptyReset: "experimental-texts-empty-reset",
 } as const;
-
-/** `"1 work"`, `"1,675 works"`: catalog counts, as server and client write them. */
-export function countLabel(count: number, noun: string): string {
-  return `${count.toLocaleString("en-US")} ${noun}${count === 1 ? "" : "s"}`;
-}
 
 /**
  * Query parameters of `/experimentalTexts`. The catalog takes none: filtering is

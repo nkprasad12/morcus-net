@@ -1,6 +1,7 @@
 import { renderPageShell } from "@/web/ui/shell/page_shell.server";
 import { getV2LibrarySummaries } from "@/web/ui/reader/reader_loader.server";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
+import { countLabel } from "@/web/ui/shell/texts_tabs.common";
 import { renderTextsTabBar } from "@/web/ui/shell/texts_tabs.server";
 import * as he from "he";
 import { ssr } from "@/web/ui/core/server/ssr_template.server";
@@ -193,7 +194,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
         <p class="library-own-text">Welcome to the library! These texts have been carefully vetted to work well in the reader.</p>
         <div class="library-search-form search-form" data-js-only>
           <div class="input-wrapper">
-            <input type="text"
+            <input type="search"
                    id="library-search-input"
                    class="input library-search-input"
                    placeholder="Filter by author or work (e.g. Caesar, Aeneid, Catullus)..."
@@ -213,6 +214,18 @@ export async function renderLibraryPageHtml(): Promise<string> {
               <button type="button" class="filter-pill" data-filter="progress" hidden>In progress</button>
             </div>
           </div>
+        </div>
+        <div class="library-summary-bar" data-js-only>
+          <p class="library-count" data-role="library-count">
+            <span data-role="library-shown-works">${countLabel(
+              sortedWorks.length,
+              "work"
+            )}</span> &middot; <span data-role="library-shown-authors">${countLabel(
+              byAuthor.size,
+              "author"
+            )}</span>
+          </p>
+          <button type="button" class="library-toggle-link" data-role="library-toggle-all">Collapse all</button>
         </div>
       </header>
 

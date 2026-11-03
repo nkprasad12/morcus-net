@@ -80,38 +80,6 @@
   margin-right: var(--space-1);
 }
 
-/* Results summary & clear filters bar */
-.experimental-texts-summary-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: 0 var(--space-1);
-  color: var(--text-muted);
-}
-
-.experimental-texts-count {
-  margin: 0;
-  font-size: 0.85rem;
-}
-
-/* A button that looks like a link. */
-.experimental-texts-reset-link {
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--primary);
-  cursor: pointer;
-}
-
-.experimental-texts-reset-link:hover {
-  text-decoration: underline;
-}
-
 /* Author -> Works grouped listing */
 .experimental-texts-groups {
   display: grid;

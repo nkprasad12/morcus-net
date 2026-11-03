@@ -89,9 +89,9 @@ describe("MorcusExperimentalTextsView", () => {
     expect(visibleTitles()).toHaveLength(ENTRIES.length);
     expect(
       document.querySelector<HTMLElement>(
-        '[data-role="experimental-texts-reset"]'
-      )!.hidden
-    ).toBe(true);
+        '[data-role="experimental-texts-toggle-all"]'
+      )!.textContent
+    ).toBe("Collapse all");
   });
 
   test("filters by author, title and volume label as the user types", () => {
@@ -106,9 +106,7 @@ describe("MorcusExperimentalTextsView", () => {
 
     type("ministrorum");
     expect(visibleTitles()).toEqual(["De Officiis Ministrorum Libri Tres"]);
-    expect(countText()).toBe(
-      `Showing 1 work across 1 author (filtered from ${ENTRIES.length} total)`
-    );
+    expect(countText()).toBe("1 work · 1 author");
     const group = document.querySelector(
       "#author-ambrosius-mediolanensis-saint-ambrose"
     )!;
@@ -150,42 +148,34 @@ describe("MorcusExperimentalTextsView", () => {
     click('[data-source-filter="all"]');
     click('[data-period-filter="all"]');
     expect(visibleTitles()).toHaveLength(ENTRIES.length);
-    expect(
-      document.querySelector<HTMLElement>(
-        '[data-role="experimental-texts-reset"]'
-      )!.hidden
-    ).toBe(true);
   });
 
-  test("shows the empty state, and both reset buttons clear every filter", () => {
+  test("shows the empty state, and empty-state reset clears every filter", () => {
     mount();
     const empty = document.querySelector<HTMLElement>(
       "#experimental-texts-empty-state"
     )!;
-    for (const reset of [
-      '[data-role="experimental-texts-empty-reset"]',
-      '[data-role="experimental-texts-reset"]',
-    ]) {
-      click('[data-period-filter="medieval"]');
-      type("no_such_author_or_work_xyz");
-      expect(visibleTitles()).toEqual([]);
-      expect(visibleAuthors()).toEqual([]);
-      expect(empty.hidden).toBe(false);
-      expect(countText()).toBe(
-        `Showing 0 works across 0 authors (filtered from ${ENTRIES.length} total)`
-      );
+    const toggleAll = document.querySelector<HTMLElement>(
+      '[data-role="experimental-texts-toggle-all"]'
+    )!;
+    click('[data-period-filter="medieval"]');
+    type("no_such_author_or_work_xyz");
+    expect(visibleTitles()).toEqual([]);
+    expect(visibleAuthors()).toEqual([]);
+    expect(empty.hidden).toBe(false);
+    expect(toggleAll.hidden).toBe(true);
+    expect(countText()).toBe("0 works · 0 authors");
 
-      click(reset);
-      expect(input().value).toBe("");
-      expect(visibleTitles()).toHaveLength(ENTRIES.length);
-      expect(empty.hidden).toBe(true);
-      expect(
-        document
-          .querySelector('[data-period-filter="all"]')!
-          .classList.contains("active")
-      ).toBe(true);
-      expect(countText()).not.toContain("filtered");
-    }
+    click('[data-role="experimental-texts-empty-reset"]');
+    expect(input().value).toBe("");
+    expect(visibleTitles()).toHaveLength(ENTRIES.length);
+    expect(empty.hidden).toBe(true);
+    expect(toggleAll.hidden).toBe(false);
+    expect(
+      document
+        .querySelector('[data-period-filter="all"]')!
+        .classList.contains("active")
+    ).toBe(true);
   });
 
   test("adopts a query typed before upgrade", () => {
@@ -198,7 +188,7 @@ describe("MorcusExperimentalTextsView", () => {
     expect(visibleAuthors()).toEqual(["Apicius"]);
   });
 
-  test("author cards start open, and a match unfolds a folded card", () => {
+  test("author cards start open, a match unfolds a folded card, and clearing restores it", () => {
     mount();
     const groups = Array.from(
       document.querySelectorAll<HTMLDetailsElement>(
@@ -213,26 +203,62 @@ describe("MorcusExperimentalTextsView", () => {
     )!;
     const other = groups.find((g) => g !== ambrose)!;
     ambrose.open = false;
-    other.open = false;
 
     type("ambros");
     expect(ambrose.open).toBe(true);
-    // Cards without a match stay as the user left them.
     expect(other.hidden).toBe(true);
-    expect(other.open).toBe(false);
 
-    // Unfiltered, nothing is reopened behind the user's back.
-    ambrose.open = false;
-    click('[data-role="experimental-texts-reset"]');
+    // Clearing the filter restores auto-opened Ambrose to folded while leaving
+    // originally-open cards open.
+    type("");
     expect(ambrose.open).toBe(false);
+    expect(other.open).toBe(true);
     expect(other.hidden).toBe(false);
+  });
+
+  test("Collapse all / Expand all toggles cards and syncs with manual card toggles", () => {
+    mount();
+    const groups = Array.from(
+      document.querySelectorAll<HTMLDetailsElement>(
+        ".experimental-texts-author-group"
+      )
+    );
+    const toggleBtn = document.querySelector<HTMLButtonElement>(
+      '[data-role="experimental-texts-toggle-all"]'
+    )!;
+    expect(toggleBtn.textContent).toBe("Collapse all");
+
+    //Manually closing one card keeps "Collapse all" while others remain open.
+    groups[0].open = false;
+    groups[0].dispatchEvent(new Event("toggle"));
+    expect(toggleBtn.textContent).toBe("Collapse all");
+
+    // Clicking "Collapse all" folds every card and flips to "Expand all".
+    toggleBtn.click();
+    expect(groups.every((g) => !g.open)).toBe(true);
+    expect(toggleBtn.textContent).toBe("Expand all");
+
+    // Manually opening one card flips the button back to "Collapse all".
+    groups[0].open = true;
+    groups[0].dispatchEvent(new Event("toggle"));
+    expect(toggleBtn.textContent).toBe("Collapse all");
+
+    // Clicking "Collapse all" folds that card again; clicking "Expand all" opens all.
+    toggleBtn.click();
+    expect(groups.every((g) => !g.open)).toBe(true);
+    expect(toggleBtn.textContent).toBe("Expand all");
+
+    toggleBtn.click();
+    expect(groups.every((g) => g.open)).toBe(true);
+    expect(toggleBtn.textContent).toBe("Collapse all");
   });
 
   test("never touches the URL", () => {
     mount();
     type("augustin");
     click('[data-source-filter="patrologia_latina"]');
-    click('[data-role="experimental-texts-reset"]');
+    type("");
+    click('[data-source-filter="all"]');
     expect(replaceState).not.toHaveBeenCalled();
     expect(pushState).not.toHaveBeenCalled();
   });

@@ -143,8 +143,16 @@ describe("library SSR & client hydration", () => {
         "sr-only",
         "library-own-text",
         "library-search-form",
+        "library-summary-bar",
       ]);
       expect(header.querySelector("h1.sr-only")?.textContent).toBe("Library");
+      const count = header.querySelector('[data-role="library-count"]')!;
+      expect(count.textContent?.replace(/\s+/g, " ").trim()).toBe(
+        "3 works · 2 authors"
+      );
+      expect(
+        header.querySelector('[data-role="library-toggle-all"]')?.textContent
+      ).toBe("Collapse all");
       expect(document.querySelectorAll("main")).toHaveLength(1);
     });
 
@@ -209,6 +217,12 @@ describe("library SSR & client hydration", () => {
             <button type="button" class="filter-pill active" data-filter="all">All</button>
             <button type="button" class="filter-pill" data-filter="macra">Macronized</button>
             <button type="button" class="filter-pill" data-filter="progress" hidden>In progress</button>
+          </div>
+          <div class="library-summary-bar">
+            <p class="library-count" data-role="library-count">
+              <span data-role="library-shown-works">3 works</span> &middot; <span data-role="library-shown-authors">2 authors</span>
+            </p>
+            <button type="button" class="library-toggle-link" data-role="library-toggle-all">Collapse all</button>
           </div>
         </header>
         <div id="library-empty-state" hidden></div>
@@ -574,6 +588,52 @@ describe("library SSR & client hydration", () => {
       expect(group(el, CAESAR).open).toBe(false);
       expect(group(el, CATULLUS).open).toBe(true);
       expect(group(el, CATULLUS).hidden).toBe(false);
+    });
+
+    it("updates count summary and toggles Collapse all / Expand all", () => {
+      const el = setupLibraryDOM();
+      const count = el.querySelector('[data-role="library-count"]')!;
+      const toggleBtn = el.querySelector<HTMLButtonElement>(
+        '[data-role="library-toggle-all"]'
+      )!;
+      const input = el.querySelector<HTMLInputElement>(
+        "#library-search-input"
+      )!;
+
+      expect(toggleBtn.textContent).toBe("Collapse all");
+
+      // Collapse all folds both authors and switches button to "Expand all".
+      toggleBtn.click();
+      expect(group(el, CAESAR).open).toBe(false);
+      expect(group(el, CATULLUS).open).toBe(false);
+      expect(toggleBtn.textContent).toBe("Expand all");
+
+      // Manually opening one author returns button to "Collapse all".
+      group(el, CAESAR).open = true;
+      group(el, CAESAR).dispatchEvent(new Event("toggle"));
+      expect(toggleBtn.textContent).toBe("Collapse all");
+
+      // Collapse all again, then filter: matching author auto-opens, count updates.
+      toggleBtn.click();
+      expect(toggleBtn.textContent).toBe("Expand all");
+
+      input.value = "gallico";
+      input.dispatchEvent(new Event("input"));
+      expect(count.textContent?.replace(/\s+/g, " ").trim()).toBe(
+        "1 work · 1 author"
+      );
+      expect(group(el, CAESAR).open).toBe(true);
+      expect(toggleBtn.textContent).toBe("Collapse all");
+
+      // Clearing filter restores collapsed state and "Expand all".
+      input.value = "";
+      input.dispatchEvent(new Event("input"));
+      expect(count.textContent?.replace(/\s+/g, " ").trim()).toBe(
+        "3 works · 2 authors"
+      );
+      expect(group(el, CAESAR).open).toBe(false);
+      expect(group(el, CATULLUS).open).toBe(false);
+      expect(toggleBtn.textContent).toBe("Expand all");
     });
   });
 

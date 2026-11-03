@@ -154,16 +154,15 @@ describe("experimental_texts.server", () => {
     ]);
     for (const pill of [...sourcePills, ...periodPills]) {
       expect(pill.type).toBe("button");
-      const isAll = pill.textContent!.startsWith("All ");
+      const isAll = pill.textContent === "All";
       expect(pill.classList.contains("active")).toBe(isAll);
       expect(pill.getAttribute("aria-pressed")).toBe(String(isAll));
     }
 
-    expect(
-      view.querySelector<HTMLButtonElement>(
-        '[data-role="experimental-texts-reset"]'
-      )?.hidden
-    ).toBe(true);
+    const toggleAll = view.querySelector<HTMLButtonElement>(
+      '[data-role="experimental-texts-toggle-all"]'
+    );
+    expect(toggleAll?.textContent).toBe("Collapse all");
     expect(
       view.querySelector<HTMLElement>("#experimental-texts-empty-state")?.hidden
     ).toBe(true);
@@ -241,11 +240,10 @@ describe("experimental_texts.server", () => {
         .hasAttribute("data-author")
     ).toBe(false);
 
-    // The "(filtered from N total)" note is hidden until the user filters.
     const count = doc.querySelector('[data-role="experimental-texts-count"]')!;
-    count.querySelectorAll("[hidden]").forEach((el) => el.remove());
+    expect(count.querySelector("strong")).toBeNull();
     expect(count.textContent!.replace(/\s+/g, " ").trim()).toBe(
-      `Showing ${items.length} works across ${
+      `${items.length} works · ${
         doc.querySelectorAll(".experimental-texts-author-group").length
       } authors`
     );

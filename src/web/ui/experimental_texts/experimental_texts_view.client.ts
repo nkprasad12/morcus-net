@@ -51,6 +51,8 @@ export class MorcusExperimentalTextsView extends BaseElement {
   readonly #filters = { source: "all", period: "all" };
   /** Built on first filter: the server-rendered list never changes. */
   #index: IndexedGroup[] | undefined = undefined;
+  /** Author cards unfolded automatically while filtering, restored when cleared. */
+  readonly #autoOpened = new WeakSet<HTMLDetailsElement>();
 
   #role(role: string): HTMLElement | null {
     return this.scope.$(`[data-role="${role}"]`);
@@ -75,20 +77,61 @@ export class MorcusExperimentalTextsView extends BaseElement {
       this.#filters[kind] = value;
       this.#apply();
     });
-    for (const role of [ROLES.reset, ROLES.emptyReset]) {
-      this.scope.listen(this.#role(role), "click", () => {
-        if (input) input.value = "";
-        this.#query = [];
-        this.#filters.source = this.#filters.period = "all";
-        this.#apply();
-        input?.focus();
-      });
-    }
+    this.scope.listen(this.#role(ROLES.emptyReset), "click", () => {
+      if (input) input.value = "";
+      this.#query = [];
+      this.#filters.source = this.#filters.period = "all";
+      this.#apply();
+      input?.focus();
+    });
+    this.scope.listen(this.#role(ROLES.toggleAll), "click", () => {
+      this.#toggleAllGroups();
+    });
+    this.scope.listen(
+      this,
+      "toggle",
+      (e) => {
+        if (
+          e.target instanceof HTMLDetailsElement &&
+          e.target.classList.contains("experimental-texts-author-group")
+        ) {
+          if (!e.target.open) this.#autoOpened.delete(e.target);
+          this.#syncToggleAll();
+        }
+      },
+      { capture: true }
+    );
 
     // The field is usable before upgrade; adopt anything already typed. The
     // pills are inert until now, so their state is ours (and survives a move).
     readQuery();
     if (this.#isFiltered()) this.#apply();
+    else this.#syncToggleAll();
+  }
+
+  #groups(): HTMLDetailsElement[] {
+    return this.#index
+      ? this.#index.map((g) => g.el)
+      : this.scope.$$<HTMLDetailsElement>(".experimental-texts-author-group");
+  }
+
+  #toggleAllGroups() {
+    const groups = this.#groups();
+    const anyVisibleOpen = groups.some((g) => !g.hidden && g.open);
+    const nextOpen = !anyVisibleOpen;
+    for (const group of groups) {
+      group.open = nextOpen;
+      this.#autoOpened.delete(group);
+    }
+    this.#syncToggleAll();
+  }
+
+  #syncToggleAll() {
+    const btn = this.#role(ROLES.toggleAll);
+    if (!btn) return;
+    const visible = this.#groups().filter((g) => !g.hidden);
+    setHidden(btn, visible.length === 0);
+    setText(btn, visible.some((g) => g.open) ? "Collapse all" : "Expand all");
   }
 
   #isFiltered(): boolean {
@@ -139,14 +182,12 @@ export class MorcusExperimentalTextsView extends BaseElement {
     }
 
     this.#index ??= this.#buildIndex();
-    let total = 0;
     let works = 0;
     let authors = 0;
     const filtered = this.#isFiltered();
     for (const group of this.#index) {
       let shown = 0;
       for (const work of group.works) {
-        total++;
         const visible =
           (source === "all" || work.source === source) &&
           (period === "all" || work.period === period) &&
@@ -156,20 +197,25 @@ export class MorcusExperimentalTextsView extends BaseElement {
       }
       setHidden(group.el, !shown);
       // Unfold a card the user folded earlier if it holds a match, so a
-      // search never reports works it then hides.
-      if (filtered && shown && !group.el.open) group.el.open = true;
+      // search never reports works it then hides, and restore it when cleared.
+      if (filtered && shown > 0) {
+        if (!group.el.open) {
+          group.el.open = true;
+          this.#autoOpened.add(group.el);
+        }
+      } else if (this.#autoOpened.has(group.el)) {
+        group.el.open = false;
+        this.#autoOpened.delete(group.el);
+      }
       works += shown;
       if (shown) authors++;
     }
 
     setText(this.#role(ROLES.shownWorks), countLabel(works, "work"));
     setText(this.#role(ROLES.shownAuthors), countLabel(authors, "author"));
-    const note = this.#role(ROLES.filteredNote);
-    if (note) note.hidden = !filtered || works === total;
-    const reset = this.#role(ROLES.reset);
-    if (reset) reset.hidden = !filtered;
     const empty = this.scope.$("#experimental-texts-empty-state");
     if (empty) empty.hidden = works > 0;
+    this.#syncToggleAll();
   }
 }
 

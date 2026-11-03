@@ -84,9 +84,43 @@
 }
 
 /* Search Bar & Filter Pills (matches Dictionary design) */
-/* Last in `.library-header`, whose margin spaces it from the grid. */
 .library-search-form {
-  margin-bottom: 0;
+  margin-bottom: var(--space-4);
+}
+
+/* Catalog summary bar & Collapse/Expand all link (shared by /library and /experimentalTexts) */
+.library-summary-bar,
+.experimental-texts-summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-inline: var(--space-3);
+  color: var(--text-muted);
+}
+
+.library-count,
+.experimental-texts-count {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.library-toggle-link,
+.experimental-texts-toggle-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.library-toggle-link:hover,
+.experimental-texts-toggle-link:hover {
+  text-decoration: underline;
 }
 
 .library-search-form .search-tray {
@@ -244,6 +278,10 @@
 }
 
 @media (width <= 640px) {
+  .body-library .container {
+    padding-inline: var(--space-5);
+  }
+
   .library-header {
     margin-bottom: var(--space-5);
   }
