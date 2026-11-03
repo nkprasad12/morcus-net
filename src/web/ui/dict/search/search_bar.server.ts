@@ -334,7 +334,8 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
           enterkeyhint="done"
         />
         <button type="button" class="btn btn-sm btn-secondary dict-set-save">Save these</button>
-      </div>`
+      </div>
+      <p class="settings-caption dict-save-caption" data-js-only>Save the ticked dictionaries as a set. Click a saved set to switch to it.</p>`
     : "";
 
   // `#dict-appearance-link`: reading text is app-wide, so the app-bar

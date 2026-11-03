@@ -16,6 +16,9 @@ export const ICON_EDIT =
 export const ICON_BOOKMARK =
   "M17 3H7a1 1 0 0 0-1 1v16l6-3.2L18 20V4a1 1 0 0 0-1-1z";
 export const ICON_CLOSE = "M18 6 6 18M6 6l12 12";
+/** Material filled "delete": deleting a saved item (vs ×, which reads as deselect). */
+export const ICON_TRASH =
+  "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z";
 /** Outline ▾: the reader TOC trigger's chevron. */
 export const ICON_STROKE_CHEVRON_DOWN = "M6 9l6 6 6-6";
 

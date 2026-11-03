@@ -144,8 +144,30 @@ morcus-dict-settings {
 }
 
 .dict-set-apply,
-.dict-set-remove {
+.dict-set-remove,
+.dict-set-save {
   font-weight: 400;
+}
+
+/* The set whose dictionaries are exactly the ticked ones. */
+.dict-set:has(.dict-set-apply[aria-pressed="true"]) {
+  border-color: var(--primary);
+}
+
+.dict-set-apply[aria-pressed="true"] {
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.dict-set-remove svg {
+  display: block;
+  width: 1.1em;
+  height: 1.1em;
+  fill: currentColor;
+}
+
+.dict-save-caption {
+  margin: var(--space-2) 0 0;
 }
 
 .dict-set-apply {

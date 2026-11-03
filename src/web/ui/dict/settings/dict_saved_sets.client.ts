@@ -1,9 +1,17 @@
-import { html, joinHtml, type SafeHtml } from "@/web/ui/core/dom/html.common";
+import {
+  html,
+  joinHtml,
+  raw,
+  type SafeHtml,
+} from "@/web/ui/core/dom/html.common";
 import { storage } from "@/web/ui/core/state/storage.client";
+import { ICON_TRASH } from "@/web/ui/core/widgets/icons.common";
 import {
   decodeStoredDictBitmask,
   encodeDictBitmask,
 } from "@/web/ui/dict/settings/dict_bitmask.common";
+
+const TRASH_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON_TRASH}"></path></svg>`;
 
 /**
  * Named sets of dictionaries the user saved from the settings dialog, to switch between kinds
@@ -72,8 +80,15 @@ export function removeDictSet(name: string): void {
   writeDictSets(readDictSets().filter((s) => !sameName(s.name, name)));
 }
 
-/** The chips for `#dict-saved-list`. The title lists the set's dictionaries. */
-export function renderDictSets(sets: readonly DictSet[]): SafeHtml {
+/**
+ * The chips for `#dict-saved-list`. The title lists the set's dictionaries. A chip whose set is
+ * exactly `ticked` (by bitmask) is marked `aria-pressed="true"`.
+ */
+export function renderDictSets(
+  sets: readonly DictSet[],
+  ticked: readonly string[] = []
+): SafeHtml {
+  const tickedMask = encodeDictBitmask(ticked);
   return html`${joinHtml(
     sets.map(
       (set) =>
@@ -82,17 +97,33 @@ export function renderDictSets(sets: readonly DictSet[]): SafeHtml {
             type="button"
             class="btn btn-sm dict-set-apply"
             data-name="${set.name}"
+            aria-pressed="${String(set.d === tickedMask)}"
             title="${(decodeStoredDictBitmask(set.d) ?? []).join(", ")}">
             ${set.name}</button
           ><button
             type="button"
             class="btn btn-sm dict-set-remove"
             data-name="${set.name}"
-            aria-label="Remove ${set.name}"
-            title="Remove">
-            ×
+            aria-label="Delete ${set.name}"
+            title="Delete set">
+            ${raw(TRASH_SVG)}
           </button></span
         >`
     )
   )}`;
+}
+
+/**
+ * Marks the chip whose set is exactly `ticked`, without redrawing (which would lose focus).
+ */
+export function syncActiveDictSet(
+  list: HTMLElement,
+  ticked: readonly string[]
+): void {
+  const tickedMask = encodeDictBitmask(ticked);
+  const sets = readDictSets();
+  for (const b of list.querySelectorAll<HTMLElement>(".dict-set-apply")) {
+    const set = sets.find((s) => sameName(s.name, b.dataset.name ?? ""));
+    b.setAttribute("aria-pressed", String(set?.d === tickedMask));
+  }
 }

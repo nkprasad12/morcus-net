@@ -23,6 +23,7 @@ import {
   removeDictSet,
   renderDictSets,
   saveDictSet,
+  syncActiveDictSet,
 } from "@/web/ui/dict/settings/dict_saved_sets.client";
 import {
   DICT_SETTINGS_DIALOG_ID,
@@ -191,9 +192,15 @@ export class MorcusDictSettings extends BaseElement {
     return window.location.hash === `#${DICT_SETTINGS_DIALOG_ID}`;
   }
 
+  #tickedKeys(): string[] {
+    return this.#dictCheckboxes()
+      .filter((cb) => cb.checked)
+      .map((cb) => cb.dataset.key || cb.value);
+  }
+
   #renderSavedSets() {
     const list = this.scope.$<HTMLElement>("#dict-saved-list");
-    if (list) setHtml(list, renderDictSets(readDictSets()));
+    if (list) setHtml(list, renderDictSets(readDictSets(), this.#tickedKeys()));
   }
 
   /** Clears the save field and its "Saved" confirmation, e.g. when the dialog closes. */
@@ -240,7 +247,7 @@ export class MorcusDictSettings extends BaseElement {
       (_e, button) => {
         removeDictSet(button.dataset.name ?? "");
         this.#renderSavedSets();
-        // The focused × is gone; keep focus in the dialog.
+        // The focused delete button is gone; keep focus in the dialog.
         (
           list.querySelector<HTMLElement>(".dict-set-apply") ??
           this.scope.$<HTMLElement>(".dict-set-name")
@@ -300,6 +307,9 @@ export class MorcusDictSettings extends BaseElement {
     // A set of no dictionaries can't be saved either.
     const saveBtn = this.scope.$<HTMLButtonElement>(".dict-set-save");
     if (saveBtn) saveBtn.disabled = none;
+    // Mark the saved set (if any) that matches the ticked dictionaries.
+    const list = this.scope.$<HTMLElement>("#dict-saved-list");
+    if (list) syncActiveDictSet(list, this.#tickedKeys());
   }
 
   /**

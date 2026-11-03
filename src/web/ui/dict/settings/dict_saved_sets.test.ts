@@ -170,7 +170,7 @@ describe("saved dictionary sets", () => {
     expect(document.cookie).toContain("morcus_d=1c");
   });
 
-  test("× removes a set", () => {
+  test("the delete (trash) button removes a set", () => {
     localStorage.setItem(
       DICT_SETS_KEY,
       JSON.stringify([
@@ -179,9 +179,61 @@ describe("saved dictionary sets", () => {
       ])
     );
     const { el } = mount();
-    el.querySelector<HTMLElement>(".dict-set-remove")!.click();
+    const del = el.querySelector<HTMLElement>(".dict-set-remove")!;
+    expect(del.getAttribute("aria-label")).toBe("Delete Prose");
+    expect(del.querySelector("svg")).not.toBeNull();
+    expect(del.textContent!.trim()).toBe("");
+    del.click();
     expect(chipNames(el)).toEqual(["Latin"]);
     expect(readDictSets()).toEqual([{ name: "Latin", d: "f" }]);
+  });
+
+  test("the set matching the ticked dictionaries is marked pressed", () => {
+    localStorage.setItem(
+      DICT_SETS_KEY,
+      JSON.stringify([
+        { name: "Prose", d: "1c" },
+        { name: "LS", d: "1" },
+      ])
+    );
+    const { el } = mount();
+    const pressed = () =>
+      Array.from(
+        el.querySelectorAll('.dict-set-apply[aria-pressed="true"]'),
+        (b) => b.textContent!.trim()
+      );
+    tick(["L&S"]);
+    el.querySelector("form")!.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
+    expect(pressed()).toEqual(["LS"]);
+    tick(["S&H", "R&A"]);
+    el.querySelector("form")!.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
+    expect(pressed()).toEqual(["Prose"]);
+    tick(["S&H"]);
+    el.querySelector("form")!.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
+    expect(pressed()).toEqual([]);
+  });
+
+  test("a newly saved set is marked pressed", () => {
+    const { el } = mount();
+    tick(["L&S"]);
+    nameField(el).value = "LS";
+    el.querySelector<HTMLElement>(".dict-set-save")!.click();
+    expect(
+      el.querySelector(".dict-set-apply")!.getAttribute("aria-pressed")
+    ).toBe("true");
+  });
+
+  test("an explanation is shown under the save field", () => {
+    const { el } = mount();
+    expect(el.querySelector(".dict-save-caption")!.textContent).toContain(
+      "Click a saved set to switch to it"
+    );
   });
 
   test("chips act on their set by name, even after another tab changed the list", () => {
@@ -301,5 +353,6 @@ describe("saved dictionary sets", () => {
     mount(options);
     expect(document.querySelector("#dict-saved-list")).toBeNull();
     expect(document.querySelector(".dict-save-set")).toBeNull();
+    expect(document.querySelector(".dict-save-caption")).toBeNull();
   });
 });
