@@ -79,7 +79,9 @@ UI text (`--text`) is not affected.
 
 Highlight strength (`highlightStrength` → `--highlight-scale`, the dictionary highlight tints) and
 style (`highlightStyle` → `data-highlight-style`) are dictionary-only, so the dictionary settings
-dialog owns them (`dict/settings/dict_settings.client.ts`). "Colored text" draws the categories as
+dialog owns them (`dict/settings/dict_settings.client.ts`), as one "Color coding" section: a
+Background / Text toggle (the style) and an Intensity slider (the strength). "Text" draws the
+categories as
 text colours (`--fg-*`) blended from the reading text by the strength, and drops the highlight
 padding. That reflows entries, so the style is pre-paint by the layout rule.
 

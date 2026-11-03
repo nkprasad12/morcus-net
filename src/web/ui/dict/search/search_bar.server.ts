@@ -365,26 +365,20 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
       <div class="settings-slider-section" data-js-only>
         <div class="settings-divider" role="separator"></div>
 
-        <div class="settings-header">
-          <span class="settings-title" id="dict-highlight-style-label">Highlight Style</span>
-        </div>
+        <div class="settings-section-title" id="dict-highlight-style-label">Color coding</div>
         <div class="segmented dict-highlight-style" role="radiogroup" aria-labelledby="dict-highlight-style-label">
           <label class="segmented-option">
             <input type="radio" name="highlight-style" value="background" checked disabled />
-            <span class="segmented-label">Highlight</span>
+            <span class="segmented-label">Background</span>
           </label>
           <label class="segmented-option">
             <input type="radio" name="highlight-style" value="text" disabled />
-            <span class="segmented-label">Colored text</span>
+            <span class="segmented-label">Text</span>
           </label>
         </div>
 
-        <div class="settings-header">
-          <span class="settings-title">Highlight Strength</span>
-          <span class="settings-value">50%</span>
-        </div>
-
-        <div class="settings-control-row">
+        <div class="settings-control-row dict-intensity-row">
+          <span class="dict-intensity-label" aria-hidden="true">Intensity</span>
           <input
             type="range"
             min="0"
@@ -392,8 +386,9 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
             step="10"
             value="50"
             class="settings-slider"
-            aria-label="Highlight strength"
+            aria-label="Color intensity"
           />
+          <span class="settings-value">50%</span>
         </div>
 
         <div class="settings-preview" aria-hidden="true">

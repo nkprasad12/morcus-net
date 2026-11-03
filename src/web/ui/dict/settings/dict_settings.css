@@ -73,12 +73,27 @@ morcus-dict-settings {
   margin-bottom: 0;
 }
 
-.dict-settings-dialog .settings-header {
-  margin-bottom: var(--space-2);
+/* Color coding: "Intensity", the slider, then its value, on one row. */
+.dict-settings-dialog .dict-intensity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: var(--space-4) 0 var(--space-3);
 }
 
-.dict-settings-dialog .settings-control-row {
-  margin-bottom: var(--space-3);
+.dict-intensity-row .settings-slider {
+  flex: 1;
+  min-width: 0;
+}
+
+.dict-intensity-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.dict-intensity-row .settings-value {
+  min-width: 2.5em;
+  text-align: end;
 }
 
 /* Reading text, like the entries it previews (and their contrast level). */
