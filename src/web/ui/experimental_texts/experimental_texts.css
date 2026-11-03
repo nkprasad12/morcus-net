@@ -118,7 +118,27 @@
   gap: var(--space-5);
 }
 
-/* Each author is a collapsible .author-card (core/nav/components.css). */
+/* Each author is a collapsible .author-card (core/nav/components.css).
+   With ~1,700 rows, style and layout dominated each filter keystroke (~50 ms
+   of ~57 ms on desktop). `content-visibility: auto` lets the browser skip
+   cards that are off-screen; their content stays in find-in-page and the
+   accessibility tree. `auto` in `contain-intrinsic-size` remembers a card's
+   real height once rendered; 300px is roughly an average card. Browsers
+   without support (Safari < 18) ignore both and render as before.
+
+   It also puts each card under layout, style and paint containment, so:
+   - Nothing inside a card may paint outside it (it's clipped, as
+     `overflow: hidden` on .author-card already does). Popups belong in the
+     top layer (`popover`, `<dialog>`), not inside a card.
+   - A card is the containing block for `position: absolute` and `fixed`
+     descendants, and a stacking context.
+   - CSS counters and quotes don't cross cards.
+   - Script mustn't measure rows in off-screen cards (their size is the
+     estimate above until they're shown); doing so forces their layout. */
+.experimental-texts-author-group {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
+}
 
 .experimental-texts-work-item {
   display: flex;

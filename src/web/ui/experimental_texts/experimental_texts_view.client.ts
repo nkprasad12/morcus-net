@@ -28,9 +28,29 @@ function setText(el: Element | null, text: string) {
   if (el && el.textContent !== text) el.textContent = text;
 }
 
+/** Sets `el.hidden`, leaving it alone (no mutation) if it already matches. */
+function setHidden(el: HTMLElement, hidden: boolean) {
+  if (el.hidden !== hidden) el.hidden = hidden;
+}
+
+interface IndexedWork {
+  readonly el: HTMLElement;
+  /** Lowercased text a query is matched against. */
+  readonly text: string;
+  readonly source: string | undefined;
+  readonly period: string | undefined;
+}
+
+interface IndexedGroup {
+  readonly el: HTMLDetailsElement;
+  readonly works: readonly IndexedWork[];
+}
+
 export class MorcusExperimentalTextsView extends BaseElement {
   #query: string[] = [];
   readonly #filters = { source: "all", period: "all" };
+  /** Built on first filter: the server-rendered list never changes. */
+  #index: IndexedGroup[] | undefined = undefined;
 
   #role(role: string): HTMLElement | null {
     return this.scope.$(`[data-role="${role}"]`);
@@ -76,6 +96,39 @@ export class MorcusExperimentalTextsView extends BaseElement {
     return this.#query.length > 0 || source !== "all" || period !== "all";
   }
 
+  /**
+   * Reads each work's searchable text once. Matched on the author and title
+   * as shown, the volume label, and the author's other names (`data-author`:
+   * shared ones on the card, a work's own extras on its row).
+   */
+  #buildIndex(): IndexedGroup[] {
+    return this.scope
+      .$$<HTMLDetailsElement>(".experimental-texts-author-group")
+      .map((group) => {
+        const author = `${
+          group.querySelector(".experimental-texts-author-name")?.textContent ??
+          ""
+        } ${group.dataset.author ?? ""}`;
+        const works = Array.from(
+          group.querySelectorAll<HTMLElement>(".experimental-texts-work-item")
+        ).map((el) => {
+          const { dataset } = el;
+          const title = el.querySelector(
+            ".experimental-texts-work-link"
+          )?.textContent;
+          return {
+            el,
+            text: `${author} ${dataset.author ?? ""} ${title} ${
+              dataset.volume ?? ""
+            }`.toLowerCase(),
+            source: dataset.source,
+            period: dataset.period,
+          };
+        });
+        return { el: group, works };
+      });
+  }
+
   #apply() {
     const { source, period } = this.#filters;
     for (const pill of this.scope.$$(PILLS)) {
@@ -85,43 +138,26 @@ export class MorcusExperimentalTextsView extends BaseElement {
       pill.setAttribute("aria-pressed", String(active));
     }
 
+    this.#index ??= this.#buildIndex();
     let total = 0;
     let works = 0;
     let authors = 0;
     const filtered = this.#isFiltered();
-    for (const group of this.scope.$$<HTMLDetailsElement>(
-      ".experimental-texts-author-group"
-    )) {
-      // Matched on the author and title as shown, the volume label, and the
-      // author's other names (`data-author`: shared ones on the card, a
-      // work's own extras on its row).
-      const author = `${
-        group.querySelector(".experimental-texts-author-name")?.textContent ??
-        ""
-      } ${group.dataset.author ?? ""}`;
+    for (const group of this.#index) {
       let shown = 0;
-      for (const item of Array.from(
-        group.querySelectorAll<HTMLElement>(".experimental-texts-work-item")
-      )) {
+      for (const work of group.works) {
         total++;
-        const { dataset } = item;
-        const title = item.querySelector(
-          ".experimental-texts-work-link"
-        )?.textContent;
-        const text = `${author} ${dataset.author ?? ""} ${title} ${
-          dataset.volume ?? ""
-        }`.toLowerCase();
         const visible =
-          (source === "all" || dataset.source === source) &&
-          (period === "all" || dataset.period === period) &&
-          this.#query.every((t) => text.includes(t));
-        item.hidden = !visible;
+          (source === "all" || work.source === source) &&
+          (period === "all" || work.period === period) &&
+          this.#query.every((t) => work.text.includes(t));
+        setHidden(work.el, !visible);
         if (visible) shown++;
       }
-      group.hidden = !shown;
+      setHidden(group.el, !shown);
       // Unfold a card the user folded earlier if it holds a match, so a
       // search never reports works it then hides.
-      if (filtered && shown && !group.open) group.open = true;
+      if (filtered && shown && !group.el.open) group.el.open = true;
       works += shown;
       if (shown) authors++;
     }
