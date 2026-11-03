@@ -55,49 +55,50 @@ export interface SnapshotMeta {
   diffUrl?: string;
   /**
    * The baseline file this snapshot belongs to, as used by
-   * `visual-baselines accept` and `checkpoint`. Missing for `results` items
+   * `visual-baselines accept` and `drop`. Missing for `results` items
    * whose Playwright project couldn't be determined.
    */
   snapshotName?: string;
-  /** `local` source only: when the local baseline was accepted (ISO). */
+  /** When the baseline was accepted (ISO). */
   acceptedAt?: string;
 }
 
-export type VisualDiffSource = "git" | "results" | "local";
+export type VisualDiffSource = "results" | "previous";
 
 /**
- * What the viewer may write, and whether it currently can. Present only when
+ * What the viewer may write, and whether it currently can. Present when
  * the Inspector serves the viewer with write endpoints (`results` and
- * `local` sources).
+ * `previous` sources).
  */
 export interface ViewerActions {
   /**
    * `accept`: the everyday `results` mode; accepting locally ends the flow.
-   * `checkpoint`: the deliberate `local` mode; checkpoint or drop local
-   * baselines.
+   * `previous`: inspecting the last `--update` or `accept` against `.visual-baselines/previous/`;
+   * allows undoing the last update or dropping individual baselines.
    */
-  mode: "accept" | "checkpoint";
+  mode: "accept" | "previous";
   /** Why actions are unavailable, if they are. */
   disabledReason?: string;
 }
 
 /** The local baseline store at a glance, for hints in the viewer. */
 export interface StoreSummary {
-  /** Valid local baselines: accepted, not checkpointed. */
+  /** Stored local baselines. */
   active: number;
-  /** Local baselines whose checkpoint changed since; they no longer apply. */
-  stale: string[];
   /** Disk size of the stored PNGs. */
   bytes: number;
   /** Oldest `acceptedAt` among the active ones. */
   oldestAcceptedAt?: string;
+  /** Snapshots in the 1-deep `.visual-baselines/previous/` backup, if any. */
+  previousCount?: number;
+  /** When the 1-deep backup was recorded (ISO). */
+  previousUpdatedAt?: string;
 }
 
 /** Results of the write endpoints, shared by the server and the viewer. */
 export interface AcceptResponse {
   added: string[];
   updated: string[];
-  reverted: string[];
   unchanged: string[];
   store: StoreSummary;
 }
@@ -105,16 +106,8 @@ export interface AcceptResponse {
 export interface DropResponse {
   /** Local baselines removed. */
   dropped: string[];
-  /** `results` undo only: earlier local baselines put back. */
+  /** Earlier local baselines put back (on undo). */
   restored: string[];
-  store: StoreSummary;
-}
-
-export interface CheckpointResponse {
-  promoted: string[];
-  skippedStale: string[];
-  /** Files written, relative to the repository root. */
-  files: string[];
   store: StoreSummary;
 }
 
@@ -124,9 +117,9 @@ export interface ApiError {
 
 export interface VisualDiffManifest {
   source: VisualDiffSource;
-  /** Human readable label for the baseline, e.g. `HEAD` or `Expected`. */
+  /** Human readable label for the baseline, e.g. `Expected` or `Previous baseline`. */
   beforeLabel: string;
-  /** Human readable label for the new images, e.g. `Working copy`. */
+  /** Human readable label for the new images, e.g. `Actual` or `Local baseline`. */
   afterLabel: string;
   items: SnapshotMeta[];
   /**
@@ -135,17 +128,12 @@ export interface VisualDiffManifest {
    */
   failuresWithoutSnapshot?: { dir: string; project?: string }[];
   /**
-   * `local` source only: local baselines ignored because the checkpoint
-   * changed after they were accepted.
-   */
-  staleLocalBaselines?: string[];
-  /**
    * Identifies what is being reviewed (the run marker for `results`, the
-   * local store contents for `local`), so review verdicts kept in the
+   * previous backup contents for `previous`), so review verdicts kept in the
    * browser's `sessionStorage` don't carry over to different screenshots.
    */
   reviewKey?: string;
   actions?: ViewerActions;
-  /** The local store when the viewer was generated (`results` and `local`). */
+  /** The local store when the viewer was generated. */
   localStore?: StoreSummary;
 }

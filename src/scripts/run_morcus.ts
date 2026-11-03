@@ -297,7 +297,7 @@ function parseArguments() {
     help:
       "Updates screenshot baselines when running visual tests (requires --all with --visual). " +
       "Changed baselines go to the gitignored local store (.visual-baselines/local), " +
-      "not the committed snapshot directory; see `visual-baselines`.",
+      "with previous versions backed up to .visual-baselines/previous.",
     action: "store_true",
   });
   e2e.add_argument("-pt", "--port", {
@@ -312,7 +312,7 @@ function parseArguments() {
     help:
       "With --visual: open the Visual Diff Inspector afterwards. Without --update " +
       "it shows Playwright's failures (expected vs actual); with --update it " +
-      "shows the local baselines against the committed checkpoint.",
+      "shows the updated local baselines against .visual-baselines/previous.",
     action: "store_true",
   });
 
@@ -322,26 +322,22 @@ function parseArguments() {
   });
   visualDiff.add_argument("-s", "--source", {
     help:
-      "Where to find changes: 'git' (committed baselines vs --ref), 'results' " +
-      "(Playwright failures in test-results/), 'local' (local baselines vs the " +
-      "committed checkpoint), or 'auto' (git, then results, then local). Default: auto.",
-    choices: ["auto", "git", "results", "local"],
+      "Where to find changes: 'results' (Playwright failures in test-results/), " +
+      "'previous' (local baselines vs the .visual-baselines/previous backup), " +
+      "or 'auto' (results, then previous). Default: auto.",
+    choices: ["auto", "results", "previous"],
     default: "auto",
-  });
-  visualDiff.add_argument("-r", "--ref", {
-    help: "Git ref to compare against for the git source (default: HEAD).",
-    default: "HEAD",
-  });
-  visualDiff.add_argument("-d", "--dir", {
-    help:
-      "Snapshot (checkpoint) directory for the git and local sources, and for " +
-      "checkpointing from the viewer (default: src/integration/screenshot/browser_screenshot.test.ts-snapshots).",
-    default: "",
   });
   visualDiff.add_argument("--store-dir", {
     help:
-      "Local baseline store read by the local source and written by accept/checkpoint " +
-      "in the viewer (default: .visual-baselines/local). For testing.",
+      "Local baseline store written by accept in the viewer " +
+      "(default: .visual-baselines/local). For testing.",
+    default: "",
+  });
+  visualDiff.add_argument("--previous-dir", {
+    help:
+      "1-deep backup directory read by the previous source and written by accept/undo " +
+      "(default: .visual-baselines/previous). For testing.",
     default: "",
   });
   visualDiff.add_argument("--results-dir", {
@@ -375,24 +371,21 @@ function parseArguments() {
 
   const visualBaselines = subparsers.add_parser(VISUAL_BASELINES, {
     help:
-      "Manages local screenshot baselines: the gitignored overlay " +
-      "(.visual-baselines/local) on top of the committed checkpoint.",
+      "Manages local screenshot baselines (.visual-baselines/local) and " +
+      "the 1-deep backup (.visual-baselines/previous).",
   });
   visualBaselines.add_argument("action", {
     help:
-      "'status': list local baselines (active and stale). " +
+      "'status': list local baselines and previous-backup status. " +
       "'accept': accept the named snapshots as local baselines straight from " +
       "Playwright's actuals in test-results/, without re-running (names or " +
       "--from-report required; refuses if the code changed since the run). " +
-      "'checkpoint': copy active local baselines into the committed snapshot " +
-      "directory and remove them from the store (needs human approval; does not commit). " +
-      "'drop': discard local baselines (names, --stale, or --all).",
-    choices: ["status", "accept", "checkpoint", "drop"],
+      "'undo': revert the last update or accept from .visual-baselines/previous. " +
+      "'drop': discard local baselines (names or --all).",
+    choices: ["status", "accept", "undo", "drop"],
   });
   visualBaselines.add_argument("names", {
-    help:
-      "Snapshot file names to act on, e.g. about-page-js-light-chromium-linux.png " +
-      "(default for checkpoint: all active).",
+    help: "Snapshot file names to act on, e.g. about-page-js-light-chromium-linux.png.",
     nargs: "*",
   });
   visualBaselines.add_argument("--from-report", {
@@ -403,10 +396,6 @@ function parseArguments() {
   });
   visualBaselines.add_argument("--force", {
     help: "With accept: accept even if the run marker is missing or the code changed since the run.",
-    action: "store_true",
-  });
-  visualBaselines.add_argument("--stale", {
-    help: "With drop: discard every stale (and missing) local baseline.",
     action: "store_true",
   });
   visualBaselines.add_argument("--all", {
@@ -421,8 +410,8 @@ function parseArguments() {
     help: "Local baseline store (default: .visual-baselines/local). For testing.",
     default: "",
   });
-  visualBaselines.add_argument("--snapshot-dir", {
-    help: "Checkpoint directory (default: src/integration/screenshot/browser_screenshot.test.ts-snapshots). For testing.",
+  visualBaselines.add_argument("--previous-dir", {
+    help: "1-deep backup directory (default: .visual-baselines/previous). For testing.",
     default: "",
   });
 
@@ -940,12 +929,17 @@ async function runE2eTests(args: any) {
     runMarker === undefined
       ? undefined
       : { state: runMarker.computeTreeState(process.cwd()), at: new Date() };
-  if (baselines !== undefined) {
-    // Compare against the committed checkpoint overlaid with local baselines.
-    const paths = baselines.defaultPaths();
-    const resolution = baselines.materializeEffective(paths);
-    childEnv[baselines.BASELINES_ENV] = paths.effectiveDir;
-    const summary = baselines.resolutionSummary(resolution);
+  const baselinePaths =
+    baselines === undefined ? undefined : baselines.defaultPaths();
+  const beforeUpdate =
+    baselines !== undefined && baselinePaths !== undefined && args.update
+      ? baselines.snapshotBeforeUpdate(baselinePaths)
+      : undefined;
+  if (baselines !== undefined && baselinePaths !== undefined) {
+    childEnv[baselines.BASELINES_ENV] = baselinePaths.storeDir;
+    const summary = baselines.resolutionSummary(
+      baselines.resolveLocal(baselinePaths)
+    );
     if (summary !== undefined) {
       console.log(`Visual baselines: ${summary}`);
     }
@@ -996,24 +990,26 @@ async function runE2eTests(args: any) {
           runMarker.computeTreeState(process.cwd())
         );
       }
-      if (baselines !== undefined && args.update) {
-        // Playwright rewrote the effective directory; keep what differs from
-        // the checkpoint in the local store. The checkpoint is not touched.
-        const accepted = baselines.acceptFromEffective(
-          baselines.defaultPaths()
+      if (
+        baselines !== undefined &&
+        baselinePaths !== undefined &&
+        beforeUpdate !== undefined
+      ) {
+        const updated = baselines.recordUpdateFromSnapshot(
+          baselinePaths,
+          beforeUpdate
         );
         console.log(
-          `\nLocal baselines: ${accepted.added.length} added, ` +
-            `${accepted.updated.length} updated, ${accepted.reverted.length} ` +
-            "reverted to the checkpoint."
+          `\nLocal baselines: ${updated.added.length} added, ` +
+            `${updated.updated.length} updated, ${updated.unchanged.length} unchanged.`
         );
       }
       if (isVisual && args.diff) {
         // Without --update, Playwright leaves expected/actual pairs for each
-        // failure in test-results/. With --update, the new baselines are in
-        // the local store, so compare them against the checkpoint.
+        // failure in test-results/. With --update, compare the updated local
+        // baselines against .visual-baselines/previous.
         const serving = await runVisualDiffCommand({
-          source: args.update ? "local" : "results",
+          source: args.update ? "previous" : "results",
         });
         if (testError !== undefined && serving) {
           // Throwing here would end the process and take the viewer down
@@ -1026,8 +1022,8 @@ async function runE2eTests(args: any) {
         }
       } else if (isVisual && args.update) {
         console.log(
-          "\nRun `./morcus.sh visual-diff --source local` to review the local baselines " +
-            "against the checkpoint."
+          "\nRun `./morcus.sh visual-diff --source previous` to review the updated baselines, " +
+            "or `./morcus.sh visual-baselines undo` to revert."
         );
       } else if (isVisual && testError !== undefined) {
         console.log(
@@ -1100,12 +1096,12 @@ async function runVisualDiffCommand(args: any): Promise<boolean> {
     "@/scripts/visual_diff/local_baselines"
   );
   const localPaths = defaultPaths();
-  if (args.dir) localPaths.snapshotDir = path.resolve(args.dir);
   if (args.store_dir) localPaths.storeDir = path.resolve(args.store_dir);
+  if (args.previous_dir) {
+    localPaths.previousDir = path.resolve(args.previous_dir);
+  }
   const result = await runVisualDiffInspector({
     source: args.source || "auto",
-    ref: args.ref || undefined,
-    snapshotDir: args.dir || undefined,
     resultsDir: args.results_dir || undefined,
     localPaths,
     outDir: args.out || undefined,
@@ -1131,8 +1127,8 @@ async function runVisualDiff(args: any): Promise<boolean> {
 async function runVisualBaselines(args: any): Promise<boolean> {
   const baselines = await import("@/scripts/visual_diff/local_baselines");
   const paths = baselines.defaultPaths();
-  if (args.snapshot_dir) paths.snapshotDir = path.resolve(args.snapshot_dir);
   if (args.store_dir) paths.storeDir = path.resolve(args.store_dir);
+  if (args.previous_dir) paths.previousDir = path.resolve(args.previous_dir);
   const names: string[] = args.names ?? [];
   try {
     if (args.action === "status") {
@@ -1154,50 +1150,32 @@ async function runVisualBaselines(args: any): Promise<boolean> {
       });
       console.log(
         `Local baselines: ${result.added.length} added, ${result.updated.length} updated, ` +
-          `${result.reverted.length} reverted to the checkpoint, ${result.unchanged.length} unchanged.`
+          `${result.unchanged.length} unchanged.`
       );
       const list = (label: string, items: string[]) => {
         for (const n of items) console.log(`  ${label.padEnd(9)} ${n}`);
       };
       list("added", result.added);
       list("updated", result.updated);
-      list("reverted", result.reverted);
       list("unchanged", result.unchanged);
       console.log(
         "\nNothing was committed (the local store is gitignored; undo with " +
-          "`visual-baselines drop <names>`). Review against the checkpoint with " +
-          "`./morcus.sh visual-diff --source local`."
+          "`./morcus.sh visual-baselines undo`)."
       );
-    } else if (args.action === "checkpoint") {
-      const { promoted, skippedStale } = baselines.checkpoint(
-        paths,
-        names.length > 0 ? names : undefined
-      );
+    } else if (args.action === "undo") {
+      const { dropped, restored } = baselines.undoLastUpdate(paths);
       console.log(
-        `Copied ${promoted.length} local baseline(s) into ${path.relative(
-          process.cwd(),
-          paths.snapshotDir
-        )}:`
+        `Reverted last baseline update: ${dropped.length} newly added dropped, ` +
+          `${restored.length} previous baseline(s) restored.`
       );
-      for (const n of promoted) console.log(`  ${n}`);
-      if (skippedStale.length > 0) {
-        console.warn(
-          `Skipped ${skippedStale.length} stale local baseline(s); see \`visual-baselines status\`.`
-        );
-      }
-      if (promoted.length > 0) {
-        console.log(
-          "\nNothing was staged. Review with `./morcus.sh visual-diff --source git`, " +
-            "and commit only with explicit human approval (AGENTS.md)."
-        );
-      }
+      for (const n of dropped) console.log(`  dropped   ${n}`);
+      for (const n of restored) console.log(`  restored  ${n}`);
     } else {
-      if (names.length === 0 && !args.stale && !args.all) {
-        throw new Error("drop needs snapshot names, --stale, or --all.");
+      if (names.length === 0 && !args.all) {
+        throw new Error("drop needs snapshot names or --all.");
       }
       const dropped = baselines.drop(paths, {
         names,
-        stale: Boolean(args.stale),
         all: Boolean(args.all),
       });
       console.log(`Dropped ${dropped.length} local baseline(s).`);

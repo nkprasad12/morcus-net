@@ -6,6 +6,9 @@ import path from "path";
 import {
   type BaselinePaths,
   readManifest,
+  readPreviousBatch,
+  recordUpdateFromSnapshot,
+  snapshotBeforeUpdate,
 } from "@/scripts/visual_diff/local_baselines";
 import {
   computeTreeState,
@@ -13,11 +16,10 @@ import {
   writeRunMarker,
 } from "@/scripts/visual_diff/run_marker";
 import {
-  CHECKPOINT_CONFIRMATION,
   MANIFEST_FILE,
   buildMarkdownReport,
   collectFailuresWithoutSnapshot,
-  collectGitEntries,
+  collectPreviousEntries,
   collectResultEntries,
   incompleteItems,
   isSameOrigin,
@@ -25,7 +27,6 @@ import {
   namesFromReport,
   newSessionToken,
   parseCompareOutput,
-  parseNameStatus,
   parseSnapshotName,
   projectFromResultsDir,
   readPngDimensions,
@@ -142,16 +143,6 @@ describe("parseCompareOutput", () => {
   });
 });
 
-describe("parseNameStatus", () => {
-  it("parses NUL-separated output", () => {
-    expect(parseNameStatus("M\0a.png\0D\0b c.png\0A\0d.png\0")).toEqual([
-      { status: "M", path: "a.png" },
-      { status: "D", path: "b c.png" },
-      { status: "A", path: "d.png" },
-    ]);
-  });
-});
-
 describe("readPngDimensions", () => {
   it("reads IHDR dimensions", () => {
     expect(readPngDimensions(fakePng(1920, 1080))).toEqual({
@@ -201,9 +192,9 @@ describe("resolveServedPath", () => {
 describe("buildMarkdownReport", () => {
   it("lists items by severity and includes the approval notice", () => {
     const manifest: VisualDiffManifest = {
-      source: "git",
-      beforeLabel: "HEAD",
-      afterLabel: "Working copy",
+      source: "previous",
+      beforeLabel: "Previous baseline",
+      afterLabel: "Local baseline",
       items: [
         {
           id: "a",
@@ -336,70 +327,60 @@ describe("collectFailuresWithoutSnapshot", () => {
   });
 });
 
-describe("git source (end to end)", () => {
-  let repo: string;
-  const run = (...args: string[]) =>
-    execFileSync("git", args, { cwd: repo, stdio: "ignore" });
+describe("previous source (end to end)", () => {
+  let root: string;
+  let localPaths: BaselinePaths;
 
   beforeEach(() => {
     jest.spyOn(console, "log").mockImplementation(() => {});
     jest.spyOn(console, "warn").mockImplementation(() => {});
-    repo = makeTempDir();
-    run("init", "-q");
-    run("config", "user.email", "test@example.com");
-    run("config", "user.name", "Test");
-    const snaps = path.join(repo, "snaps");
-    fs.mkdirSync(snaps);
+    root = makeTempDir();
+    localPaths = {
+      storeDir: path.join(root, ".visual-baselines", "local"),
+      previousDir: path.join(root, ".visual-baselines", "previous"),
+    };
+    const before1 = snapshotBeforeUpdate(localPaths);
+    fs.mkdirSync(localPaths.storeDir, { recursive: true });
     fs.writeFileSync(
-      path.join(snaps, "mod-js-light-chromium-linux.png"),
+      path.join(localPaths.storeDir, "mod-js-light-chromium-linux.png"),
       fakePng(10, 10)
     );
     fs.writeFileSync(
-      path.join(snaps, "del-js-light-chromium-linux.png"),
+      path.join(localPaths.storeDir, "same-js-light-chromium-linux.png"),
       fakePng(10, 10)
     );
+    recordUpdateFromSnapshot(localPaths, before1);
+
+    const before2 = snapshotBeforeUpdate(localPaths);
     fs.writeFileSync(
-      path.join(snaps, "same-js-light-chromium-linux.png"),
-      fakePng(10, 10)
-    );
-    run("add", ".");
-    run("commit", "-q", "-m", "init");
-    fs.writeFileSync(
-      path.join(snaps, "mod-js-light-chromium-linux.png"),
+      path.join(localPaths.storeDir, "mod-js-light-chromium-linux.png"),
       fakePng(20, 10, 1)
     );
-    fs.rmSync(path.join(snaps, "del-js-light-chromium-linux.png"));
     fs.writeFileSync(
-      path.join(snaps, "v2-new-js-light-chromium-linux.png"),
+      path.join(localPaths.storeDir, "new-js-light-chromium-linux.png"),
       fakePng(10, 10)
     );
+    recordUpdateFromSnapshot(localPaths, before2);
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
-    fs.rmSync(repo, { recursive: true, force: true });
+    fs.rmSync(root, { recursive: true, force: true });
   });
 
-  it("finds modified, deleted, and untracked snapshots", () => {
-    const entries = collectGitEntries(path.join(repo, "snaps"), "HEAD");
+  it("finds modified and newly added snapshots from the previous backup", () => {
+    const entries = collectPreviousEntries(localPaths);
     expect(entries.map((e) => [e.name, e.status])).toEqual([
-      ["del-js-light-chromium-linux.png", "deleted"],
       ["mod-js-light-chromium-linux.png", "modified"],
-      ["v2-new-js-light-chromium-linux.png", "added"],
+      ["new-js-light-chromium-linux.png", "added"],
     ]);
   });
 
-  it("rejects an unknown ref", () => {
-    expect(() =>
-      collectGitEntries(path.join(repo, "snaps"), "no-such-ref")
-    ).toThrow();
-  });
-
   it("writes a viewer without a server", async () => {
-    const outDir = path.join(repo, "out");
+    const outDir = path.join(root, "out");
     const result = await runVisualDiffInspector({
-      source: "git",
-      snapshotDir: path.join(repo, "snaps"),
+      source: "previous",
+      localPaths,
       outDir,
       startServer: false,
     });
@@ -410,9 +391,8 @@ describe("git source (end to end)", () => {
       before: { width: 10, height: 10 },
       after: { width: 20, height: 10 },
     });
-    expect(byName.get("del")?.afterUrl).toBeUndefined();
-    expect(byName.get("del")?.beforeUrl).toBeDefined();
     expect(byName.get("new")?.beforeUrl).toBeUndefined();
+    expect(byName.get("new")?.afterUrl).toBeDefined();
 
     const html = fs.readFileSync(path.join(outDir, "index.html"), "utf-8");
     expect(html).not.toContain("__VISUAL_DIFF_MANIFEST__");
@@ -424,7 +404,7 @@ describe("git source (end to end)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Accept / checkpoint from the viewer
+// Accept / undo / drop from the viewer
 // ---------------------------------------------------------------------------
 
 describe("tokenMatches", () => {
@@ -584,11 +564,10 @@ describe("viewer write endpoints (end to end)", () => {
     ...extra,
   });
 
-  async function start(source: "results" | "local" | "git") {
+  async function start(source: "results" | "previous") {
     const result = await runVisualDiffInspector({
       source,
       resultsDir: results,
-      snapshotDir: localPaths.snapshotDir,
       localPaths,
       outDir: path.join(repo, ".cache", "visual-diff"),
       host: "127.0.0.1",
@@ -614,16 +593,27 @@ describe("viewer write endpoints (end to end)", () => {
       path.join(repo, ".gitignore"),
       "/test-results/\n/.cache/\n/.visual-baselines/\n"
     );
-    localPaths = {
-      snapshotDir: path.join(repo, "src", "snaps"),
-      storeDir: path.join(repo, ".visual-baselines", "local"),
-      effectiveDir: path.join(repo, ".cache", "effective"),
-    };
-    fs.mkdirSync(localPaths.snapshotDir, { recursive: true });
-    fs.writeFileSync(path.join(localPaths.snapshotDir, A), fakePng(10, 10, 0));
-    fs.writeFileSync(path.join(localPaths.snapshotDir, B), fakePng(10, 10, 0));
+    fs.mkdirSync(path.join(repo, "src"), { recursive: true });
+    fs.writeFileSync(path.join(repo, "src", "app.ts"), "v1");
     git("add", ".");
     git("commit", "-q", "-m", "init");
+
+    localPaths = {
+      storeDir: path.join(repo, ".visual-baselines", "local"),
+      previousDir: path.join(repo, ".visual-baselines", "previous"),
+    };
+    const before = snapshotBeforeUpdate(localPaths);
+    fs.mkdirSync(localPaths.storeDir, { recursive: true });
+    fs.writeFileSync(path.join(localPaths.storeDir, A), fakePng(10, 10, 0));
+    fs.writeFileSync(path.join(localPaths.storeDir, B), fakePng(10, 10, 0));
+    recordUpdateFromSnapshot(
+      localPaths,
+      before,
+      new Date("2026-01-01T00:00:00Z"),
+      repo
+    );
+    // Clear the initial seed backup so tests start with a clean previousDir.
+    fs.rmSync(localPaths.previousDir, { recursive: true, force: true });
 
     fail("a-js-light", "chromium", fakePng(10, 10, 1), fakePng(10, 10, 0));
     fail("b-js-dark", "MobileChrome", fakePng(10, 10, 2), fakePng(10, 10, 0));
@@ -646,7 +636,7 @@ describe("viewer write endpoints (end to end)", () => {
       [A, B, NEW].sort()
     );
     expect(manifest.actions).toEqual({ mode: "accept" });
-    expect(manifest.localStore).toEqual({ active: 0, stale: [], bytes: 0 });
+    expect(manifest.localStore).toMatchObject({ active: 2 });
     expect(manifest.reviewKey).toBe(`results:${readRunMarker(results)!.id}`);
     expect(viewerUrl).toContain(`#token=${TOKEN}`);
     for (const file of ["index.html", MANIFEST_FILE]) {
@@ -695,7 +685,7 @@ describe("viewer write endpoints (end to end)", () => {
       body,
     });
     expect(form.status).toBe(415);
-    expect(fs.existsSync(localPaths.storeDir)).toBe(false);
+    expect(readPreviousBatch(localPaths)).toBeUndefined();
   });
 
   it("only accepts names from this session", async () => {
@@ -706,10 +696,10 @@ describe("viewer write endpoints (end to end)", () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Not in this review session/);
-    expect(fs.existsSync(localPaths.storeDir)).toBe(false);
+    expect(readPreviousBatch(localPaths)).toBeUndefined();
   });
 
-  it("accepts approved names, and never checkpoints from a results session", async () => {
+  it("accepts approved names, and refuses /api/undo from a results session", async () => {
     await start("results");
     const accepted = await request(port, "/api/accept", {
       headers: headers(),
@@ -717,66 +707,55 @@ describe("viewer write endpoints (end to end)", () => {
     });
     expect(accepted.status).toBe(200);
     expect(accepted.body).toMatchObject({
-      added: [A, NEW],
-      updated: [],
-      reverted: [],
+      added: [NEW],
+      updated: [A],
       unchanged: [],
-      store: { active: 2, stale: [] },
+      store: { active: 3, previousCount: 2 },
     });
     expect(accepted.body.store.oldestAcceptedAt).toBeDefined();
-    expect(readManifest(localPaths).entries[B]).toBeUndefined();
-
-    const checkpointed = await request(port, "/api/checkpoint", {
-      headers: headers(),
-      body: { names: [A], confirm: CHECKPOINT_CONFIRMATION },
-    });
-    expect(checkpointed.status).toBe(400);
-    expect(checkpointed.body.error).toMatch(/only available in local mode/);
-    expect(fs.readFileSync(path.join(localPaths.snapshotDir, A))).toEqual(
+    expect(fs.readFileSync(path.join(localPaths.storeDir, B))).toEqual(
       fakePng(10, 10, 0)
     );
+
+    const undone = await request(port, "/api/undo", {
+      headers: headers(),
+      body: { names: [A] },
+    });
+    expect(undone.status).toBe(400);
+    expect(undone.body.error).toMatch(/only available for --source previous/);
   });
 
   it("undoes only this session's accepts, restoring earlier local baselines", async () => {
-    // An earlier local baseline for B, from before this session.
     await start("results");
     await request(port, "/api/accept", {
       headers: headers(),
-      body: { names: [B] },
-    });
-    const earlier = fs.readFileSync(path.join(localPaths.storeDir, B));
-    server?.close();
-    fail("b-js-dark", "MobileChrome", fakePng(10, 10, 7), fakePng(10, 10, 0));
-    writeRunMarker(results, computeTreeState(repo), new Date());
-
-    await start("results");
-    await request(port, "/api/accept", {
-      headers: headers(),
-      body: { names: [A, B] },
+      body: { names: [B, NEW] },
     });
     const notAccepted = await request(port, "/api/drop", {
       headers: headers(),
-      body: { names: [NEW] },
+      body: { names: [A] },
     });
     expect(notAccepted.status).toBe(400);
     expect(notAccepted.body.error).toMatch(/accepted in this session/);
 
     const undone = await request(port, "/api/drop", {
       headers: headers(),
-      body: { names: [A, B] },
+      body: { names: [B, NEW] },
     });
     expect(undone.status).toBe(200);
     expect(undone.body).toMatchObject({
-      dropped: [A],
+      dropped: [NEW],
       restored: [B],
-      store: { active: 1 },
+      store: { active: 2 },
     });
-    expect(Object.keys(readManifest(localPaths).entries)).toEqual([B]);
-    expect(fs.readFileSync(path.join(localPaths.storeDir, B))).toEqual(earlier);
+    expect(Object.keys(readManifest(localPaths).entries)).toEqual([A, B]);
+    expect(fs.readFileSync(path.join(localPaths.storeDir, B))).toEqual(
+      fakePng(10, 10, 0)
+    );
     // Undone once; a second undo of the same names is refused.
     const again = await request(port, "/api/drop", {
       headers: headers(),
-      body: { names: [A] },
+      body: { names: [NEW] },
     });
     expect(again.status).toBe(400);
   });
@@ -790,7 +769,7 @@ describe("viewer write endpoints (end to end)", () => {
     });
     expect(res.status).toBe(409);
     expect(res.body.error).toMatch(/Uncommitted changes/);
-    expect(fs.existsSync(localPaths.storeDir)).toBe(false);
+    expect(readPreviousBatch(localPaths)).toBeUndefined();
   });
 
   it("disables actions in the page when there is no run marker", async () => {
@@ -799,53 +778,26 @@ describe("viewer write endpoints (end to end)", () => {
     expect(manifest.actions?.disabledReason).toMatch(/No run marker/);
   });
 
-  it("checkpoints a subset and drops local baselines in local mode", async () => {
+  it("undoes the last update and drops local baselines in previous mode", async () => {
     await start("results");
     await request(port, "/api/accept", {
       headers: headers(),
       body: { names: [A, B, NEW] },
     });
     server?.close();
-    // Make A stale: its checkpoint changes after it was accepted.
-    fs.writeFileSync(path.join(localPaths.snapshotDir, A), fakePng(10, 10, 5));
-    const { manifest } = await start("local");
-    expect(manifest.actions).toEqual({ mode: "checkpoint" });
+
+    const { manifest } = await start("previous");
+    expect(manifest.actions).toEqual({ mode: "previous" });
     expect(manifest.items.map((i) => i.snapshotName).sort()).toEqual(
-      [B, NEW].sort()
+      [A, B, NEW].sort()
     );
     expect(manifest.items.every((i) => i.acceptedAt !== undefined)).toBe(true);
-    expect(manifest.staleLocalBaselines).toEqual([A]);
-    expect(manifest.localStore?.stale).toEqual([A]);
 
     const accept = await request(port, "/api/accept", {
       headers: headers(),
       body: { names: [B] },
     });
     expect(accept.status).toBe(400);
-
-    // Only the selected (filtered, approved) names are promoted.
-    const done = await request(port, "/api/checkpoint", {
-      headers: headers(),
-      body: { names: [B], confirm: CHECKPOINT_CONFIRMATION },
-    });
-    expect(done.status).toBe(200);
-    expect(done.body).toMatchObject({
-      promoted: [B],
-      files: [path.join("src", "snaps", B)],
-      store: { active: 1, stale: [A] },
-    });
-    expect(fs.readFileSync(path.join(localPaths.snapshotDir, B))).toEqual(
-      fakePng(10, 10, 2)
-    );
-    expect(Object.keys(readManifest(localPaths).entries).sort()).toEqual(
-      [A, NEW].sort()
-    );
-    // Promoted names leave the session.
-    const twice = await request(port, "/api/checkpoint", {
-      headers: headers(),
-      body: { names: [B], confirm: CHECKPOINT_CONFIRMATION },
-    });
-    expect(twice.status).toBe(400);
 
     const foreign = await request(port, "/api/drop", {
       headers: headers(),
@@ -858,29 +810,34 @@ describe("viewer write endpoints (end to end)", () => {
     });
     expect(noToken.status).toBe(403);
 
+    // Drop a single local baseline in previous mode.
     const dropped = await request(port, "/api/drop", {
       headers: headers(),
-      body: { names: [NEW, A] },
+      body: { names: [B] },
     });
     expect(dropped.status).toBe(200);
     expect(dropped.body).toMatchObject({
-      dropped: [A, NEW],
+      dropped: [B],
       restored: [],
-      store: { active: 0, stale: [] },
+      store: { active: 2 },
     });
-    expect(readManifest(localPaths).entries).toEqual({});
-  });
 
-  it("is read-only for the git source", async () => {
-    fs.writeFileSync(path.join(localPaths.snapshotDir, A), fakePng(20, 10, 1));
-    const { manifest, viewerUrl } = await start("git");
-    expect(manifest.actions).toBeUndefined();
-    expect(viewerUrl).not.toContain("#token=");
-    const res = await request(port, "/api/checkpoint", {
+    // Undo the last update: restores A & B, drops NEW, clears previousDir.
+    const undone = await request(port, "/api/undo", {
       headers: headers(),
-      body: { names: [A], confirm: CHECKPOINT_CONFIRMATION },
+      body: { names: [A] },
     });
-    expect(res.status).toBe(404);
+    expect(undone.status).toBe(200);
+    expect(undone.body).toMatchObject({
+      dropped: [NEW],
+      restored: [A, B],
+      store: { active: 2 },
+    });
+    expect(fs.readFileSync(path.join(localPaths.storeDir, A))).toEqual(
+      fakePng(10, 10, 0)
+    );
+    expect(fs.existsSync(path.join(localPaths.storeDir, NEW))).toBe(false);
+    expect(readPreviousBatch(localPaths)).toBeUndefined();
   });
 
   it("lists the reported names for accept --from-report", async () => {

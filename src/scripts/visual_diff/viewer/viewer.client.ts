@@ -11,7 +11,6 @@
 import type {
   AcceptResponse,
   ApiError,
-  CheckpointResponse,
   DropResponse,
   ImageDims,
   SnapshotMeta,
@@ -132,8 +131,6 @@ interface State {
   maskOpacity: number;
   filters: Record<FacetKey, string>;
   group: GroupKey;
-  /** `local` mode: only show baselines accepted before this day (YYYY-MM-DD). */
-  acceptedBefore: string;
   /** Verdicts by item id. */
   verdicts: Map<string, Verdict>;
   /** Verdict batches, most recent last, for undo: each id's previous verdict. */
@@ -141,9 +138,7 @@ interface State {
   showReviewed: boolean;
   /** `results` mode: set once accepted; the flow ends there. */
   accepted?: AcceptedState;
-  /** `local` mode: the last checkpoint. */
-  checkpointed?: CheckpointResponse;
-  /** `local` mode: ids checkpointed or dropped this session. */
+  /** `previous` mode: ids undone or dropped this session. */
   removed: Set<string>;
   /** The local store, as of the last write. */
   store?: StoreSummary;
@@ -207,7 +202,6 @@ const state: State = {
   group: "none",
   verdicts: new Map(),
   verdictHistory: [],
-  acceptedBefore: "",
   showReviewed: false,
   removed: new Set(),
   store: manifest.localStore,
@@ -240,20 +234,6 @@ const els = {
   peek: byId("peek", HTMLButtonElement),
   blink: byId("blink", HTMLButtonElement),
   helpModal: byId("help-modal", HTMLDivElement),
-  acceptedBefore: byId("accepted-before", HTMLInputElement),
-  acceptedBeforeRow: byId("accepted-before-row", HTMLLabelElement),
-  localLink: byId("local-link", HTMLButtonElement),
-  localModal: byId("local-modal", HTMLDivElement),
-  localModalText: byId("local-modal-text", HTMLParagraphElement),
-  localModalClose: byId("local-modal-close", HTMLButtonElement),
-  checkpointModal: byId("checkpoint-modal", HTMLDivElement),
-  checkpointForm: byId("checkpoint-form", HTMLFormElement),
-  checkpointSummary: byId("checkpoint-summary", HTMLParagraphElement),
-  checkpointNames: byId("checkpoint-names", HTMLUListElement),
-  checkpointInput: byId("checkpoint-input", HTMLInputElement),
-  checkpointSubmit: byId("checkpoint-submit", HTMLButtonElement),
-  checkpointCancel: byId("checkpoint-cancel", HTMLButtonElement),
-  checkpointError: byId("checkpoint-error", HTMLParagraphElement),
 };
 
 function current(): SnapshotMeta | undefined {
@@ -330,13 +310,6 @@ function initFilters() {
     applyFilters();
   });
   els.clearFilters.addEventListener("click", clearFilters);
-  // Only local baselines have an accepted date.
-  els.acceptedBeforeRow.hidden = manifest.source !== "local";
-  els.acceptedBefore.value = state.acceptedBefore;
-  els.acceptedBefore.addEventListener("change", () => {
-    state.acceptedBefore = els.acceptedBefore.value;
-    applyFilters();
-  });
 }
 
 /** Options for a facet: the known ones in order, then any unexpected values. */
@@ -361,13 +334,6 @@ function matches(
   includeReviewed = false
 ): boolean {
   if (!includeReviewed && !state.showReviewed && state.verdicts.has(item.id)) {
-    return false;
-  }
-  if (
-    state.acceptedBefore !== "" &&
-    (item.acceptedAt === undefined ||
-      item.acceptedAt.slice(0, 10) >= state.acceptedBefore)
-  ) {
     return false;
   }
   for (const facet of FACETS) {
@@ -399,8 +365,7 @@ function hasActiveFilters(): boolean {
   return (
     FACETS.some((f) => state.filters[f.key] !== ALL_VALUE) ||
     els.browser.value !== ALL_VALUE ||
-    els.search.value !== "" ||
-    state.acceptedBefore !== ""
+    els.search.value !== ""
   );
 }
 
@@ -408,8 +373,6 @@ function clearFilters() {
   for (const facet of FACETS) state.filters[facet.key] = ALL_VALUE;
   els.browser.value = ALL_VALUE;
   els.search.value = "";
-  state.acceptedBefore = "";
-  els.acceptedBefore.value = "";
   applyFilters();
 }
 
@@ -464,10 +427,6 @@ function readHash() {
   const group = params.get("group");
   if (isGroupKey(group)) state.group = group;
   els.group.value = state.group;
-  const before = params.get("before");
-  if (before !== null && /^\d{4}-\d{2}-\d{2}$/.test(before)) {
-    state.acceptedBefore = before;
-  }
 }
 
 function writeHash() {
@@ -479,7 +438,6 @@ function writeHash() {
   if (els.browser.value !== ALL_VALUE) params.set("browser", els.browser.value);
   if (els.search.value !== "") params.set("q", els.search.value);
   if (state.group !== "none") params.set("group", state.group);
-  if (state.acceptedBefore !== "") params.set("before", state.acceptedBefore);
   const hash = params.toString();
   window.history.replaceState(
     null,
@@ -775,7 +733,6 @@ const storageKey = `${STORAGE_PREFIX}${
 interface SavedSession {
   verdicts: [string, Verdict][];
   accepted?: AcceptedState;
-  checkpointed?: CheckpointResponse;
   removed: string[];
   store?: StoreSummary;
 }
@@ -784,7 +741,6 @@ function saveSession() {
   const data: SavedSession = {
     verdicts: [...state.verdicts],
     accepted: state.accepted,
-    checkpointed: state.checkpointed,
     removed: [...state.removed],
     store: state.store,
   };
@@ -822,12 +778,11 @@ function restoreSession() {
     : [];
   state.verdicts = new Map(verdicts.filter(([id]) => ids.has(id)));
   state.accepted = data.accepted;
-  state.checkpointed = data.checkpointed;
   if (data.store !== undefined) state.store = data.store;
 }
 
 // ---------------------------------------------------------------------------
-// Accept, undo, drop and checkpoint (need the per-session token)
+// Accept, undo and drop (need the per-session token)
 // ---------------------------------------------------------------------------
 
 function readToken(): string | undefined {
@@ -908,18 +863,12 @@ function storeLine(store: StoreSummary): string {
     store.oldestAcceptedAt === undefined
       ? ""
       : ` · oldest ${store.oldestAcceptedAt.slice(0, 10)}`;
-  return `Local baselines: ${store.active} not checkpointed (${formatBytes(
+  return `Local baselines: ${store.active} (${formatBytes(
     store.bytes
   )})${oldest}`;
 }
 
-function staleLine(store: StoreSummary): string | undefined {
-  return store.stale.length === 0
-    ? undefined
-    : `${store.stale.length} stale: they no longer apply; ./morcus.sh visual-baselines drop --stale`;
-}
-
-/** Removes checkpointed or dropped local baselines from the list. */
+/** Removes undone or dropped local baselines from the list. */
 function removeNames(names: readonly string[]) {
   const gone = new Set(names);
   for (const item of ALL) {
@@ -950,7 +899,7 @@ function undoAccept() {
   const a = state.accepted;
   if (a === undefined) return;
   // Only what the accept changed; "unchanged" names were left alone.
-  const names = [...a.added, ...a.updated, ...a.reverted].sort();
+  const names = [...a.added, ...a.updated].sort();
   void write(async () => {
     if (names.length > 0) {
       const res = await post<DropResponse>("/api/drop", { names });
@@ -965,11 +914,24 @@ function undoAccept() {
   });
 }
 
+function undoPreviousUpdate() {
+  const names = namesOf(ALL);
+  if (names.length === 0) return;
+  void write(async () => {
+    const res = await post<DropResponse>("/api/undo", { names });
+    state.store = res.store;
+    removeNames([...res.dropped, ...res.restored]);
+    state.notice =
+      `Reverted update: ${res.dropped.length} newly added dropped, ` +
+      `${res.restored.length} previous baseline(s) restored.`;
+  });
+}
+
 function dropNames(names: string[], what: string) {
   if (names.length === 0) return;
   const ok = window.confirm(
     `Drop ${what}?\n\n${names.join("\n")}\n\n` +
-      "The checkpoint applies again for these. This can't be undone from the viewer."
+      "This removes these baseline(s) from .visual-baselines/local/."
   );
   if (!ok) return;
   void write(async () => {
@@ -980,85 +942,7 @@ function dropNames(names: string[], what: string) {
   });
 }
 
-/** `local` mode: the items a checkpoint applies to (the current filters). */
-function selection(): SnapshotMeta[] {
-  return ALL.filter((i) => matches(i, undefined, true));
-}
-
-function openCheckpoint() {
-  const names = namesOf(selection());
-  if (names.length === 0) return;
-  els.checkpointSummary.textContent =
-    `Copy these ${names.length} local baseline(s) into the checkpoint (the ` +
-    "committed snapshot directory), and remove them from the local store. " +
-    "Files are written to the working tree; nothing is staged or committed.";
-  els.checkpointNames.replaceChildren(
-    ...names.map((n) => {
-      const li = h("li");
-      li.append(h("code", undefined, n));
-      return li;
-    })
-  );
-  els.checkpointInput.value = "";
-  els.checkpointSubmit.disabled = true;
-  els.checkpointError.hidden = true;
-  els.checkpointModal.hidden = false;
-  els.checkpointInput.focus();
-}
-
-function closeCheckpoint() {
-  els.checkpointModal.hidden = true;
-}
-
-async function submitCheckpoint() {
-  const names = namesOf(selection());
-  const confirm = els.checkpointInput.value.trim();
-  if (names.length === 0 || confirm !== "checkpoint" || state.busy) return;
-  state.busy = true;
-  els.checkpointSubmit.disabled = true;
-  els.checkpointError.hidden = true;
-  try {
-    const res = await post<CheckpointResponse>("/api/checkpoint", {
-      names,
-      confirm,
-    });
-    state.checkpointed = res;
-    state.store = res.store;
-    removeNames(res.promoted);
-    closeCheckpoint();
-  } catch (err) {
-    els.checkpointError.textContent =
-      err instanceof Error ? err.message : String(err);
-    els.checkpointError.hidden = false;
-  } finally {
-    state.busy = false;
-    els.checkpointSubmit.disabled =
-      els.checkpointInput.value.trim() !== "checkpoint";
-    saveSession();
-    applyFilters();
-  }
-}
-
-function openLocalHint() {
-  els.localModalText.textContent =
-    "To review local baselines against the checkpoint, checkpoint a subset, " +
-    "or drop some, open local mode in another terminal:";
-  els.localModal.hidden = false;
-}
-
-function renderLocalLink() {
-  const store = state.store;
-  if (manifest.source !== "results" || store === undefined) {
-    els.localLink.hidden = true;
-    return;
-  }
-  els.localLink.hidden = false;
-  els.localLink.textContent = `Local baselines (${store.active}) →`;
-  els.localLink.title = storeLine(store);
-}
-
 function renderActions() {
-  renderLocalLink();
   const actions = manifest.actions;
   if (actions === undefined) {
     els.actionsPanel.hidden = true;
@@ -1084,8 +968,6 @@ function renderActions() {
   const storeHints = () => {
     if (state.store === undefined) return;
     note("muted", storeLine(state.store));
-    const stale = staleLine(state.store);
-    if (stale !== undefined) note("warn", `⚠ ${stale}`);
   };
 
   if (actions.mode === "accept") {
@@ -1101,8 +983,7 @@ function renderActions() {
       );
       note(
         "muted",
-        `${a.added.length} added, ${a.updated.length} updated, ` +
-          `${a.reverted.length} back to the checkpoint, ${a.unchanged.length} unchanged.`
+        `${a.added.length} added, ${a.updated.length} updated, ${a.unchanged.length} unchanged.`
       );
       storeHints();
       if (blocked === undefined) button("Undo accept", "ghost", undoAccept);
@@ -1131,76 +1012,23 @@ function renderActions() {
       }
     }
   } else {
-    parts.push(h("h3", undefined, "Local baselines"));
+    parts.push(h("h3", undefined, "Previous update"));
     storeHints();
-    const c = state.checkpointed;
-    if (c !== undefined) {
-      note("", `Last checkpoint: ${c.promoted.length} file(s) written:`);
-      const list = h("ul", "file-list");
-      for (const f of c.files) {
-        const li = h("li");
-        li.append(h("code", undefined, f));
-        list.append(li);
-      }
-      parts.push(list);
-      if (c.skippedStale.length > 0) {
-        note("warn", `Skipped ${c.skippedStale.length} stale.`);
-      }
-      note(
-        "warn",
-        "Nothing was staged or committed. Review with ./morcus.sh visual-diff " +
-          "--source git, and commit only with explicit human approval."
-      );
-    }
     if (blocked !== undefined) {
       note("warn", blocked);
     } else {
-      const sel = selection();
-      const approvedInSel = sel.filter(
-        (i) => state.verdicts.get(i.id) === "approved"
-      ).length;
-      const rejectedInSel = sel.filter(
-        (i) => state.verdicts.get(i.id) === "rejected"
-      ).length;
-      const scope = hasActiveFilters()
-        ? `the ${sel.length} matching the current filters`
-        : `all ${sel.length}`;
-      if (sel.length === 0) {
-        note("muted", "No local baselines match the filters.");
-      } else if (approvedInSel === sel.length) {
-        note("muted", `Checkpoint applies to ${scope}.`);
-        button(`Checkpoint ${sel.length}…`, "primary", openCheckpoint);
-      } else {
+      if (ALL.length > 0) {
         note(
           "muted",
-          `Checkpoint applies to ${scope}; approve all of them first ` +
-            `(${sel.length - approvedInSel - rejectedInSel} unreviewed, ` +
-            `${rejectedInSel} rejected). Narrow the filters to checkpoint a subset.`
+          `Showing ${ALL.length} snapshot(s) from the last update against .visual-baselines/previous/.`
         );
+        button("Undo last update", "ghost", undoPreviousUpdate);
       }
       const item = current();
       if (item?.snapshotName !== undefined) {
         const name = item.snapshotName;
         button("Drop this local baseline…", "ghost danger", () =>
           dropNames([name], "this local baseline")
-        );
-      }
-      const stale = state.store?.stale ?? [];
-      if (stale.length > 0) {
-        const details = h("details", "stale-list");
-        details.append(
-          h("summary", undefined, `${stale.length} stale (no longer apply)`)
-        );
-        const list = h("ul", "file-list");
-        for (const n of stale) {
-          const li = h("li");
-          li.append(h("code", undefined, n));
-          list.append(li);
-        }
-        details.append(list);
-        parts.push(details);
-        button(`Drop ${stale.length} stale…`, "ghost danger", () =>
-          dropNames(stale, `${stale.length} stale local baseline(s)`)
         );
       }
     }
@@ -1570,22 +1398,6 @@ function bindControls() {
   els.approve.addEventListener("click", () => toggleVerdictCurrent("approved"));
   els.reject.addEventListener("click", () => toggleVerdictCurrent("rejected"));
   els.undoVerdict.addEventListener("click", undoVerdict);
-  els.checkpointInput.addEventListener("input", () => {
-    els.checkpointSubmit.disabled =
-      state.busy || els.checkpointInput.value.trim() !== "checkpoint";
-  });
-  els.checkpointForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    void submitCheckpoint();
-  });
-  els.checkpointCancel.addEventListener("click", closeCheckpoint);
-  els.localLink.addEventListener("click", openLocalHint);
-  els.localModalClose.addEventListener("click", () => {
-    els.localModal.hidden = true;
-  });
-  els.localModal.addEventListener("click", (e) => {
-    if (e.target === els.localModal) els.localModal.hidden = true;
-  });
   byId("prev", HTMLButtonElement).addEventListener("click", () => navigate(-1));
   byId("next", HTMLButtonElement).addEventListener("click", () => navigate(1));
   byId("help-button", HTMLButtonElement).addEventListener("click", () =>
@@ -1609,14 +1421,6 @@ function bindControls() {
 function bindKeyboard() {
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (!els.checkpointModal.hidden) {
-      // No review shortcuts behind the confirmation dialog.
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeCheckpoint();
-      }
-      return;
-    }
     const target = e.target;
     if (
       target instanceof HTMLInputElement ||
@@ -1665,10 +1469,7 @@ function bindKeyboard() {
       "/": () => els.search.focus(),
       "?": () => toggleHelp(true),
       c: clearFilters,
-      Escape: () => {
-        toggleHelp(false);
-        els.localModal.hidden = true;
-      },
+      Escape: () => toggleHelp(false),
     };
     const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const action = actions[key];

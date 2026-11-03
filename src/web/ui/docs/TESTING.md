@@ -139,24 +139,15 @@ Verifies pixel-perfect UI fidelity across the V2 views and every browser project
 ./morcus.sh visual-baselines accept <names...>
 ```
 
-#### Baselines: committed checkpoint + local overlay
+#### Local baselines & 1-deep backup
 
-Baselines live in two places, so day-to-day UI work doesn't add a new set of PNGs to git history every time:
+Screenshot baselines are kept locally rather than committed to git because system font fallback and subpixel antialiasing vary across developer machines and CI environments, and committing hundreds of PNGs adds unnecessary weight to the repository:
 
-- **Checkpoint** (committed): `src/integration/screenshot/browser_screenshot.test.ts-snapshots/`. Refreshed every so often, with explicit human approval.
-- **Local baselines** (gitignored): `.visual-baselines/local/`, plus a `manifest.json`. `e2e --visual --update` and `visual-baselines accept` write changed screenshots here, never to the checkpoint.
-
-| Term                 | Meaning                                                                                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Accept (locally)** | Save screenshots as local baselines in `.visual-baselines/local/` (plus `manifest.json`). Gitignored; undo with `visual-baselines drop`.                   |
-| **Checkpoint**       | Promote local baselines into the committed snapshot directory. Writes files; never stages or commits them.                                                 |
-| **Effective**        | The checkpoint plus the valid local baselines, merged before each run into `.cache/visual-baselines/effective/`. This is what Playwright compares against. |
-| **Stale**            | A local baseline whose checkpoint file has changed since it was accepted. The checkpoint wins.                                                             |
-
-Before each visual run, `run_morcus` merges the two into `.cache/visual-baselines/effective/` and points Playwright at it (`MORCUS_VISUAL_BASELINES`, read by `playwright.config.ts`). A local baseline is used while the checkpoint file it was accepted against is unchanged. If the checkpoint changes afterwards (a pull, a rebase, or a new checkpoint), the checkpoint wins and the local baseline is reported as **stale**. The comparison uses file content (git blob ids), not mtimes, so checkouts and rebases don't confuse it. Plain `npx playwright test` (and CI) ignores the local store.
+- **Local baselines** (gitignored): `.visual-baselines/local/`, plus a `manifest.json`. Playwright compares directly against this directory (`snapshotPathTemplate` in `playwright.config.ts`).
+- **Previous backup** (gitignored, 1-deep): `.visual-baselines/previous/`. Whenever `e2e --visual --update` or `visual-baselines accept` adds or overwrites baselines, the previous versions are saved here so you can still inspect `before` vs `after` (`./morcus.sh visual-diff --source previous`) or revert the update (`./morcus.sh visual-baselines undo`).
 
 ```bash
-# What's in the local store, and what's stale:
+# What's in the local store, and whether a previous backup exists:
 ./morcus.sh visual-baselines status
 
 # Accept specific failures from the last run straight from test-results/,
@@ -165,38 +156,34 @@ Before each visual run, `run_morcus` merges the two into `.cache/visual-baseline
 # ...or exactly the snapshots in the last `visual-diff --source results` report:
 ./morcus.sh visual-baselines accept --from-report
 
-# Review local baselines against the checkpoint:
-./morcus.sh visual-diff --source local
+# Review the last update/accept against the 1-deep backup in .visual-baselines/previous/:
+./morcus.sh visual-diff --source previous
 
-# Checkpoint (needs explicit human approval): copy the active local baselines
-# into the committed directory and clear them from the store. Nothing is staged;
-# review with `visual-diff --source git`, then commit.
-./morcus.sh visual-baselines checkpoint            # or name specific files
+# Revert the last `--update` or `accept` using .visual-baselines/previous/:
+./morcus.sh visual-baselines undo
 
-# Discard local baselines:
-./morcus.sh visual-baselines drop --stale          # or: drop <names...>, drop --all
+# Discard specific (or all) local baselines:
+./morcus.sh visual-baselines drop <names...>       # or: drop --all
 ```
 
-`.visual-baselines/` is deliberately outside `.cache/`, so clearing the cache doesn't lose accepted baselines. The store doesn't track deleted scenarios: remove their PNGs from the checkpoint by hand.
+`.visual-baselines/` is deliberately outside `.cache/`, so clearing the cache doesn't lose accepted baselines.
 
-**`accept` and the run marker.** `accept` takes Playwright's `*-actual.png` files from `test-results/` (mapping `<dir>--<project>/<name>-actual.png` to `<name>-<project>-<os>.png`), so it only makes sense if those screenshots came from the code that is checked out now. Every `e2e --visual` run records `HEAD` and a hash of the uncommitted changes under `src/` and `playwright.config.ts` when it starts, and writes them to `test-results/.visual-run.json` when it finishes. `accept` refuses if that marker is missing (plain `npx playwright test`, an interrupted run), if the code changed during the run, or if `HEAD` or the uncommitted changes differ now; the error says which. `--force` overrides it. There is no "accept everything": pass names or `--from-report`, so a flaky failure is never accepted just because it was in `test-results/`. Like `--update`, an actual identical to the checkpoint removes the local baseline instead ("reverted").
+**`accept` and the run marker.** `accept` takes Playwright's `*-actual.png` files from `test-results/` (mapping `<dir>--<project>/<name>-actual.png` to `<name>-<project>-<os>.png`), so it only makes sense if those screenshots came from the code that is checked out now. Every `e2e --visual` run records `HEAD` and a hash of the uncommitted changes under `src/` and `playwright.config.ts` when it starts, and writes them to `test-results/.visual-run.json` when it finishes. `accept` refuses if that marker is missing (plain `npx playwright test`, an interrupted run), if the code changed during the run, or if `HEAD` or the uncommitted changes differ now; the error says which. `--force` overrides it. There is no "accept everything": pass names or `--from-report`, so a flaky failure is never accepted just because it was in `test-results/`.
 
 #### Visual Diff Inspector (`src/scripts/visual_diff/`)
 
-An interactive viewer for screenshot changes. It reads from one of three sources:
+An interactive viewer for screenshot changes. It reads from one of two sources:
 
-- **`results`**: Playwright's failure output in `test-results/` (expected vs actual). Use this to review a failing run _before_ asking for approval. Tests that failed _before_ taking a screenshot (a timeout, a crash, a missing element) have no image to show, so they are listed separately as "⚠ N failed without a screenshot", in the console and at the top of `report.md`. Resolve those before asking for approval: their baselines were never compared.
-- **`local`**: local baselines vs the committed checkpoint. Use this to review baselines after `--update`. Stale local baselines are listed separately.
-- **`git`**: checkpoint PNGs in the working tree vs a git ref. Use this to review a checkpoint before committing it.
+- **`results`**: Playwright's failure output in `test-results/` (expected vs actual). Use this to review a failing run _before_ accepting. Tests that failed _before_ taking a screenshot (a timeout, a crash, a missing element) have no image to show, so they are listed separately as "⚠ N failed without a screenshot", in the console and at the top of `report.md`. Resolve those before accepting: their baselines were never compared.
+- **`previous`**: current local baselines vs the 1-deep backup in `.visual-baselines/previous/`. Use this to review baselines after `--update` or `accept`.
 
 ```bash
-# Auto-detect the source (git changes first, then Playwright failures, then local baselines):
+# Auto-detect the source (Playwright failures in test-results/ first, then previous backup):
 ./morcus.sh visual-diff        # or: ./morcus.sh diff, npm run visual-diff
 
 # Pick a source explicitly:
 ./morcus.sh visual-diff --source results
-./morcus.sh visual-diff --source local
-./morcus.sh visual-diff --source git --ref HEAD~1
+./morcus.sh visual-diff --source previous
 
 # Write the viewer and a markdown report to .cache/visual-diff/ without a server:
 ./morcus.sh visual-diff --no-server --report /tmp/visual-diff.md
@@ -211,22 +198,22 @@ An interactive viewer for screenshot changes. It reads from one of three sources
 
 The viewer offers before/after flip (<kbd>Space</kbd>, hold-to-peek, auto-blink with <kbd>B</kbd>), a split slider (<kbd>S</kbd>), a diff mask overlay (<kbd>D</kbd>), side-by-side view (<kbd>4</kbd>), zoom, and filtering by page, color (light/dark), size (mobile/desktop), scripting (JS/No-JS), browser, and name. Option counts reflect the other active filters, and filters are kept in the URL hash. Press <kbd>?</kbd> for all shortcuts. Pixel counts and diff masks need ImageMagick (6 or 7); without it, the `results` source falls back to Playwright's own diff images.
 
-##### Reviewing, accepting and checkpointing in the viewer
+##### Reviewing and accepting in the viewer
 
-Give each snapshot a verdict: **approve** (<kbd>A</kbd>, or <kbd>Y</kbd>/<kbd>Enter</kbd>) or **reject** (<kbd>R</kbd>); <kbd>Shift</kbd> applies it to the whole group, <kbd>U</kbd> undoes. The header counts "N unreviewed · M approved · K rejected". Verdicts are kept in the tab's `sessionStorage`, keyed by the run marker (or the local store's contents), so a reload keeps them and a new run starts fresh.
+Give each snapshot a verdict: **approve** (<kbd>A</kbd>, or <kbd>Y</kbd>/<kbd>Enter</kbd>) or **reject** (<kbd>R</kbd>); <kbd>Shift</kbd> applies it to the whole group, <kbd>U</kbd> undoes. The header counts "N unreviewed · M approved · K rejected". Verdicts are kept in the tab's `sessionStorage`, keyed by the run marker (or the previous backup), so a reload keeps them and a new run starts fresh.
 
-The viewer has two modes with write actions, in a panel under the list. Most of the time you only need the first: checkpointing is deliberately occasional, to keep PNGs out of git history.
+The viewer has two modes with write actions, in a panel under the list:
 
-- **Everyday: `--source results` → accept.** Once nothing is unreviewed, **"Accept M locally"** accepts exactly the approved snapshots (the same as `visual-baselines accept <names>`, run-marker guard included). Rejected ones are left alone and keep failing. That's the end of the flow: the panel shows "✓ Accepted M locally · K rejected (still failing)", the local store's size and oldest entry, and a stale warning if there is one. Its only action is **Undo accept**, which puts back exactly what this accept changed (dropping new local baselines, restoring ones it replaced). There is no checkpoint here. The header's quiet "Local baselines (N) →" link only says how to open local mode.
-- **Occasional: `--source local` → checkpoint.** Reviews every local baseline against the committed checkpoint, with stale ones listed separately. **"Checkpoint N…"** applies to the snapshots matching the current filters (page, color, size, scripting, browser, name, and "Accepted before" a date), so you can checkpoint a subset. It appears only once every one of them is approved, asks you to type `checkpoint`, and then lists the files written. Nothing is staged or committed: review with `visual-diff --source git`, then commit. **"Drop this local baseline…"** (and "Drop N stale…") discard local baselines after a confirmation.
+- **`--source results` → accept.** Once nothing is unreviewed, **"Accept M locally"** accepts exactly the approved snapshots (the same as `visual-baselines accept <names>`, run-marker guard included). Rejected ones are left alone and keep failing. The panel shows "✓ Accepted M locally · K rejected (still failing)", plus the local store's size and oldest entry. Its action is **Undo accept**, which puts back what this session's accept changed (dropping new local baselines, restoring ones it replaced).
+- **`--source previous` → undo / drop.** Reviews the last update or accept against `.visual-baselines/previous/`. **"Undo last update"** reverts the entire batch (`visual-baselines undo`), and **"Drop this local baseline…"** removes individual local baselines after confirmation.
 
-`--source git` is read-only. The buttons are disabled, with the reason, if the run marker check fails (`results`) or a snapshot's images are incomplete (a missing or unreadable image, an unknown Playwright project, or, for `results`, no diff at all). `./morcus.sh visual-baselines status` shows the same hints: how many local baselines aren't checkpointed, their size, the oldest, and a one-line warning when some are stale.
+The buttons are disabled, with the reason, if the run marker check fails (`results`) or a snapshot's images are incomplete (a missing or unreadable image, an unknown Playwright project, or, for `results`, no diff at all).
 
-Because the viewer listens on the network, the write endpoints (`POST /api/accept`, `/api/drop` and `/api/checkpoint`) need a random token generated at startup. It's in the URLs the Inspector prints (`…/#token=…`; the fragment never reaches the server); the viewer sends it as a header. Without it, or from another origin, requests are refused. The endpoints only take snapshot names shown in the current session; a `results` session can only accept, and undo its own accepts, while only a `local` session can checkpoint or drop. To try the flow without touching the real stores, point the Inspector at copies: `--results-dir`, `--dir` (checkpoint) and `--store-dir` (local store).
+Because the viewer listens on the network, the write endpoints (`POST /api/accept`, `/api/undo` and `/api/drop`) need a random token generated at startup. It's in the URLs the Inspector prints (`…/#token=…`; the fragment never reaches the server); the viewer sends it as a header. Without it, or from another origin, requests are refused. The endpoints only take snapshot names shown in the current session. To try the flow without touching the real stores, point the Inspector at copies: `--results-dir`, `--store-dir`, and `--previous-dir`.
 
 > [!IMPORTANT]
 >
-> **For agents:** never call the Inspector's accept, drop or checkpoint endpoints, or click those buttons. They're for the human reviewing the diffs. See the Visual Baseline Approval Rule in `AGENTS.md`.
+> **For agents:** never call the Inspector's accept, undo or drop endpoints, or click those buttons. They're for the human reviewing the diffs. See the Visual Baseline Approval Rule in `AGENTS.md`.
 
 ---
 
@@ -347,17 +334,13 @@ Checks that span the whole app rather than one page stay in `core/`:
     ```bash
     ./morcus.sh e2e --visual --all
     ```
-4.  **If there are pixel diffs, review them before touching baselines** (see the Visual Baseline Approval Rule in `AGENTS.md`):
+4.  **If there are pixel diffs, review them in the Visual Diff Inspector** (see the Visual Baseline Approval Rule in `AGENTS.md`):
 
     ```bash
     # Opens the Visual Diff Inspector on Playwright's failures (expected vs actual):
     ./morcus.sh e2e --visual --all --diff
 
-    # Accept them locally (gitignored), and show the user the result:
+    # Or accept them locally (gitignored) and review against the 1-deep backup:
     ./morcus.sh e2e --visual --all --update
-    ./morcus.sh visual-diff --source local
-
-    # Only after explicit approval: checkpoint, re-review vs HEAD, and commit:
-    ./morcus.sh visual-baselines checkpoint
-    ./morcus.sh visual-diff --source git
+    ./morcus.sh visual-diff --source previous
     ```

@@ -22,7 +22,7 @@ In this repository, operational tasks—such as starting development servers, bu
 | `worker`           | Starts background cruncher/NLP workers                      | `./morcus.sh worker -wt ls`                                            |
 | `corpus`           | Corpus processing utilities and Rust CLI                    | `./morcus.sh corpus -r`                                                |
 | `visual-diff`      | Interactive viewer for screenshot diffs (`TESTING.md` §2.F) | `./morcus.sh visual-diff --source results`                             |
-| `visual-baselines` | Local (gitignored) screenshot baselines and checkpoints     | `./morcus.sh visual-baselines status`                                  |
+| `visual-baselines` | Local (gitignored) screenshot baselines                     | `./morcus.sh visual-baselines status`                                  |
 | `test`             | Jest: unit tests related to your changes, or a whole tier   | `./morcus.sh test`<br>`./morcus.sh test --whole-system`                |
 | `upstream`         | Pinned upstream data repos and their local clones           | `./morcus.sh upstream status`<br>`./morcus.sh upstream pin gesner@fix` |
 
@@ -74,25 +74,21 @@ Backend-only commits can't affect them, so skip the tier there: dictionary stora
 
 ### ⛔ Visual Baseline Approval Rule
 
-**NEVER checkpoint or commit updated screenshot baselines without explicit human approval.**
+**Always show screenshot diffs to the user before treating a UI change as done.**
 
-A baseline update rewrites the definition of "correct" for the UI. An agent that both changes the pixels and re-blesses them has removed the only check on its own visual judgement, so this decision belongs to the user every time.
+A baseline update rewrites the definition of "correct" for the UI. An agent that both changes the pixels and silently re-blesses them has removed the only check on its own visual judgement, so visual diffs must always be reviewed with the user.
 
-Baselines have two tiers ([`src/web/ui/docs/TESTING.md` §2.F](src/web/ui/docs/TESTING.md#baselines-committed-checkpoint--local-overlay)): the committed **checkpoint** (`*-snapshots/`) and gitignored **local baselines** (`.visual-baselines/local/`). `./morcus.sh e2e --visual --all --update` writes only to the local tier. That's reversible and never committed, so agents may run it without asking, but the diffs must still be shown to the user. The same goes for `./morcus.sh visual-baselines accept <names...>`, which accepts named failures from the last run into the local tier without re-running it: agents may run it with explicit names, after showing the user the diffs.
+Screenshot baselines are stored locally in `.visual-baselines/local/` (gitignored; see [`src/web/ui/docs/TESTING.md` §2.F](src/web/ui/docs/TESTING.md#option-f-visual-regression-tests--the-visual-diff-inspector)), with a 1-deep backup in `.visual-baselines/previous/` recorded whenever `--update` or `accept` modifies baselines. `./morcus.sh e2e --visual --all --update` and `./morcus.sh visual-baselines accept <names...>` write to `.visual-baselines/local/` and save the overwritten baselines to `.visual-baselines/previous/` (reversible via `./morcus.sh visual-baselines undo`), so agents may run them, but the diffs must still be shown to the user.
 
-The Visual Diff Inspector also has **Accept locally**, **Undo accept**, **Drop** and **Checkpoint** buttons (and the `POST /api/accept`, `/api/drop` and `/api/checkpoint` endpoints behind them). They are for the human reviewing the diffs. Agents must **never** call those endpoints or click those buttons, even though the token is in the URL the Inspector prints.
+The Visual Diff Inspector also has **Accept locally**, **Undo accept**, **Undo last update**, and **Drop** buttons (and the `POST /api/accept`, `/api/undo`, and `/api/drop` endpoints behind them). They are for the human reviewing the diffs. Agents must **never** call those endpoints or click those buttons, even though the token is in the URL the Inspector prints.
 
 When a change causes pixel diffs:
 
 1. Run the visual suite **without** `--update` first, to see exactly what moved: `./morcus.sh e2e --visual --all`.
 2. Report which snapshots differ and why, using the Visual Diff Inspector ([`src/web/ui/docs/TESTING.md` §2.F](src/web/ui/docs/TESTING.md#option-f-visual-regression-tests--the-visual-diff-inspector)):
-   - Start it in the background with `./morcus.sh visual-diff --source results` (or `--source local` after `--update`) and give the user the `Network:` URL it prints (including its `#token=…`), so they can flip through before/after and approve or reject themselves.
+   - Start it in the background with `./morcus.sh visual-diff --source results` (or `--source previous` after `--update`) and give the user the `Network:` URL it prints (including its `#token=…`), so they can flip through before/after and approve or reject themselves.
    - To inspect the diffs yourself, read `.cache/visual-diff/report.md` and the `images/*.{before,after,diff}.png` files next to it.
 3. You may accept the new screenshots locally with `--update`, or with `visual-baselines accept <names...>` for the specific failures the user has seen. Don't call the UI change done until the user has seen the diffs.
-4. **Wait for approval before checkpointing.** Do not run `./morcus.sh visual-baselines checkpoint`, write to `*-snapshots/` any other way, or `git add` anything under `*-snapshots/`, until the user has said yes.
-5. Only then checkpoint, re-check the checkpoint against `HEAD` with `./morcus.sh visual-diff --source git`, and commit, listing the affected files.
-
-This applies to amending or fixing up an earlier baseline commit too.
 
 ### Quick Test & Verification Reference
 
@@ -107,4 +103,4 @@ For full command flags, debugging modes, and the complete Pre-Commit / Pre-Push 
 | **Start dev server**            | `PORT=5757 ./morcus.sh web`                                              |
 | **Functional E2E (Playwright)** | `./morcus.sh e2e` (fast) · `./morcus.sh e2e --all` (all browsers)        |
 | **Visual regression suite**     | `./morcus.sh e2e --visual --all` (`--diff` to open inspector on failure) |
-| **Visual Diff Inspector**       | `./morcus.sh visual-diff --source results` (or `--source git`)           |
+| **Visual Diff Inspector**       | `./morcus.sh visual-diff --source results` (or `--source previous`)      |

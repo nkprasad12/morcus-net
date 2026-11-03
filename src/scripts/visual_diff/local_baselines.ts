@@ -1,25 +1,25 @@
 /**
- * Local visual baselines: a gitignored overlay on top of the committed
- * screenshot baselines.
+ * Local visual baselines: the gitignored screenshot baseline store
+ * (`.visual-baselines/local/`) and a 1-deep backup of the last update
+ * (`.visual-baselines/previous/`).
  *
- * The committed snapshot directory is a *checkpoint*, refreshed every so
- * often. Day-to-day baseline changes are accepted into a local store
- * (`.visual-baselines/local/`) instead, so a long-running branch doesn't add
- * a new set of PNGs to git history with every UI tweak.
+ * Screenshot baselines are kept locally rather than committed to git because
+ * font rendering and subpixel antialiasing vary across developer machines and
+ * CI environments, and committing hundreds of PNGs bloats the repository.
  *
- * Before each visual run, the checkpoint and the valid local entries are
- * merged into an *effective* directory, which Playwright compares against
- * (see `snapshotPathTemplate` in `playwright.config.ts`).
+ * Playwright compares directly against `.visual-baselines/local/` (see
+ * `snapshotPathTemplate` in `playwright.config.ts`).
  *
- * A local entry is valid while the checkpoint file it was accepted against is
- * unchanged (same git blob id). Once the checkpoint moves on (a pull, a rebase,
- * or a new checkpoint), the checked-in file wins and the entry is "stale".
- * This is content-based rather than mtime-based, because checkouts and rebases
- * rewrite mtimes.
+ * Baselines are updated by:
+ * - `./morcus.sh e2e --visual --all --update` ({@link snapshotBeforeUpdate} +
+ *   {@link recordUpdateFromSnapshot})
+ * - `./morcus.sh visual-baselines accept` or the Visual Diff Inspector's
+ *   Accept button ({@link acceptFromActuals})
  *
- * Entries are added by `e2e --visual --update` ({@link acceptFromEffective})
- * or straight from a failed run's actuals ({@link acceptFromActuals}, used by
- * `visual-baselines accept` and the Visual Diff Inspector).
+ * Every update or accept that changes baselines saves the overwritten images
+ * into `.visual-baselines/previous/`, so you can still inspect `before` vs
+ * `after` (`./morcus.sh visual-diff --source previous`) or revert the update
+ * (`./morcus.sh visual-baselines undo`).
  */
 
 import { execFileSync } from "child_process";
@@ -30,10 +30,8 @@ import { scanResultActuals } from "@/scripts/visual_diff/playwright_results";
 import { checkRunMarker } from "@/scripts/visual_diff/run_marker";
 import type { StoreSummary } from "@/scripts/visual_diff/visual_diff_types";
 
-export const DEFAULT_SNAPSHOT_DIR =
-  "src/integration/screenshot/browser_screenshot.test.ts-snapshots";
 export const DEFAULT_STORE_DIR = ".visual-baselines/local";
-export const DEFAULT_EFFECTIVE_DIR = ".cache/visual-baselines/effective";
+export const DEFAULT_PREVIOUS_DIR = ".visual-baselines/previous";
 /** Read by `playwright.config.ts`: the directory to compare screenshots against. */
 export const BASELINES_ENV = "MORCUS_VISUAL_BASELINES";
 
@@ -47,11 +45,6 @@ export interface LocalEntry {
   acceptedAt: string;
   /** `HEAD` when the entry was accepted, if known. Informational only. */
   acceptedAtCommit?: string;
-  /**
-   * Git blob id of the checkpoint file this entry was accepted against, or
-   * `null` if the snapshot had no checkpoint (a new scenario).
-   */
-  checkpointBlob: string | null;
 }
 
 export interface LocalManifest {
@@ -59,35 +52,36 @@ export interface LocalManifest {
   entries: Record<string, LocalEntry>;
 }
 
+/**
+ * Metadata for the 1-deep `.visual-baselines/previous/` backup, written
+ * whenever an `--update` or `accept` adds or overwrites baselines.
+ */
+export interface PreviousBatch {
+  version: number;
+  updatedAt: string;
+  /** Baselines that did not exist before the update (removed on undo). */
+  added: string[];
+  /** Baselines that were overwritten, with their previous manifest entries. */
+  updated: Record<string, LocalEntry>;
+}
+
 export interface BaselinePaths {
-  /** Committed checkpoint directory. */
-  snapshotDir: string;
-  /** Gitignored local store. */
+  /** Gitignored local baseline store. */
   storeDir: string;
-  /** Regenerated before each run: checkpoint + valid local entries. */
-  effectiveDir: string;
+  /** 1-deep backup of the last update or accept. */
+  previousDir: string;
 }
 
 export function defaultPaths(root: string = process.cwd()): BaselinePaths {
   return {
-    snapshotDir: path.resolve(root, DEFAULT_SNAPSHOT_DIR),
     storeDir: path.resolve(root, DEFAULT_STORE_DIR),
-    effectiveDir: path.resolve(root, DEFAULT_EFFECTIVE_DIR),
+    previousDir: path.resolve(root, DEFAULT_PREVIOUS_DIR),
   };
 }
 
 // ---------------------------------------------------------------------------
 // Hashing and manifest I/O
 // ---------------------------------------------------------------------------
-
-/** The id git would give this content as a blob (`git hash-object`). */
-export function gitBlobId(content: Buffer): string {
-  return crypto
-    .createHash("sha1")
-    .update(`blob ${content.length}\0`)
-    .update(content)
-    .digest("hex");
-}
 
 function sha256(content: Buffer): string {
   return crypto.createHash("sha256").update(content).digest("hex");
@@ -106,19 +100,8 @@ function isLocalEntry(x: unknown): x is LocalEntry {
     isRecord(x) &&
     typeof x.sha256 === "string" &&
     typeof x.acceptedAt === "string" &&
-    (x.acceptedAtCommit === undefined ||
-      typeof x.acceptedAtCommit === "string") &&
-    (x.checkpointBlob === null || typeof x.checkpointBlob === "string")
+    (x.acceptedAtCommit === undefined || typeof x.acceptedAtCommit === "string")
   );
-}
-
-/** Blob id of the checkpoint (working tree) version of `name`, or null. */
-export function checkpointBlobOf(
-  paths: BaselinePaths,
-  name: string
-): string | null {
-  const content = readIfExists(path.join(paths.snapshotDir, name));
-  return content === undefined ? null : gitBlobId(content);
 }
 
 export function readManifest(paths: BaselinePaths): LocalManifest {
@@ -139,7 +122,13 @@ export function readManifest(paths: BaselinePaths): LocalManifest {
     if (!isLocalEntry(entry)) {
       throw new Error(`Malformed local baseline entry for ${name}.`);
     }
-    entries[name] = entry;
+    entries[name] = {
+      sha256: entry.sha256,
+      acceptedAt: entry.acceptedAt,
+      ...(entry.acceptedAtCommit === undefined
+        ? {}
+        : { acceptedAtCommit: entry.acceptedAtCommit }),
+    };
   }
   return { version: MANIFEST_VERSION, entries };
 }
@@ -148,12 +137,84 @@ export function writeManifest(paths: BaselinePaths, manifest: LocalManifest) {
   fs.mkdirSync(paths.storeDir, { recursive: true });
   const sorted: Record<string, LocalEntry> = {};
   for (const name of Object.keys(manifest.entries).sort()) {
-    sorted[name] = manifest.entries[name];
+    const e = manifest.entries[name];
+    sorted[name] = {
+      sha256: e.sha256,
+      acceptedAt: e.acceptedAt,
+      ...(e.acceptedAtCommit === undefined
+        ? {}
+        : { acceptedAtCommit: e.acceptedAtCommit }),
+    };
   }
   fs.writeFileSync(
     path.join(paths.storeDir, MANIFEST_FILE),
     JSON.stringify({ version: MANIFEST_VERSION, entries: sorted }, null, 2) +
       "\n"
+  );
+}
+
+export function readPreviousBatch(
+  paths: BaselinePaths
+): PreviousBatch | undefined {
+  const raw = readIfExists(path.join(paths.previousDir, MANIFEST_FILE));
+  if (raw === undefined) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(raw.toString("utf-8"));
+    if (
+      !isRecord(parsed) ||
+      parsed.version !== MANIFEST_VERSION ||
+      typeof parsed.updatedAt !== "string" ||
+      !Array.isArray(parsed.added) ||
+      !parsed.added.every((n): n is string => typeof n === "string") ||
+      !isRecord(parsed.updated)
+    ) {
+      return undefined;
+    }
+    const updated: Record<string, LocalEntry> = {};
+    for (const [name, entry] of Object.entries(parsed.updated)) {
+      if (!isLocalEntry(entry)) return undefined;
+      updated[name] = {
+        sha256: entry.sha256,
+        acceptedAt: entry.acceptedAt,
+        ...(entry.acceptedAtCommit === undefined
+          ? {}
+          : { acceptedAtCommit: entry.acceptedAtCommit }),
+      };
+    }
+    return {
+      version: MANIFEST_VERSION,
+      updatedAt: parsed.updatedAt,
+      added: [...parsed.added].sort(),
+      updated,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function writePreviousBackup(
+  paths: BaselinePaths,
+  now: Date,
+  added: readonly string[],
+  updated: ReadonlyMap<string, { png: Buffer; entry: LocalEntry }>
+) {
+  fs.rmSync(paths.previousDir, { recursive: true, force: true });
+  fs.mkdirSync(paths.previousDir, { recursive: true });
+  const updatedEntries: Record<string, LocalEntry> = {};
+  for (const name of [...updated.keys()].sort()) {
+    const item = updated.get(name)!;
+    fs.writeFileSync(path.join(paths.previousDir, name), item.png);
+    updatedEntries[name] = item.entry;
+  }
+  const batch: PreviousBatch = {
+    version: MANIFEST_VERSION,
+    updatedAt: now.toISOString(),
+    added: [...added].sort(),
+    updated: updatedEntries,
+  };
+  fs.writeFileSync(
+    path.join(paths.previousDir, MANIFEST_FILE),
+    JSON.stringify(batch, null, 2) + "\n"
   );
 }
 
@@ -182,10 +243,8 @@ function currentCommit(cwd: string): string | undefined {
 // ---------------------------------------------------------------------------
 
 export interface Resolution {
-  /** Local entries that override (or add to) the checkpoint. */
+  /** Local entries present on disk. */
   valid: string[];
-  /** Local entries whose checkpoint has since changed; the checkpoint wins. */
-  stale: string[];
   /** Manifest entries whose PNG is missing from the store; ignored. */
   missing: string[];
 }
@@ -194,110 +253,107 @@ export function resolveLocal(
   paths: BaselinePaths,
   manifest: LocalManifest = readManifest(paths)
 ): Resolution {
-  const result: Resolution = { valid: [], stale: [], missing: [] };
+  const result: Resolution = { valid: [], missing: [] };
   for (const name of Object.keys(manifest.entries).sort()) {
     if (!fs.existsSync(path.join(paths.storeDir, name))) {
       result.missing.push(name);
-    } else if (
-      checkpointBlobOf(paths, name) === manifest.entries[name].checkpointBlob
-    ) {
-      result.valid.push(name);
     } else {
-      result.stale.push(name);
+      result.valid.push(name);
     }
   }
   return result;
-}
-
-/**
- * Rebuilds the effective directory: every checkpoint PNG, overlaid with the
- * valid local entries. Files are copied, never hard-linked: Playwright
- * rewrites baselines in place on `--update-snapshots`, which would otherwise
- * write through to the checkpoint.
- */
-export function materializeEffective(paths: BaselinePaths): Resolution {
-  const resolution = resolveLocal(paths);
-  fs.rmSync(paths.effectiveDir, { recursive: true, force: true });
-  fs.mkdirSync(paths.effectiveDir, { recursive: true });
-  const copy = (from: string, name: string) =>
-    fs.copyFileSync(
-      path.join(from, name),
-      path.join(paths.effectiveDir, name),
-      fs.constants.COPYFILE_FICLONE
-    );
-  for (const name of listPngs(paths.snapshotDir)) copy(paths.snapshotDir, name);
-  for (const name of resolution.valid) copy(paths.storeDir, name);
-  return resolution;
 }
 
 // ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
 
-export interface AcceptResult {
+export interface UpdateResult {
   /** New local entries (first local version of a snapshot). */
   added: string[];
   /** Local entries replaced with a newer image. */
   updated: string[];
-  /** Local entries removed because the image is back to the checkpoint. */
-  reverted: string[];
+  /** Existing local entries whose image did not change. */
+  unchanged: string[];
+}
+
+/** Pre-update snapshot of `.visual-baselines/local/`, for {@link recordUpdateFromSnapshot}. */
+export type BeforeUpdateSnapshot = Map<
+  string,
+  { png: Buffer; entry: LocalEntry }
+>;
+
+/**
+ * Captures the current contents of `.visual-baselines/local/` in memory before
+ * running Playwright with `--update-snapshots`, so {@link recordUpdateFromSnapshot}
+ * can see what changed and populate `.visual-baselines/previous/`.
+ */
+export function snapshotBeforeUpdate(
+  paths: BaselinePaths,
+  now: Date = new Date()
+): BeforeUpdateSnapshot {
+  const manifest = readManifest(paths);
+  const snapshot: BeforeUpdateSnapshot = new Map();
+  for (const name of listPngs(paths.storeDir)) {
+    const png = fs.readFileSync(path.join(paths.storeDir, name));
+    const entry = manifest.entries[name] ?? {
+      sha256: sha256(png),
+      acceptedAt: now.toISOString(),
+    };
+    snapshot.set(name, { png, entry });
+  }
+  return snapshot;
 }
 
 /**
- * Records the effective directory (after `--update-snapshots`) into the local
- * store: every image that differs from the checkpoint becomes a local entry.
- *
- * Stale entries are only replaced if the image changed; otherwise they are
- * left for `drop --stale`, since an untouched image may just mean the test
- * didn't run (e.g. with `--grep`).
+ * Records changes written to `.visual-baselines/local/` by Playwright's
+ * `--update-snapshots`: updates `manifest.json` and backs up overwritten
+ * baselines to `.visual-baselines/previous/`.
  */
-export function acceptFromEffective(
+export function recordUpdateFromSnapshot(
   paths: BaselinePaths,
-  now: Date = new Date()
-): AcceptResult {
+  before: BeforeUpdateSnapshot,
+  now: Date = new Date(),
+  repoRoot: string = process.cwd()
+): UpdateResult {
   const manifest = readManifest(paths);
-  const before = resolveLocal(paths, manifest);
-  const valid = new Set(before.valid);
-  const commit = currentCommit(path.dirname(paths.snapshotDir));
-  const result: AcceptResult = { added: [], updated: [], reverted: [] };
+  const commit = currentCommit(repoRoot);
+  const result: UpdateResult = { added: [], updated: [], unchanged: [] };
+  const updatedBackup = new Map<string, { png: Buffer; entry: LocalEntry }>();
 
-  for (const name of listPngs(paths.effectiveDir)) {
-    const content = fs.readFileSync(path.join(paths.effectiveDir, name));
-    const checkpoint = readIfExists(path.join(paths.snapshotDir, name));
-    const existing = manifest.entries[name];
-
-    if (checkpoint !== undefined && checkpoint.equals(content)) {
-      // Back to the checkpoint. Only a valid entry can have been overridden
-      // by this run; a stale one was never in the effective dir.
-      if (existing !== undefined && valid.has(name)) {
-        delete manifest.entries[name];
-        fs.rmSync(path.join(paths.storeDir, name), { force: true });
-        result.reverted.push(name);
-      }
-      continue;
-    }
+  for (const name of listPngs(paths.storeDir)) {
+    const content = fs.readFileSync(path.join(paths.storeDir, name));
     const hash = sha256(content);
-    if (existing !== undefined && valid.has(name) && existing.sha256 === hash) {
-      continue;
+    const prev = before.get(name);
+
+    if (prev === undefined) {
+      manifest.entries[name] = {
+        sha256: hash,
+        acceptedAt: now.toISOString(),
+        ...(commit === undefined ? {} : { acceptedAtCommit: commit }),
+      };
+      result.added.push(name);
+    } else if (!prev.png.equals(content)) {
+      updatedBackup.set(name, prev);
+      manifest.entries[name] = {
+        sha256: hash,
+        acceptedAt: now.toISOString(),
+        ...(commit === undefined ? {} : { acceptedAtCommit: commit }),
+      };
+      result.updated.push(name);
+    } else {
+      manifest.entries[name] = prev.entry;
+      result.unchanged.push(name);
     }
-    fs.mkdirSync(paths.storeDir, { recursive: true });
-    fs.writeFileSync(path.join(paths.storeDir, name), content);
-    manifest.entries[name] = {
-      sha256: hash,
-      acceptedAt: now.toISOString(),
-      ...(commit === undefined ? {} : { acceptedAtCommit: commit }),
-      checkpointBlob: checkpoint === undefined ? null : gitBlobId(checkpoint),
-    };
-    (existing === undefined ? result.added : result.updated).push(name);
   }
   writeManifest(paths, manifest);
+  if (result.added.length > 0 || result.updated.length > 0) {
+    writePreviousBackup(paths, now, result.added, updatedBackup);
+  }
   return result;
 }
 
-export interface ActualsAcceptResult extends AcceptResult {
-  /** Already accepted with the same image, or identical to the checkpoint. */
-  unchanged: string[];
-}
+export type ActualsAcceptResult = UpdateResult;
 
 export interface AcceptFromActualsOptions {
   now?: Date;
@@ -324,9 +380,7 @@ export class AcceptRefusedError extends Error {}
  * Unless `force` is set, refuses if the run marker (`run_marker.ts`) is
  * missing or the code changed since the run.
  *
- * Like {@link acceptFromEffective}, an actual identical to the checkpoint
- * removes the local entry instead ("reverted"). Unlike it, a stale entry is
- * always replaced or reverted: the image was picked explicitly.
+ * Overwritten baselines are backed up to `.visual-baselines/previous/`.
  */
 export function acceptFromActuals(
   paths: BaselinePaths,
@@ -363,98 +417,111 @@ export function acceptFromActuals(
 
   const now = options.now ?? new Date();
   const manifest = readManifest(paths);
-  const valid = new Set(resolveLocal(paths, manifest).valid);
-  const commit = currentCommit(
-    options.repoRoot ?? path.dirname(paths.snapshotDir)
-  );
+  const commit = currentCommit(options.repoRoot ?? process.cwd());
   const result: ActualsAcceptResult = {
     added: [],
     updated: [],
-    reverted: [],
     unchanged: [],
   };
+  const updatedBackup = new Map<string, { png: Buffer; entry: LocalEntry }>();
+
   for (const name of wanted) {
     const content = fs.readFileSync(actuals.get(name)!);
-    const checkpoint = readIfExists(path.join(paths.snapshotDir, name));
-    const existing = manifest.entries[name];
-    if (checkpoint !== undefined && checkpoint.equals(content)) {
-      if (existing === undefined) {
-        result.unchanged.push(name);
-      } else {
-        delete manifest.entries[name];
-        fs.rmSync(path.join(paths.storeDir, name), { force: true });
-        result.reverted.push(name);
-      }
-      continue;
-    }
     const hash = sha256(content);
-    if (existing !== undefined && valid.has(name) && existing.sha256 === hash) {
+    const existingPng = readIfExists(path.join(paths.storeDir, name));
+    const existingEntry = manifest.entries[name];
+
+    if (existingPng !== undefined && existingPng.equals(content)) {
+      if (existingEntry === undefined) {
+        manifest.entries[name] = {
+          sha256: hash,
+          acceptedAt: now.toISOString(),
+          ...(commit === undefined ? {} : { acceptedAtCommit: commit }),
+        };
+      }
       result.unchanged.push(name);
       continue;
     }
+
+    if (existingPng !== undefined) {
+      updatedBackup.set(name, {
+        png: existingPng,
+        entry: existingEntry ?? {
+          sha256: sha256(existingPng),
+          acceptedAt: now.toISOString(),
+        },
+      });
+    }
+
     fs.mkdirSync(paths.storeDir, { recursive: true });
     fs.writeFileSync(path.join(paths.storeDir, name), content);
     manifest.entries[name] = {
       sha256: hash,
       acceptedAt: now.toISOString(),
       ...(commit === undefined ? {} : { acceptedAtCommit: commit }),
-      checkpointBlob: checkpoint === undefined ? null : gitBlobId(checkpoint),
     };
-    (existing === undefined ? result.added : result.updated).push(name);
+    (existingPng === undefined ? result.added : result.updated).push(name);
   }
   writeManifest(paths, manifest);
+  if (result.added.length > 0 || result.updated.length > 0) {
+    writePreviousBackup(paths, now, result.added, updatedBackup);
+  }
   return result;
 }
 
 /**
- * Promotes valid local entries into the committed checkpoint directory and
- * removes them from the store. Does not stage or commit anything.
+ * Reverts the last `--update` or `accept` using the 1-deep backup in
+ * `.visual-baselines/previous/`, and clears the backup.
  */
-export function checkpoint(
-  paths: BaselinePaths,
-  names?: readonly string[]
-): { promoted: string[]; skippedStale: string[] } {
+export function undoLastUpdate(paths: BaselinePaths): {
+  dropped: string[];
+  restored: string[];
+} {
+  const batch = readPreviousBatch(paths);
+  if (batch === undefined) {
+    throw new Error(
+      "No previous baseline update in .visual-baselines/previous to undo."
+    );
+  }
   const manifest = readManifest(paths);
-  const { valid, stale } = resolveLocal(paths, manifest);
-  const wanted = names === undefined ? undefined : new Set(names);
-  const pick = (n: string) => wanted === undefined || wanted.has(n);
-  if (wanted !== undefined) {
-    const known = new Set(Object.keys(manifest.entries));
-    const unknown = [...wanted].filter((n) => !known.has(n));
-    if (unknown.length > 0) {
-      throw new Error(`No local baseline named: ${unknown.join(", ")}`);
+  const dropped: string[] = [];
+  const restored: string[] = [];
+
+  for (const name of batch.added) {
+    fs.rmSync(path.join(paths.storeDir, name), { force: true });
+    delete manifest.entries[name];
+    dropped.push(name);
+  }
+  fs.mkdirSync(paths.storeDir, { recursive: true });
+  for (const [name, entry] of Object.entries(batch.updated)) {
+    const prevFile = path.join(paths.previousDir, name);
+    if (fs.existsSync(prevFile)) {
+      fs.copyFileSync(prevFile, path.join(paths.storeDir, name));
+      manifest.entries[name] = entry;
+      restored.push(name);
     }
   }
-  const promoted: string[] = [];
-  fs.mkdirSync(paths.snapshotDir, { recursive: true });
-  for (const name of valid.filter(pick)) {
-    fs.copyFileSync(
-      path.join(paths.storeDir, name),
-      path.join(paths.snapshotDir, name)
-    );
-    fs.rmSync(path.join(paths.storeDir, name));
-    delete manifest.entries[name];
-    promoted.push(name);
-  }
   writeManifest(paths, manifest);
-  return { promoted, skippedStale: stale.filter(pick) };
+  fs.rmSync(paths.previousDir, { recursive: true, force: true });
+  return { dropped: dropped.sort(), restored: restored.sort() };
 }
 
-/** Discards local entries: the named ones, and/or every stale or missing one. */
+/** Discards local entries: the named ones, or every entry with `all: true`. */
 export function drop(
   paths: BaselinePaths,
-  options: { names?: readonly string[]; stale?: boolean; all?: boolean }
+  options: { names?: readonly string[]; all?: boolean }
 ): string[] {
   const manifest = readManifest(paths);
-  const { stale, missing } = resolveLocal(paths, manifest);
   const targets = new Set<string>(options.names ?? []);
-  if (options.stale) {
-    for (const n of [...stale, ...missing]) targets.add(n);
-  }
   if (options.all) {
     for (const n of Object.keys(manifest.entries)) targets.add(n);
+    for (const n of listPngs(paths.storeDir)) targets.add(n);
   }
-  const unknown = [...targets].filter((n) => manifest.entries[n] === undefined);
+  const unknown = [...targets].filter(
+    (n) =>
+      manifest.entries[n] === undefined &&
+      !fs.existsSync(path.join(paths.storeDir, n))
+  );
   if (unknown.length > 0) {
     throw new Error(`No local baseline named: ${unknown.join(", ")}`);
   }
@@ -466,7 +533,7 @@ export function drop(
   return [...targets].sort();
 }
 
-/** A local entry and its image, saved so an accept can be undone. */
+/** A local entry and its image, saved so a session accept can be undone. */
 export interface SavedEntry {
   entry: LocalEntry;
   png: Buffer;
@@ -477,9 +544,13 @@ export function saveEntry(
   paths: BaselinePaths,
   name: string
 ): SavedEntry | null {
-  const entry = readManifest(paths).entries[name];
   const png = readIfExists(path.join(paths.storeDir, name));
-  return entry === undefined || png === undefined ? null : { entry, png };
+  if (png === undefined) return null;
+  const entry = readManifest(paths).entries[name] ?? {
+    sha256: sha256(png),
+    acceptedAt: new Date().toISOString(),
+  };
+  return { entry, png };
 }
 
 /** Puts back an entry saved by {@link saveEntry}. */
@@ -507,78 +578,69 @@ export function formatBytes(bytes: number): string {
 
 export function storeSummary(paths: BaselinePaths): StoreSummary {
   const manifest = readManifest(paths);
-  const { valid, stale } = resolveLocal(paths, manifest);
-  const bytes = valid
-    .concat(stale)
-    .reduce((n, f) => n + fs.statSync(path.join(paths.storeDir, f)).size, 0);
+  const { valid } = resolveLocal(paths, manifest);
+  const bytes = valid.reduce(
+    (n, f) => n + fs.statSync(path.join(paths.storeDir, f)).size,
+    0
+  );
   const oldest: string | undefined = valid
     .map((n) => manifest.entries[n].acceptedAt)
     .sort()[0];
+  const prev = readPreviousBatch(paths);
+  const previousCount =
+    prev === undefined
+      ? undefined
+      : prev.added.length + Object.keys(prev.updated).length;
   return {
     active: valid.length,
-    stale,
     bytes,
     ...(oldest === undefined ? {} : { oldestAcceptedAt: oldest }),
+    ...(previousCount === undefined || previousCount === 0
+      ? {}
+      : { previousCount, previousUpdatedAt: prev?.updatedAt }),
   };
-}
-
-/** The one-line stale warning, or undefined if nothing is stale. */
-export function staleHint(stale: number): string | undefined {
-  return stale === 0
-    ? undefined
-    : `⚠ ${stale} stale: they no longer apply; \`./morcus.sh visual-baselines drop --stale\``;
 }
 
 export function statusReport(paths: BaselinePaths): string {
   const manifest = readManifest(paths);
-  const { valid, stale, missing } = resolveLocal(paths, manifest);
+  const { valid, missing } = resolveLocal(paths, manifest);
   const summary = storeSummary(paths);
   const lines = [
     `Local visual baselines (${path.relative(process.cwd(), paths.storeDir)})`,
-    `  ${valid.length} active, ${stale.length} stale, ${formatBytes(
-      summary.bytes
-    )}`,
+    `  ${valid.length} active, ${formatBytes(summary.bytes)}`,
   ];
   if (summary.oldestAcceptedAt !== undefined) {
+    lines.push(`  oldest accepted ${summary.oldestAcceptedAt}`);
+  }
+  if (summary.previousCount !== undefined && summary.previousCount > 0) {
     lines.push(
-      `  ${valid.length} not checkpointed · oldest accepted ${summary.oldestAcceptedAt}`
+      `  previous backup: ${summary.previousCount} snapshot(s) from ${summary.previousUpdatedAt} ` +
+        "(`visual-diff --source previous` to inspect, `visual-baselines undo` to revert)"
     );
   }
-  const hint = staleHint(stale.length);
-  if (hint !== undefined) lines.push(`  ${hint}`);
   const section = (title: string, names: string[], note: string) => {
     if (names.length === 0) return;
     lines.push("", `${title} (${note}):`);
     for (const n of names) {
       const e = manifest.entries[n];
       lines.push(
-        `  ${n}  [${e.checkpointBlob === null ? "new" : "override"}, ${
-          e.acceptedAt
-        }${e.acceptedAtCommit ? ` @ ${e.acceptedAtCommit}` : ""}]`
+        `  ${n}  [${e.acceptedAt}${
+          e.acceptedAtCommit ? ` @ ${e.acceptedAtCommit}` : ""
+        }]`
       );
     }
   };
-  section("Active", valid, "used instead of the checkpoint");
-  section(
-    "Stale",
-    stale,
-    "the checkpoint changed since; it wins. `visual-baselines drop --stale`"
-  );
+  section("Active", valid, "compared by Playwright");
   section("Missing", missing, "manifest entry without a PNG; ignored");
   return lines.join("\n");
 }
 
 /** One-line summary printed before a visual run. */
 export function resolutionSummary(r: Resolution): string | undefined {
-  if (r.valid.length + r.stale.length + r.missing.length === 0) {
+  if (r.valid.length + r.missing.length === 0) {
     return undefined;
   }
   const parts = [`${r.valid.length} local baseline(s) active`];
-  if (r.stale.length > 0) {
-    parts.push(
-      `${r.stale.length} stale (checkpoint changed; run \`./morcus.sh visual-baselines status\`)`
-    );
-  }
   if (r.missing.length > 0) parts.push(`${r.missing.length} missing`);
   return parts.join(", ");
 }

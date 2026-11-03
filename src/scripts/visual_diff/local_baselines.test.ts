@@ -6,19 +6,18 @@ import {
   AcceptRefusedError,
   type BaselinePaths,
   acceptFromActuals,
-  acceptFromEffective,
-  checkpoint,
   drop,
-  gitBlobId,
-  materializeEffective,
   readManifest,
+  readPreviousBatch,
+  recordUpdateFromSnapshot,
   resolutionSummary,
   resolveLocal,
   restoreEntry,
   saveEntry,
-  staleHint,
+  snapshotBeforeUpdate,
   statusReport,
   storeSummary,
+  undoLastUpdate,
 } from "@/scripts/visual_diff/local_baselines";
 import {
   RUN_MARKER_FILE,
@@ -27,7 +26,7 @@ import {
   readRunMarker,
   writeRunMarker,
 } from "@/scripts/visual_diff/run_marker";
-import { collectLocalEntries } from "@/scripts/visual_diff/visual_diff";
+import { collectPreviousEntries } from "@/scripts/visual_diff/visual_diff";
 
 /** Distinct fake PNG content; the store never decodes images. */
 function png(tag: string): Buffer {
@@ -49,272 +48,196 @@ function read(dir: string, name: string): Buffer {
   return fs.readFileSync(path.join(dir, name));
 }
 
-/** Simulates Playwright's `--update-snapshots` writing into the effective dir. */
+/** Simulates Playwright's `--update-snapshots` writing into the local store. */
 function playwrightWrites(name: string, content: Buffer) {
-  write(paths.effectiveDir, name, content);
+  write(paths.storeDir, name, content);
 }
 
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "local-baselines-test-"));
   paths = {
-    snapshotDir: path.join(root, "snaps"),
     storeDir: path.join(root, ".visual-baselines", "local"),
-    effectiveDir: path.join(root, ".cache", "effective"),
+    previousDir: path.join(root, ".visual-baselines", "previous"),
   };
-  write(paths.snapshotDir, "a.png", png("a0"));
-  write(paths.snapshotDir, "b.png", png("b0"));
 });
 
 afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-describe("gitBlobId", () => {
-  it("matches git hash-object", () => {
-    const file = path.join(root, "x.bin");
-    fs.writeFileSync(file, png("hello"));
-    const expected = execFileSync("git", ["hash-object", file], {
-      encoding: "utf-8",
-    }).trim();
-    expect(gitBlobId(png("hello"))).toBe(expected);
-  });
-});
-
-describe("materializeEffective", () => {
-  it("copies the checkpoint when there is no local store", () => {
-    const r = materializeEffective(paths);
-    expect(r).toEqual({ valid: [], stale: [], missing: [] });
-    expect(fs.readdirSync(paths.effectiveDir).sort()).toEqual([
-      "a.png",
-      "b.png",
-    ]);
-    expect(read(paths.effectiveDir, "a.png")).toEqual(png("a0"));
-  });
-
-  it("clears leftovers from a previous run", () => {
-    write(paths.effectiveDir, "old.png", png("old"));
-    materializeEffective(paths);
-    expect(fs.existsSync(path.join(paths.effectiveDir, "old.png"))).toBe(false);
-  });
-
-  it("does not write through to the checkpoint", () => {
-    materializeEffective(paths);
-    playwrightWrites("a.png", png("a1"));
-    expect(read(paths.snapshotDir, "a.png")).toEqual(png("a0"));
-  });
-});
-
-describe("acceptFromEffective", () => {
-  it("stores changed and new images, and leaves the checkpoint alone", () => {
-    materializeEffective(paths);
+describe("snapshotBeforeUpdate and recordUpdateFromSnapshot", () => {
+  it("records new baselines and creates a previous backup", () => {
+    const before = snapshotBeforeUpdate(paths);
     playwrightWrites("a.png", png("a1"));
     playwrightWrites("new.png", png("n1"));
 
-    const result = acceptFromEffective(paths, new Date("2026-01-02T03:04:05Z"));
+    const result = recordUpdateFromSnapshot(
+      paths,
+      before,
+      new Date("2026-01-02T03:04:05Z")
+    );
 
     expect(result).toEqual({
       added: ["a.png", "new.png"],
       updated: [],
-      reverted: [],
+      unchanged: [],
     });
     expect(read(paths.storeDir, "a.png")).toEqual(png("a1"));
-    expect(read(paths.snapshotDir, "a.png")).toEqual(png("a0"));
-    expect(fs.existsSync(path.join(paths.storeDir, "b.png"))).toBe(false);
     const manifest = readManifest(paths);
     expect(manifest.entries["a.png"]).toMatchObject({
       acceptedAt: "2026-01-02T03:04:05.000Z",
-      checkpointBlob: gitBlobId(png("a0")),
     });
-    expect(manifest.entries["new.png"].checkpointBlob).toBeNull();
-  });
-
-  it("overlays valid local entries on the next run", () => {
-    materializeEffective(paths);
-    playwrightWrites("a.png", png("a1"));
-    acceptFromEffective(paths);
-
-    const r = materializeEffective(paths);
-    expect(r.valid).toEqual(["a.png"]);
-    expect(read(paths.effectiveDir, "a.png")).toEqual(png("a1"));
-    expect(read(paths.effectiveDir, "b.png")).toEqual(png("b0"));
+    expect(readPreviousBatch(paths)).toEqual({
+      version: 1,
+      updatedAt: "2026-01-02T03:04:05.000Z",
+      added: ["a.png", "new.png"],
+      updated: {},
+    });
   });
 
   it("is a no-op when nothing changed", () => {
-    materializeEffective(paths);
+    const before1 = snapshotBeforeUpdate(paths);
     playwrightWrites("a.png", png("a1"));
-    acceptFromEffective(paths);
-    const first = readManifest(paths);
+    recordUpdateFromSnapshot(paths, before1, new Date("2026-01-02T03:04:05Z"));
+    const firstManifest = readManifest(paths);
+    const firstBatch = readPreviousBatch(paths);
 
-    materializeEffective(paths);
-    const result = acceptFromEffective(paths, new Date(0));
-    expect(result).toEqual({ added: [], updated: [], reverted: [] });
-    expect(readManifest(paths)).toEqual(first);
+    const before2 = snapshotBeforeUpdate(paths);
+    const result = recordUpdateFromSnapshot(paths, before2, new Date(0));
+    expect(result).toEqual({ added: [], updated: [], unchanged: ["a.png"] });
+    expect(readManifest(paths)).toEqual(firstManifest);
+    expect(readPreviousBatch(paths)).toEqual(firstBatch);
   });
 
-  it("updates an existing entry with a newer image", () => {
-    materializeEffective(paths);
+  it("updates an existing entry and backs up the old image to previousDir", () => {
+    const before1 = snapshotBeforeUpdate(paths);
     playwrightWrites("a.png", png("a1"));
-    acceptFromEffective(paths);
+    recordUpdateFromSnapshot(paths, before1, new Date("2026-01-01T00:00:00Z"));
+    const prevEntry = readManifest(paths).entries["a.png"];
 
-    materializeEffective(paths);
+    const before2 = snapshotBeforeUpdate(paths);
     playwrightWrites("a.png", png("a2"));
-    expect(acceptFromEffective(paths).updated).toEqual(["a.png"]);
-    expect(read(paths.storeDir, "a.png")).toEqual(png("a2"));
-  });
-
-  it("removes an entry whose image went back to the checkpoint", () => {
-    materializeEffective(paths);
-    playwrightWrites("a.png", png("a1"));
-    acceptFromEffective(paths);
-
-    materializeEffective(paths);
-    playwrightWrites("a.png", png("a0"));
-    expect(acceptFromEffective(paths).reverted).toEqual(["a.png"]);
-    expect(readManifest(paths).entries).toEqual({});
-    expect(fs.existsSync(path.join(paths.storeDir, "a.png"))).toBe(false);
-  });
-
-  it("keeps stale entries that this run did not touch", () => {
-    materializeEffective(paths);
-    playwrightWrites("a.png", png("a1"));
-    acceptFromEffective(paths);
-    write(paths.snapshotDir, "a.png", png("a-upstream"));
-
-    materializeEffective(paths);
-    expect(acceptFromEffective(paths)).toEqual({
-      added: [],
-      updated: [],
-      reverted: [],
-    });
-    expect(resolveLocal(paths).stale).toEqual(["a.png"]);
-  });
-
-  it("replaces a stale entry when the run produces a new image", () => {
-    materializeEffective(paths);
-    playwrightWrites("a.png", png("a1"));
-    acceptFromEffective(paths);
-    write(paths.snapshotDir, "a.png", png("a-upstream"));
-
-    materializeEffective(paths);
-    playwrightWrites("a.png", png("a2"));
-    expect(acceptFromEffective(paths).updated).toEqual(["a.png"]);
-    expect(resolveLocal(paths).valid).toEqual(["a.png"]);
-    expect(readManifest(paths).entries["a.png"].checkpointBlob).toBe(
-      gitBlobId(png("a-upstream"))
+    const result = recordUpdateFromSnapshot(
+      paths,
+      before2,
+      new Date("2026-02-01T00:00:00Z")
     );
+
+    expect(result).toEqual({
+      added: [],
+      updated: ["a.png"],
+      unchanged: [],
+    });
+    expect(read(paths.storeDir, "a.png")).toEqual(png("a2"));
+    expect(read(paths.previousDir, "a.png")).toEqual(png("a1"));
+    expect(readPreviousBatch(paths)).toEqual({
+      version: 1,
+      updatedAt: "2026-02-01T00:00:00.000Z",
+      added: [],
+      updated: { "a.png": prevEntry },
+    });
+  });
+
+  it("ignores legacy checkpointBlob fields in manifest.json", () => {
+    fs.mkdirSync(paths.storeDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(paths.storeDir, "manifest.json"),
+      JSON.stringify({
+        version: 1,
+        entries: {
+          "a.png": {
+            sha256: "abc",
+            acceptedAt: "2026-01-01T00:00:00.000Z",
+            checkpointBlob: "deadbeef",
+          },
+        },
+      })
+    );
+    const manifest = readManifest(paths);
+    expect(manifest.entries["a.png"]).toEqual({
+      sha256: "abc",
+      acceptedAt: "2026-01-01T00:00:00.000Z",
+    });
   });
 });
 
 describe("resolveLocal", () => {
   beforeEach(() => {
-    materializeEffective(paths);
+    const before = snapshotBeforeUpdate(paths);
     playwrightWrites("a.png", png("a1"));
     playwrightWrites("new.png", png("n1"));
-    acceptFromEffective(paths);
-  });
-
-  it("marks an entry stale once its checkpoint changes", () => {
-    write(paths.snapshotDir, "a.png", png("a-upstream"));
-    const r = materializeEffective(paths);
-    expect(r).toEqual({ valid: ["new.png"], stale: ["a.png"], missing: [] });
-    expect(read(paths.effectiveDir, "a.png")).toEqual(png("a-upstream"));
-  });
-
-  it("marks a new-scenario entry stale once a checkpoint appears", () => {
-    write(paths.snapshotDir, "new.png", png("n-upstream"));
-    expect(resolveLocal(paths).stale).toEqual(["new.png"]);
-  });
-
-  it("marks an override stale when the checkpoint file is deleted", () => {
-    fs.rmSync(path.join(paths.snapshotDir, "a.png"));
-    expect(resolveLocal(paths).stale).toEqual(["a.png"]);
+    recordUpdateFromSnapshot(paths, before, new Date("2026-01-01T00:00:00Z"));
   });
 
   it("reports manifest entries without a PNG as missing", () => {
     fs.rmSync(path.join(paths.storeDir, "a.png"));
-    expect(resolveLocal(paths).missing).toEqual(["a.png"]);
+    expect(resolveLocal(paths)).toEqual({
+      valid: ["new.png"],
+      missing: ["a.png"],
+    });
   });
 
   it("summarizes the resolution", () => {
-    write(paths.snapshotDir, "a.png", png("a-upstream"));
-    expect(resolutionSummary(resolveLocal(paths))).toMatch(
-      /^1 local baseline\(s\) active, 1 stale/
+    fs.rmSync(path.join(paths.storeDir, "a.png"));
+    expect(resolutionSummary(resolveLocal(paths))).toBe(
+      "1 local baseline(s) active, 1 missing"
     );
-    expect(
-      resolutionSummary({ valid: [], stale: [], missing: [] })
-    ).toBeUndefined();
+    expect(resolutionSummary({ valid: [], missing: [] })).toBeUndefined();
   });
 
-  it("lists entries in the status report", () => {
-    write(paths.snapshotDir, "a.png", png("a-upstream"));
+  it("lists entries and previous backup in the status report", () => {
+    fs.rmSync(path.join(paths.storeDir, "a.png"));
     const report = statusReport(paths);
-    expect(report).toContain("1 active, 1 stale");
-    expect(report).toMatch(/Active[^\n]*:\n {2}new\.png {2}\[new,/);
-    expect(report).toMatch(/Stale[^\n]*:\n {2}a\.png {2}\[override,/);
+    expect(report).toContain("1 active");
+    expect(report).toContain("previous backup: 2 snapshot(s)");
+    expect(report).toMatch(/Active[^\n]*:\n {2}new\.png {2}\[/);
+    expect(report).toMatch(/Missing[^\n]*:\n {2}a\.png {2}\[/);
   });
 });
 
-describe("checkpoint", () => {
-  beforeEach(() => {
-    materializeEffective(paths);
+describe("undoLastUpdate", () => {
+  it("restores updated baselines, drops added ones, and clears previousDir", () => {
+    const before1 = snapshotBeforeUpdate(paths);
     playwrightWrites("a.png", png("a1"));
     playwrightWrites("b.png", png("b1"));
+    recordUpdateFromSnapshot(paths, before1, new Date("2026-01-01T00:00:00Z"));
+    const a1Entry = readManifest(paths).entries["a.png"];
+
+    const before2 = snapshotBeforeUpdate(paths);
+    playwrightWrites("a.png", png("a2"));
     playwrightWrites("new.png", png("n1"));
-    acceptFromEffective(paths);
-  });
+    recordUpdateFromSnapshot(paths, before2, new Date("2026-02-01T00:00:00Z"));
 
-  it("promotes every valid entry and empties the store", () => {
-    const result = checkpoint(paths);
-    expect(result).toEqual({
-      promoted: ["a.png", "b.png", "new.png"],
-      skippedStale: [],
+    const undone = undoLastUpdate(paths);
+    expect(undone).toEqual({
+      dropped: ["new.png"],
+      restored: ["a.png"],
     });
-    expect(read(paths.snapshotDir, "a.png")).toEqual(png("a1"));
-    expect(read(paths.snapshotDir, "new.png")).toEqual(png("n1"));
-    expect(readManifest(paths).entries).toEqual({});
-    expect(materializeEffective(paths).valid).toEqual([]);
+    expect(read(paths.storeDir, "a.png")).toEqual(png("a1"));
+    expect(read(paths.storeDir, "b.png")).toEqual(png("b1"));
+    expect(fs.existsSync(path.join(paths.storeDir, "new.png"))).toBe(false);
+    expect(readManifest(paths).entries["a.png"]).toEqual(a1Entry);
+    expect(readManifest(paths).entries["new.png"]).toBeUndefined();
+    expect(readPreviousBatch(paths)).toBeUndefined();
   });
 
-  it("promotes only the named entries", () => {
-    expect(checkpoint(paths, ["b.png"]).promoted).toEqual(["b.png"]);
-    expect(read(paths.snapshotDir, "a.png")).toEqual(png("a0"));
-    expect(Object.keys(readManifest(paths).entries)).toEqual([
-      "a.png",
-      "new.png",
-    ]);
-  });
-
-  it("skips stale entries", () => {
-    write(paths.snapshotDir, "a.png", png("a-upstream"));
-    const result = checkpoint(paths);
-    expect(result.skippedStale).toEqual(["a.png"]);
-    expect(read(paths.snapshotDir, "a.png")).toEqual(png("a-upstream"));
-    expect(Object.keys(readManifest(paths).entries)).toEqual(["a.png"]);
-  });
-
-  it("rejects unknown names", () => {
-    expect(() => checkpoint(paths, ["nope.png"])).toThrow(/nope\.png/);
+  it("throws when there is no previous backup", () => {
+    expect(() => undoLastUpdate(paths)).toThrow(/No previous baseline update/);
   });
 });
 
 describe("drop", () => {
   beforeEach(() => {
-    materializeEffective(paths);
+    const before = snapshotBeforeUpdate(paths);
     playwrightWrites("a.png", png("a1"));
     playwrightWrites("b.png", png("b1"));
-    acceptFromEffective(paths);
+    recordUpdateFromSnapshot(paths, before);
   });
 
   it("drops named entries", () => {
     expect(drop(paths, { names: ["a.png"] })).toEqual(["a.png"]);
     expect(Object.keys(readManifest(paths).entries)).toEqual(["b.png"]);
     expect(fs.existsSync(path.join(paths.storeDir, "a.png"))).toBe(false);
-  });
-
-  it("drops stale and missing entries", () => {
-    write(paths.snapshotDir, "a.png", png("a-upstream"));
-    expect(drop(paths, { stale: true })).toEqual(["a.png"]);
-    expect(Object.keys(readManifest(paths).entries)).toEqual(["b.png"]);
   });
 
   it("drops everything", () => {
@@ -327,18 +250,20 @@ describe("drop", () => {
   });
 });
 
-describe("collectLocalEntries", () => {
-  it("compares valid local entries against the checkpoint", () => {
-    materializeEffective(paths);
+describe("collectPreviousEntries", () => {
+  it("compares local entries against the previous backup", () => {
+    const before1 = snapshotBeforeUpdate(paths);
+    playwrightWrites("a.png", png("a0"));
+    playwrightWrites("b.png", png("b0"));
+    recordUpdateFromSnapshot(paths, before1);
+
+    const before2 = snapshotBeforeUpdate(paths);
     playwrightWrites("a.png", png("a1"));
-    playwrightWrites("b.png", png("b1"));
     playwrightWrites("new.png", png("n1"));
-    acceptFromEffective(paths);
-    write(paths.snapshotDir, "b.png", png("b-upstream"));
+    recordUpdateFromSnapshot(paths, before2);
 
-    const { entries, stale } = collectLocalEntries(paths);
+    const entries = collectPreviousEntries(paths);
 
-    expect(stale).toEqual(["b.png"]);
     expect(entries.map((e) => ({ name: e.name, status: e.status }))).toEqual([
       { name: "a.png", status: "modified" },
       { name: "new.png", status: "added" },
@@ -385,30 +310,30 @@ describe("acceptFromActuals", () => {
 
   beforeEach(() => {
     results = path.join(root, "test-results");
-    write(paths.snapshotDir, A, png("a0"));
   });
 
-  it("adds changed and new snapshots, and leaves the checkpoint alone", () => {
+  it("adds new snapshots and backs up overwritten ones to previousDir", () => {
+    const before = snapshotBeforeUpdate(paths);
+    playwrightWrites(A, png("a0"));
+    recordUpdateFromSnapshot(paths, before, new Date("2026-01-01T00:00:00Z"));
+
     playwrightFails(results, "a-js-light", "chromium", png("a1"), png("a0"));
     playwrightFails(results, "n-js-dark", "MobileSafari", png("n1"));
 
     const result = accept([A, NEW], new Date("2026-01-02T03:04:05Z"));
 
     expect(result).toEqual({
-      added: [A, NEW],
-      updated: [],
-      reverted: [],
+      added: [NEW],
+      updated: [A],
       unchanged: [],
     });
     expect(read(paths.storeDir, A)).toEqual(png("a1"));
     expect(read(paths.storeDir, NEW)).toEqual(png("n1"));
-    expect(read(paths.snapshotDir, A)).toEqual(png("a0"));
+    expect(read(paths.previousDir, A)).toEqual(png("a0"));
     const manifest = readManifest(paths);
     expect(manifest.entries[A]).toMatchObject({
       acceptedAt: "2026-01-02T03:04:05.000Z",
-      checkpointBlob: gitBlobId(png("a0")),
     });
-    expect(manifest.entries[NEW].checkpointBlob).toBeNull();
     expect(resolveLocal(paths).valid).toEqual([A, NEW]);
   });
 
@@ -427,39 +352,15 @@ describe("acceptFromActuals", () => {
 
     expect(accept([A]).updated).toEqual([A]);
     expect(read(paths.storeDir, A)).toEqual(png("a2"));
+    expect(read(paths.previousDir, A)).toEqual(png("a1"));
   });
 
-  it("reverts to the checkpoint when the actual matches it", () => {
-    playwrightFails(results, "a-js-light", "chromium", png("a1"));
-    accept([A]);
-    playwrightFails(results, "a-js-light", "chromium", png("a0"));
-
-    expect(accept([A]).reverted).toEqual([A]);
-    expect(readManifest(paths).entries).toEqual({});
-    expect(fs.existsSync(path.join(paths.storeDir, A))).toBe(false);
-  });
-
-  it("reports images that are already accepted, or match the checkpoint, as unchanged", () => {
+  it("reports images that are already accepted as unchanged", () => {
     playwrightFails(results, "a-js-light", "chromium", png("a1"));
     accept([A]);
     const before = readManifest(paths);
     expect(accept([A], new Date(0)).unchanged).toEqual([A]);
     expect(readManifest(paths)).toEqual(before);
-
-    drop(paths, { all: true });
-    playwrightFails(results, "a-js-light", "chromium", png("a0"));
-    expect(accept([A]).unchanged).toEqual([A]);
-    expect(readManifest(paths).entries).toEqual({});
-  });
-
-  it("replaces a stale entry", () => {
-    playwrightFails(results, "a-js-light", "chromium", png("a1"));
-    accept([A]);
-    write(paths.snapshotDir, A, png("a-upstream"));
-    expect(resolveLocal(paths).stale).toEqual([A]);
-
-    expect(accept([A]).updated).toEqual([A]);
-    expect(resolveLocal(paths).valid).toEqual([A]);
   });
 
   it("rejects names with no actual, and writes nothing", () => {
@@ -511,20 +412,19 @@ describe("run marker guard", () => {
     git("init", "-q");
     git("config", "user.email", "test@example.com");
     git("config", "user.name", "Test");
-    fs.writeFileSync(path.join(repo, ".gitignore"), "/test-results/\n");
+    fs.writeFileSync(
+      path.join(repo, ".gitignore"),
+      "/test-results/\n/.visual-baselines/\n"
+    );
     write(path.join(repo, "src"), "app.ts", Buffer.from("v1"));
     write(repo, "README.md", Buffer.from("readme"));
     git("add", ".");
     git("commit", "-q", "-m", "init");
     // Paths inside the repo, like the real layout.
     paths = {
-      snapshotDir: path.join(repo, "src", "snaps"),
       storeDir: path.join(repo, ".visual-baselines", "local"),
-      effectiveDir: path.join(repo, ".cache", "effective"),
+      previousDir: path.join(repo, ".visual-baselines", "previous"),
     };
-    write(paths.snapshotDir, A, png("a0"));
-    git("add", ".");
-    git("commit", "-q", "-m", "snaps");
     playwrightFails(results, "a-js-light", "chromium", png("a1"), png("a0"));
   });
 
@@ -607,39 +507,30 @@ describe("run marker guard", () => {
 
 describe("store hints", () => {
   beforeEach(() => {
-    materializeEffective(paths);
+    const before1 = snapshotBeforeUpdate(paths);
     playwrightWrites("a.png", png("a1"));
-    acceptFromEffective(paths, new Date("2026-01-01T00:00:00Z"));
-    materializeEffective(paths);
+    recordUpdateFromSnapshot(paths, before1, new Date("2026-01-01T00:00:00Z"));
+    const before2 = snapshotBeforeUpdate(paths);
     playwrightWrites("b.png", png("b1"));
-    acceptFromEffective(paths, new Date("2026-02-01T00:00:00Z"));
+    recordUpdateFromSnapshot(paths, before2, new Date("2026-02-01T00:00:00Z"));
   });
 
-  it("summarizes count, size, oldest and stale entries", () => {
+  it("summarizes count, size, oldest and previous backup", () => {
     expect(storeSummary(paths)).toEqual({
       active: 2,
-      stale: [],
       bytes: png("a1").length + png("b1").length,
       oldestAcceptedAt: "2026-01-01T00:00:00.000Z",
-    });
-    write(paths.snapshotDir, "a.png", png("a-upstream"));
-    expect(storeSummary(paths)).toMatchObject({
-      active: 1,
-      stale: ["a.png"],
-      oldestAcceptedAt: "2026-02-01T00:00:00.000Z",
+      previousCount: 1,
+      previousUpdatedAt: "2026-02-01T00:00:00.000Z",
     });
   });
 
-  it("shows the oldest entry, and a one-line stale warning, in status", () => {
-    expect(statusReport(paths)).toContain(
-      "2 not checkpointed · oldest accepted 2026-01-01T00:00:00.000Z"
+  it("shows the oldest entry and previous backup in status", () => {
+    const report = statusReport(paths);
+    expect(report).toContain("oldest accepted 2026-01-01T00:00:00.000Z");
+    expect(report).toContain(
+      "previous backup: 1 snapshot(s) from 2026-02-01T00:00:00.000Z"
     );
-    expect(statusReport(paths)).not.toContain("no longer apply");
-    write(paths.snapshotDir, "a.png", png("a-upstream"));
-    expect(statusReport(paths)).toContain(
-      "⚠ 1 stale: they no longer apply; `./morcus.sh visual-baselines drop --stale`"
-    );
-    expect(staleHint(0)).toBeUndefined();
   });
 
   it("saves and restores an entry", () => {

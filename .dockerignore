@@ -19,4 +19,4 @@ coverage
 e2e_metrics
 playwright-report
 test-results
-src/integration/screenshot/browser_screenshot.test.ts-snapshots
+.visual-baselines

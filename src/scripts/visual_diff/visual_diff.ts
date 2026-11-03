@@ -4,27 +4,23 @@
  * Visual Diff Inspector: collects changed screenshot baselines, renders
  * before / after / diff images, and serves an interactive viewer for them.
  *
- * Three sources are supported:
- * - `git`: compares snapshot PNGs in the working tree against a git ref. This
- *   is what you want when reviewing a checkpoint (committed baselines).
+ * Two sources are supported:
  * - `results`: reads Playwright's failure output (`*-expected.png`,
  *   `*-actual.png`, `*-diff.png`) from `test-results/`. This is what you want
  *   after a failing `e2e --visual` run, *before* deciding to update baselines.
- * - `local`: compares the gitignored local baselines (`local_baselines.ts`)
- *   against the committed checkpoint. This is what you want after
- *   `e2e --visual --update`, which writes to the local store.
+ * - `previous`: compares the current local baselines (`.visual-baselines/local/`)
+ *   against the 1-deep backup in `.visual-baselines/previous/` recorded by the
+ *   last `e2e --visual --all --update` or `visual-baselines accept`.
  *
  * The served viewer can also write, through POST endpoints that need a
  * random per-session token (see {@link handleApiRequest}): for `results`,
  * accept approved screenshots into the local store (and undo that); for
- * `local`, checkpoint a reviewed subset or drop local baselines. The `git`
- * source is read-only.
+ * `previous`, undo the last update or drop individual local baselines.
  *
- * External tools: `git` (required for the `git` source) and ImageMagick
- * (optional; used for pixel counts and diff masks).
+ * External tools: ImageMagick (optional; used for pixel counts and diff masks).
  */
 
-import { execFileSync, spawn, spawnSync } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import crypto from "crypto";
 import esbuild from "esbuild";
 import fs from "fs";
@@ -34,7 +30,6 @@ import path from "path";
 import type {
   AcceptResponse,
   ApiError,
-  CheckpointResponse,
   DropResponse,
   ImageDims,
   SnapshotCategory,
@@ -49,14 +44,14 @@ import {
   type BaselinePaths,
   acceptFromActuals,
   type SavedEntry,
-  checkpoint,
   defaultPaths,
   drop,
   readManifest,
-  resolveLocal,
+  readPreviousBatch,
   restoreEntry,
   saveEntry,
   storeSummary,
+  undoLastUpdate,
 } from "@/scripts/visual_diff/local_baselines";
 import {
   KNOWN_PROJECTS,
@@ -70,8 +65,6 @@ import {
   readRunMarker,
 } from "@/scripts/visual_diff/run_marker";
 
-const DEFAULT_SNAPSHOT_DIR =
-  "src/integration/screenshot/browser_screenshot.test.ts-snapshots";
 const DEFAULT_RESULTS_DIR = "test-results";
 const DEFAULT_OUT_DIR = ".cache/visual-diff";
 const DEFAULT_PORT = 8899;
@@ -79,7 +72,7 @@ const DEFAULT_PORT = 8899;
  * All interfaces, matching the dev server (`start_server.ts`), so the viewer is
  * reachable from another machine (e.g. when running on a remote workstation).
  * The content is low-risk: screenshots of the dev UI. The only write
- * endpoints (accept / checkpoint) need the per-session token printed in the
+ * endpoints (accept / undo / drop) need the per-session token printed in the
  * terminal. Pass `--host 127.0.0.1` to restrict it to this machine.
  */
 const DEFAULT_HOST = "0.0.0.0";
@@ -94,17 +87,12 @@ export { projectFromResultsDir, sizeForProject };
 
 export interface VisualDiffOptions {
   /**
-   * Where to look for changes. `auto` tries `git`, then `results`, then
-   * `local`.
+   * Where to look for changes. `auto` tries `results`, then `previous`.
    */
   source?: VisualDiffSource | "auto";
-  /** Snapshot directory for the `git` source. */
-  snapshotDir?: string;
-  /** Git ref to compare against for the `git` source. */
-  ref?: string;
   /** Playwright output directory for the `results` source. */
   resultsDir?: string;
-  /** Checkpoint and store locations for the `local` source. */
+  /** Store and previous-backup locations. */
   localPaths?: BaselinePaths;
   outDir?: string;
   startServer?: boolean;
@@ -113,8 +101,8 @@ export interface VisualDiffOptions {
   openBrowser?: boolean;
   reportPath?: string;
   /**
-   * Serve accept/checkpoint endpoints for the `results` and `local` sources
-   * (default: true). They need the per-session token either way.
+   * Serve accept/undo/drop endpoints when serving (default: true).
+   * They need the per-session token either way.
    */
   actions?: boolean;
   /** Fixed session token; tests only. Generated randomly by default. */
@@ -323,7 +311,7 @@ function compareImages(
 // ---------------------------------------------------------------------------
 
 /** A changed snapshot, before its images are copied into the output dir. */
-interface RawEntry {
+export interface RawEntry {
   id: string;
   name: string;
   browserHint?: string;
@@ -340,118 +328,38 @@ interface RawEntry {
   acceptedAt?: string;
 }
 
-function git(args: string[], cwd: string): string {
-  return execFileSync("git", args, {
-    cwd,
-    encoding: "utf-8",
-    stdio: ["ignore", "pipe", "pipe"],
-    maxBuffer: 64 * 1024 * 1024,
-  });
-}
-
-/** Parses NUL-separated `git diff --name-status -z` output. */
-export function parseNameStatus(
-  output: string
-): { status: string; path: string }[] {
-  const tokens = output.split("\0").filter((t) => t.length > 0);
-  const result: { status: string; path: string }[] = [];
-  for (let i = 0; i + 1 < tokens.length; i += 2) {
-    result.push({ status: tokens[i], path: tokens[i + 1] });
-  }
-  return result;
-}
-
-export function collectGitEntries(
-  snapshotDir: string,
-  ref: string
-): RawEntry[] {
-  const absDir = path.resolve(snapshotDir);
-  if (!fs.existsSync(absDir)) {
-    throw new Error(`Snapshot directory does not exist: ${absDir}`);
-  }
-  const repoRoot = git(["rev-parse", "--show-toplevel"], absDir).trim();
-  const relDir = path.relative(repoRoot, absDir) || ".";
-  // Fail loudly on a bad ref rather than reporting "no changes".
-  git(["rev-parse", "--verify", "--quiet", `${ref}^{commit}`], repoRoot);
-
-  const byPath = new Map<string, SnapshotStatus>();
-  const diffOutput = git(
-    ["diff", "--name-status", "--no-renames", "-z", ref, "--", relDir],
-    repoRoot
-  );
-  for (const { status, path: relPath } of parseNameStatus(diffOutput)) {
-    const code = status[0];
-    byPath.set(
-      relPath,
-      code === "A" ? "added" : code === "D" ? "deleted" : "modified"
-    );
-  }
-  const untracked = git(
-    ["ls-files", "--others", "--exclude-standard", "-z", "--", relDir],
-    repoRoot
-  );
-  for (const relPath of untracked.split("\0")) {
-    if (relPath.length > 0) {
-      byPath.set(relPath, "added");
-    }
-  }
-
-  const entries: RawEntry[] = [];
-  for (const [relPath, status] of byPath) {
-    if (!relPath.endsWith(".png")) {
-      continue;
-    }
-    const absPath = path.join(repoRoot, relPath);
-    entries.push({
-      id: safeId(path.relative(relDir, relPath).replace(/\.png$/, "")),
-      name: path.basename(relPath),
-      snapshotName: path.basename(relPath),
-      status,
-      afterPath: status === "deleted" ? undefined : absPath,
-      writeBefore:
-        status === "added"
-          ? undefined
-          : (dest) =>
-              fs.writeFileSync(
-                dest,
-                execFileSync("git", ["show", `${ref}:${relPath}`], {
-                  cwd: repoRoot,
-                  stdio: ["ignore", "pipe", "pipe"],
-                  maxBuffer: 64 * 1024 * 1024,
-                })
-              ),
-    });
-  }
-  return entries.sort((a, b) => a.id.localeCompare(b.id));
-}
-
 /**
- * Local baselines (see `local_baselines.ts`) against the checkpoint they
- * override: before = committed checkpoint, after = local store. Only valid
- * entries are shown; stale ones are returned separately.
+ * Compares the last update's 1-deep backup (`.visual-baselines/previous/`)
+ * against the current `.visual-baselines/local/` store:
+ * before = previous baseline, after = current local baseline.
  */
-export function collectLocalEntries(paths: BaselinePaths): {
-  entries: RawEntry[];
-  stale: string[];
-} {
+export function collectPreviousEntries(paths: BaselinePaths): RawEntry[] {
+  const batch = readPreviousBatch(paths);
+  if (batch === undefined) return [];
   const manifest = readManifest(paths);
-  const { valid, stale } = resolveLocal(paths, manifest);
-  const entries: RawEntry[] = valid.map((name) => {
-    const checkpointPath = path.join(paths.snapshotDir, name);
-    const hasCheckpoint = fs.existsSync(checkpointPath);
-    return {
+  const names = [
+    ...new Set([...batch.added, ...Object.keys(batch.updated)]),
+  ].sort();
+  const entries: RawEntry[] = [];
+
+  for (const name of names) {
+    const afterPath = path.join(paths.storeDir, name);
+    if (!fs.existsSync(afterPath)) continue;
+    const prevPath = path.join(paths.previousDir, name);
+    const hasPrevious = name in batch.updated && fs.existsSync(prevPath);
+    entries.push({
       id: safeId(name.replace(/\.png$/, "")),
       name,
       snapshotName: name,
-      acceptedAt: manifest.entries[name].acceptedAt,
-      status: hasCheckpoint ? "modified" : "added",
-      afterPath: path.join(paths.storeDir, name),
-      writeBefore: hasCheckpoint
-        ? (dest) => fs.copyFileSync(checkpointPath, dest)
+      acceptedAt: manifest.entries[name]?.acceptedAt ?? batch.updatedAt,
+      status: hasPrevious ? "modified" : "added",
+      afterPath,
+      writeBefore: hasPrevious
+        ? (dest) => fs.copyFileSync(prevPath, dest)
         : undefined,
-    };
-  });
-  return { entries, stale };
+    });
+  }
+  return entries;
 }
 
 export function collectResultEntries(resultsDir: string): RawEntry[] {
@@ -673,15 +581,6 @@ export function buildMarkdownReport(manifest: VisualDiffManifest): string {
       ""
     );
   }
-  const stale = manifest.staleLocalBaselines ?? [];
-  if (stale.length > 0) {
-    lines.push(
-      "> [!WARNING]",
-      `> ${stale.length} stale local baseline(s) ignored: the checkpoint changed after they were accepted.`,
-      ...stale.map((n) => `> - \`${n}\``),
-      ""
-    );
-  }
   lines.push(
     "| Scenario | Browser | Size | Mode | Theme | Diff | Diff pixels | Before | After |",
     "| :--- | :--- | :--- | :--- | :--- | ---: | ---: | :--- | :--- |"
@@ -700,7 +599,7 @@ export function buildMarkdownReport(manifest: VisualDiffManifest): string {
     "",
     "> [!IMPORTANT]",
     "> Per the Visual Baseline Approval Rule in `AGENTS.md`, updated baselines",
-    "> must not be checkpointed or committed without explicit human approval.",
+    "> must be reviewed in the Visual Diff Inspector.",
     ""
   );
   return lines.join("\n");
@@ -832,13 +731,11 @@ function startViewerServer(
 }
 
 // ---------------------------------------------------------------------------
-// Write endpoints: accept and checkpoint from the viewer
+// Write endpoints: accept, undo and drop from the viewer
 // ---------------------------------------------------------------------------
 
 /** Request header carrying the per-session token. */
 export const TOKEN_HEADER = "x-visual-diff-token";
-/** What the user must type to checkpoint from the viewer. */
-export const CHECKPOINT_CONFIRMATION = "checkpoint";
 const MAX_BODY_BYTES = 1024 * 1024;
 
 /**
@@ -848,14 +745,13 @@ const MAX_BODY_BYTES = 1024 * 1024;
  */
 export interface ActionSession {
   token: string;
-  source: "results" | "local";
+  source: VisualDiffSource;
   paths: BaselinePaths;
   resultsDir: string;
   repoRoot: string;
   outDir: string;
   /**
-   * Snapshot names shown in this session (for `local`, stale ones too); the
-   * only names the endpoints accept.
+   * Snapshot names shown in this session; the only names the endpoints accept.
    */
   names: Set<string>;
   /**
@@ -942,7 +838,7 @@ function disabledReason(session: ActionSession): string | undefined {
 function sendJson(
   res: http.ServerResponse,
   status: number,
-  body: AcceptResponse | CheckpointResponse | DropResponse | ApiError
+  body: AcceptResponse | DropResponse | ApiError
 ) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -975,7 +871,7 @@ class HttpError extends Error {
   }
 }
 
-function parseRequest(raw: string): { names: string[]; confirm?: string } {
+function parseRequest(raw: string): { names: string[] } {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -993,21 +889,19 @@ function parseRequest(raw: string): { names: string[]; confirm?: string } {
   ) {
     throw new HttpError(400, "`names` must be a non-empty list of strings.");
   }
-  const confirm = "confirm" in parsed ? parsed.confirm : undefined;
   return {
     names: [...new Set(names)].sort(),
-    confirm: typeof confirm === "string" ? confirm : undefined,
   };
 }
 
 /**
- * Handles `POST /api/accept`, `/api/drop` and `/api/checkpoint`. Exported for
+ * Handles `POST /api/accept`, `/api/drop` and `/api/undo`. Exported for
  * tests; the Inspector routes every `/api/` request here.
  *
  * - `results` (the everyday mode): accept, and drop only to undo this
- *   session's accepts. No checkpoint.
- * - `local` (the deliberate mode): checkpoint and drop, for names shown in
- *   the session (including stale ones, for drop).
+ *   session's accepts.
+ * - `previous`: undo the last update (`POST /api/undo`), or drop named
+ *   local baselines (`POST /api/drop`).
  */
 export async function handleApiRequest(
   session: ActionSession,
@@ -1031,7 +925,7 @@ export async function handleApiRequest(
     if (!contentType.startsWith("application/json")) {
       throw new HttpError(415, "Content-Type must be application/json.");
     }
-    const { names, confirm } = parseRequest(await readBody(req));
+    const { names } = parseRequest(await readBody(req));
     const foreign = names.filter((n) => !session.names.has(n));
     if (foreign.length > 0) {
       throw new HttpError(
@@ -1044,8 +938,8 @@ export async function handleApiRequest(
       sendJson(res, 200, apiAccept(session, names));
     } else if (url.pathname === "/api/drop") {
       sendJson(res, 200, apiDrop(session, names));
-    } else if (url.pathname === "/api/checkpoint") {
-      sendJson(res, 200, apiCheckpoint(session, names, confirm));
+    } else if (url.pathname === "/api/undo") {
+      sendJson(res, 200, apiUndo(session));
     } else {
       throw new HttpError(404, `No endpoint ${url.pathname}.`);
     }
@@ -1079,7 +973,7 @@ function apiAccept(session: ActionSession, names: string[]): AcceptResponse {
   const result = acceptFromActuals(session.paths, session.resultsDir, names, {
     repoRoot: session.repoRoot,
   });
-  for (const n of [...result.added, ...result.updated, ...result.reverted]) {
+  for (const n of [...result.added, ...result.updated]) {
     if (before.has(n)) session.acceptedBefore.set(n, before.get(n) ?? null);
   }
   return { ...result, store: storeSummary(session.paths) };
@@ -1089,7 +983,7 @@ function apiDrop(session: ActionSession, names: string[]): DropResponse {
   if (session.staticDisabledReason !== undefined) {
     throw new HttpError(409, session.staticDisabledReason);
   }
-  if (session.source === "local") {
+  if (session.source === "previous") {
     let dropped: string[];
     try {
       dropped = drop(session.paths, { names });
@@ -1109,7 +1003,7 @@ function apiDrop(session: ActionSession, names: string[]): DropResponse {
       400,
       `Only snapshots accepted in this session can be undone here: ${notAccepted.join(
         ", "
-      )}. Use --source local to drop other local baselines.`
+      )}. Use ./morcus.sh visual-baselines drop to remove other local baselines.`
     );
   }
   const toDrop: string[] = [];
@@ -1130,42 +1024,26 @@ function apiDrop(session: ActionSession, names: string[]): DropResponse {
   return { dropped, restored, store: storeSummary(session.paths) };
 }
 
-function apiCheckpoint(
-  session: ActionSession,
-  names: string[],
-  confirm: string | undefined
-): CheckpointResponse {
-  if (session.source !== "local") {
+function apiUndo(session: ActionSession): DropResponse {
+  if (session.source !== "previous") {
     throw new HttpError(
       400,
-      "Checkpoint is only available in local mode: `./morcus.sh visual-diff --source local`."
-    );
-  }
-  if (confirm !== CHECKPOINT_CONFIRMATION) {
-    throw new HttpError(
-      400,
-      `Checkpoint needs the typed confirmation "${CHECKPOINT_CONFIRMATION}".`
+      "Undo update is only available for --source previous."
     );
   }
   if (session.staticDisabledReason !== undefined) {
     throw new HttpError(409, session.staticDisabledReason);
   }
-  let result: { promoted: string[]; skippedStale: string[] };
+  let result: { dropped: string[]; restored: string[] };
   try {
-    result = checkpoint(session.paths, names);
+    result = undoLastUpdate(session.paths);
   } catch (err) {
     throw new HttpError(400, err instanceof Error ? err.message : String(err));
   }
-  for (const n of result.promoted) session.names.delete(n);
-  return {
-    ...result,
-    files: result.promoted.map((n) => {
-      const abs = path.join(session.paths.snapshotDir, n);
-      const rel = path.relative(session.repoRoot, abs);
-      return rel.startsWith("..") ? abs : rel;
-    }),
-    store: storeSummary(session.paths),
-  };
+  for (const n of [...result.dropped, ...result.restored]) {
+    session.names.delete(n);
+  }
+  return { ...result, store: storeSummary(session.paths) };
 }
 
 /** Identifies the screenshots under review; see `VisualDiffManifest.reviewKey`. */
@@ -1182,13 +1060,8 @@ function reviewKeyFor(
       ? `results:${marker.id}`
       : `results:nomarker:${hash(items.map((i) => i.id).join("\0"))}`;
   }
-  if (source === "local") {
-    const manifest = readManifest(options.localPaths ?? defaultPaths());
-    return `local:${hash(JSON.stringify(manifest.entries))}`;
-  }
-  return `git:${options.ref ?? "HEAD"}:${hash(
-    items.map((i) => i.id).join("\0")
-  )}`;
+  const batch = readPreviousBatch(options.localPaths ?? defaultPaths());
+  return `previous:${hash(JSON.stringify(batch ?? items.map((i) => i.id)))}`;
 }
 
 /**
@@ -1243,43 +1116,26 @@ function selectEntries(options: VisualDiffOptions): {
   entries: RawEntry[];
   beforeLabel: string;
   afterLabel: string;
-  staleLocal?: string[];
 } {
   const source = options.source ?? "auto";
-  const ref = options.ref ?? "HEAD";
-  const snapshotDir = options.snapshotDir ?? DEFAULT_SNAPSHOT_DIR;
   const resultsDir = options.resultsDir ?? DEFAULT_RESULTS_DIR;
+  const paths = options.localPaths ?? defaultPaths();
 
-  const fromGit = () => ({
-    source: "git" as const,
-    entries: collectGitEntries(snapshotDir, ref),
-    beforeLabel: ref,
-    afterLabel: "Working copy",
-  });
   const fromResults = () => ({
     source: "results" as const,
     entries: collectResultEntries(resultsDir),
     beforeLabel: "Expected",
     afterLabel: "Actual",
   });
-  const fromLocal = () => {
-    const { entries, stale } = collectLocalEntries(
-      options.localPaths ?? defaultPaths()
-    );
-    return {
-      source: "local" as const,
-      entries,
-      beforeLabel: "Checkpoint",
-      afterLabel: "Local baseline",
-      staleLocal: stale,
-    };
-  };
+  const fromPrevious = () => ({
+    source: "previous" as const,
+    entries: collectPreviousEntries(paths),
+    beforeLabel: "Previous baseline",
+    afterLabel: "Local baseline",
+  });
 
-  if (source === "git") return fromGit();
   if (source === "results") return fromResults();
-  if (source === "local") return fromLocal();
-  const git = fromGit();
-  if (git.entries.length > 0) return git;
+  if (source === "previous") return fromPrevious();
   const results = fromResults();
   // Failures without a screenshot also count: they must not be reported as
   // "no changes" just because there is no image to show.
@@ -1289,25 +1145,20 @@ function selectEntries(options: VisualDiffOptions): {
   ) {
     return results;
   }
-  const local = fromLocal();
-  return local.entries.length > 0 || local.staleLocal.length > 0 ? local : git;
+  const prev = fromPrevious();
+  return prev.entries.length > 0 ? prev : results;
 }
 
 export async function runVisualDiffInspector(
   options: VisualDiffOptions = {}
 ): Promise<VisualDiffResult> {
   const outDir = path.resolve(options.outDir ?? DEFAULT_OUT_DIR);
-  const { source, entries, beforeLabel, afterLabel, staleLocal } =
-    selectEntries(options);
+  const { source, entries, beforeLabel, afterLabel } = selectEntries(options);
 
   console.log(`\n🔍 Visual Diff Inspector`);
   console.log(
-    source === "git"
-      ? `Comparing ${
-          options.snapshotDir ?? DEFAULT_SNAPSHOT_DIR
-        } against ${beforeLabel}`
-      : source === "local"
-      ? `Comparing local baselines against the committed checkpoint`
+    source === "previous"
+      ? `Comparing local baselines against the previous backup (.visual-baselines/previous)`
       : `Reading Playwright failures from ${
           options.resultsDir ?? DEFAULT_RESULTS_DIR
         }`
@@ -1319,14 +1170,6 @@ export async function runVisualDiffInspector(
     afterLabel,
     items: [],
   };
-  if (staleLocal !== undefined && staleLocal.length > 0) {
-    manifest.staleLocalBaselines = staleLocal;
-    console.warn(
-      `\n⚠ ${staleLocal.length} stale local baseline(s) ignored (the checkpoint changed since):\n` +
-        staleLocal.map((n) => `  - ${n}`).join("\n") +
-        "\n  Discard them with `./morcus.sh visual-baselines drop --stale`."
-    );
-  }
   const failuresWithoutSnapshot =
     source === "results"
       ? collectFailuresWithoutSnapshot(
@@ -1370,14 +1213,12 @@ export async function runVisualDiffInspector(
   }
   manifest.items = entries.map((e) => materialize(e, imagesDir, im));
   manifest.reviewKey = reviewKeyFor(source, options, manifest.items);
-  if (source !== "git") {
-    manifest.localStore = storeSummary(options.localPaths ?? defaultPaths());
-  }
+  manifest.localStore = storeSummary(options.localPaths ?? defaultPaths());
 
-  // Write endpoints, for the `results` and `local` sources when serving.
+  // Write endpoints, when serving.
   const serving = options.startServer !== false;
   let session: ActionSession | undefined = undefined;
-  if (serving && options.actions !== false && source !== "git") {
+  if (serving && options.actions !== false) {
     const incomplete = incompleteItems(manifest.items, source);
     session = {
       token: options.token ?? newSessionToken(),
@@ -1386,12 +1227,11 @@ export async function runVisualDiffInspector(
       resultsDir: path.resolve(options.resultsDir ?? DEFAULT_RESULTS_DIR),
       repoRoot: path.resolve(options.repoRoot ?? process.cwd()),
       outDir,
-      names: new Set([
-        ...manifest.items.flatMap((i) =>
+      names: new Set(
+        manifest.items.flatMap((i) =>
           i.snapshotName === undefined ? [] : [i.snapshotName]
-        ),
-        ...(staleLocal ?? []),
-      ]),
+        )
+      ),
       acceptedBefore: new Map(),
       staticDisabledReason:
         incomplete.length === 0
@@ -1403,7 +1243,7 @@ export async function runVisualDiffInspector(
               .join("; ")}${incomplete.length > 5 ? "; …" : ""}`,
     };
     const actions: ViewerActions = {
-      mode: source === "results" ? "accept" : "checkpoint",
+      mode: source === "results" ? "accept" : "previous",
     };
     const reason = disabledReason(session);
     if (reason !== undefined) actions.disabledReason = reason;
@@ -1420,9 +1260,6 @@ export async function runVisualDiffInspector(
   printSummary(manifest);
   // After the table, so it is the last thing in view, not scrolled away.
   warnFailuresWithoutSnapshot();
-  console.log(
-    "\n⚠️  Do not commit updated baselines without explicit human approval (AGENTS.md)."
-  );
   console.log(`Viewer written to ${path.join(outDir, "index.html")}`);
 
   if (options.startServer === false) {
@@ -1450,7 +1287,7 @@ export async function runVisualDiffInspector(
   }
   if (session !== undefined) {
     console.log(
-      "   The #token=… part enables accept/checkpoint in the viewer; without it, the viewer is read-only."
+      "   The #token=… part enables accept/undo in the viewer; without it, the viewer is read-only."
     );
     if (manifest.actions?.disabledReason !== undefined) {
       console.warn(`   Actions disabled: ${manifest.actions.disabledReason}`);
