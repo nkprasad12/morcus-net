@@ -90,7 +90,7 @@ export function createV2Router(
     createMacronizerRoutes({ engine: options?.macronizer, staticPages })
   );
   router.use(createExternalRoutes({ staticPages }));
-  router.use(createExperimentalTextsRoutes());
+  router.use(createExperimentalTextsRoutes({ staticPages }));
   router.use(createApiRoutes(fusedDict, options));
 
   // Library Catalog route

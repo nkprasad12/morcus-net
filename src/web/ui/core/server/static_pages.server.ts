@@ -1,11 +1,11 @@
 /**
  * Pre-rendered, pre-compressed static pages.
  *
- * A few UI V2 documents are a function of nothing but the build: the About
- * and Library pages, the Macronizer and External Reader landings, the default
- * Corpus landing, and the dictionary landing for a visitor with default
- * settings (standalone, at the site root, and embedded in the reader's
- * iframe). The build renders them once (`static_pages_seed.server.ts`),
+ * A few UI V2 documents are a function of nothing but the build: the About,
+ * Library, and Experimental Texts catalog pages, the Macronizer and External
+ * Reader landings, the default Corpus landing, and the dictionary landing for
+ * a visitor with default settings (standalone, at the site root, and embedded
+ * in the reader's iframe). The build renders them once (`static_pages_seed.server.ts`),
  * compresses them at Brotli q10 and gzip 6, and stores them in
  * `build/pages.db`. The server answers a matching request with a point lookup
  * and no render or compression; anything else takes the dynamic path exactly

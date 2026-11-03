@@ -46,6 +46,14 @@ jest.mock("@/web/ui/corpus/corpus_query.server", () => ({
     ),
 }));
 
+jest.mock("@/common/experimental_texts/catalog_loader", () => ({
+  ...jest.requireActual("@/common/experimental_texts/catalog_loader"),
+  getExperimentalTextsCatalogBundle: () =>
+    jest.requireActual(
+      "@/web/ui/experimental_texts/experimental_texts_test_catalog"
+    ).EXPERIMENTAL_TEXTS_TEST_CATALOG,
+}));
+
 /** The URL each seed answers, with the request state its key stands for. */
 const SEEDED_REQUESTS: ReadonlyArray<{ url: string; expectKey: RegExp }> = [
   { url: "/", expectKey: /^dict:.*:root$/ },
@@ -53,6 +61,7 @@ const SEEDED_REQUESTS: ReadonlyArray<{ url: string; expectKey: RegExp }> = [
   { url: "/dicts?embedded=1", expectKey: /^dict:[^:]+:1:1$/ },
   { url: "/about", expectKey: /^page:\/about$/ },
   { url: "/library", expectKey: /^page:\/library$/ },
+  { url: "/experimentalTexts", expectKey: /^page:\/experimentalTexts$/ },
   { url: "/macronizer", expectKey: /^page:\/macronizer$/ },
   { url: "/externalReader", expectKey: /^page:\/externalReader$/ },
   { url: "/corpus", expectKey: /^corpus:/ },
@@ -69,6 +78,7 @@ const DYNAMIC_REQUESTS: ReadonlyArray<{ url: string; cookie?: string }> = [
   { url: "/corpus?pageSize=20" },
   { url: "/corpus?q=amo" },
   { url: "/externalReader?lines=prose" },
+  { url: "/experimentalTexts?open=pl/stoa0022.stoa001.opp-lat1" },
 ];
 
 const rawBody = (res: request.Response, cb: (err: null, b: Buffer) => void) => {

@@ -17,6 +17,11 @@ import {
   findExperimentalTextCatalogEntry,
   getExperimentalTextsCatalogBundle,
 } from "@/common/experimental_texts/catalog_loader";
+import { asyncHandler } from "@/web/ui/core/server/async_handler.server";
+import {
+  sendStaticPageOr,
+  type StaticPageLookup,
+} from "@/web/ui/core/server/static_pages.server";
 import { EXPERIMENTAL_TEXTS_PATH } from "@/web/ui/experimental_texts/experimental_texts_contract.common";
 import {
   renderExperimentalTextNotFoundPageHtml,
@@ -24,9 +29,14 @@ import {
   renderExperimentalTextsCatalogPageHtml,
 } from "@/web/ui/experimental_texts/experimental_texts.server";
 
+/** The static page key for the Experimental Texts catalog (`static_pages.server.ts`). */
+export const EXPERIMENTAL_TEXTS_PAGE_KEY = "page:/experimentalTexts";
+
 export interface ExperimentalTextsRouteOptions {
   /** Optional catalog bundle override (used by unit tests). */
   readonly bundle?: ExperimentalTextCatalogBundle;
+  /** Pre-rendered static pages; see `static_pages.server.ts`. */
+  readonly staticPages?: StaticPageLookup;
 }
 
 function firstQueryString(val: unknown): string | undefined {
@@ -46,33 +56,46 @@ export function createExperimentalTextsRoutes(
 ): Router {
   const router = Router();
 
-  router.get(EXPERIMENTAL_TEXTS_PATH, (req: Request, res: Response) => {
-    const bundle = options.bundle ?? getExperimentalTextsCatalogBundle();
-    const openId = firstQueryString(req.query.open);
+  router.get(
+    EXPERIMENTAL_TEXTS_PATH,
+    asyncHandler(async (req: Request, res: Response) => {
+      const openId = firstQueryString(req.query.open);
 
-    if (openId) {
-      const found = findExperimentalTextCatalogEntry(openId, bundle);
-      if (!found) {
-        res.status(404).send(renderExperimentalTextNotFoundPageHtml(openId));
+      if (openId) {
+        const bundle = options.bundle ?? getExperimentalTextsCatalogBundle();
+        const found = findExperimentalTextCatalogEntry(openId, bundle);
+        if (!found) {
+          res.status(404).send(renderExperimentalTextNotFoundPageHtml(openId));
+          return;
+        }
+
+        const initialSection = firstQueryString(req.query.page);
+
+        res.setHeader("X-Robots-Tag", "noindex, nofollow");
+        res.status(200).send(
+          renderExperimentalTextReaderPageHtml({
+            entry: found.entry,
+            sourceMeta: found.sourceMeta,
+            initialSection,
+            backHref: EXPERIMENTAL_TEXTS_PATH,
+          })
+        );
         return;
       }
 
-      const initialSection = firstQueryString(req.query.page);
-
-      res.setHeader("X-Robots-Tag", "noindex, nofollow");
-      res.status(200).send(
-        renderExperimentalTextReaderPageHtml({
-          entry: found.entry,
-          sourceMeta: found.sourceMeta,
-          initialSection,
-          backHref: EXPERIMENTAL_TEXTS_PATH,
-        })
+      res.status(200);
+      await sendStaticPageOr(
+        req,
+        res,
+        options.staticPages,
+        EXPERIMENTAL_TEXTS_PAGE_KEY,
+        () =>
+          renderExperimentalTextsCatalogPageHtml(
+            options.bundle ?? getExperimentalTextsCatalogBundle()
+          )
       );
-      return;
-    }
-
-    res.status(200).send(renderExperimentalTextsCatalogPageHtml(bundle));
-  });
+    })
+  );
 
   return router;
 }

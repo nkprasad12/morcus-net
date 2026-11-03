@@ -7,6 +7,10 @@
  * would render. `static_pages_seed.test.ts` checks that against the routes.
  */
 
+import {
+  getExperimentalTextsCatalogBundle,
+  SEED_EXPERIMENTAL_TEXTS_CATALOG_BUNDLE,
+} from "@/common/experimental_texts/catalog_loader";
 import { ABOUT_PAGE_KEY, LIBRARY_PAGE_KEY } from "@/web/ui/app_router.server";
 import { renderAboutPageHtml } from "@/web/ui/about/about.server";
 import {
@@ -30,6 +34,8 @@ import {
   dictLandingPageKey,
   renderDictLandingPage,
 } from "@/web/ui/dict/dict_routes.server";
+import { renderExperimentalTextsCatalogPageHtml } from "@/web/ui/experimental_texts/experimental_texts.server";
+import { EXPERIMENTAL_TEXTS_PAGE_KEY } from "@/web/ui/experimental_texts/experimental_texts_routes.server";
 import { EXTERNAL_LANDING_PAGE_KEY } from "@/web/ui/external/external_routes.server";
 import { renderExternalLandingPageHtml } from "@/web/ui/external/external.server";
 import { renderLibraryPageHtml } from "@/web/ui/library/library.server";
@@ -70,6 +76,10 @@ export function staticPageSeeds(options: SeedOptions = {}): StaticPageSeed[] {
   return [
     { key: ABOUT_PAGE_KEY, render: renderAboutPageHtml },
     { key: LIBRARY_PAGE_KEY, render: renderLibraryPageHtml },
+    {
+      key: EXPERIMENTAL_TEXTS_PAGE_KEY,
+      render: () => renderExperimentalTextsCatalogPageHtml(),
+    },
     { key: MACRONIZER_PAGE_KEY, render: () => renderMacronizerPage() },
     {
       key: EXTERNAL_LANDING_PAGE_KEY,
@@ -125,6 +135,14 @@ async function checkSeedInputs(): Promise<void> {
   if ((await loadCorpusAuthors()) === undefined) {
     throw new Error(
       "Static pages: the corpus author list is missing; build the corpus first."
+    );
+  }
+  if (
+    getExperimentalTextsCatalogBundle() ===
+    SEED_EXPERIMENTAL_TEXTS_CATALOG_BUNDLE
+  ) {
+    throw new Error(
+      "Static pages: the Experimental Texts catalog is missing; build it first."
     );
   }
 }
