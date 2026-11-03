@@ -262,10 +262,8 @@ describe("MorcusExperimentalTextsView", () => {
     });
     const jerome = document
       .querySelector('a[href="/experimentalTexts?open=pl%2Fjerome"]')!
-      .closest<HTMLElement>(".experimental-texts-work-item")!;
-    expect(jerome.dataset.author).toBe(
-      "jerome · hieronymus · eusebius hieronymus"
-    );
+      .closest<HTMLElement>(".experimental-texts-author-group")!;
+    expect(jerome.dataset.author).toBe("hieronymus · eusebius hieronymus");
 
     type("hieronymus");
     expect(visibleAuthors()).toEqual(["Jerome"]);

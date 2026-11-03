@@ -93,10 +93,12 @@ export class MorcusExperimentalTextsView extends BaseElement {
       ".experimental-texts-author-group"
     )) {
       // Matched on the author and title as shown, the volume label, and the
-      // author's other names (`data-author`, when it has any).
-      const author =
+      // author's other names (`data-author`: shared ones on the card, a
+      // work's own extras on its row).
+      const author = `${
         group.querySelector(".experimental-texts-author-name")?.textContent ??
-        "";
+        ""
+      } ${group.dataset.author ?? ""}`;
       let shown = 0;
       for (const item of Array.from(
         group.querySelectorAll<HTMLElement>(".experimental-texts-work-item")
@@ -107,7 +109,7 @@ export class MorcusExperimentalTextsView extends BaseElement {
           ".experimental-texts-work-link"
         )?.textContent;
         const text = `${author} ${dataset.author ?? ""} ${title} ${
-          dataset.volume
+          dataset.volume ?? ""
         }`.toLowerCase();
         const visible =
           (source === "all" || dataset.source === source) &&

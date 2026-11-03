@@ -63,7 +63,30 @@ const SOURCE_LABELS: Readonly<Record<ExperimentalTextSourceId, string>> = {
   thelatinlibrary: "The Latin Library",
 };
 
-function renderWorkItemHtml(entry: ExperimentalTextCatalogEntry): string {
+/** Lowercased aliases of `entry`, without its (shown) author name. */
+function lowerAliases(entry: ExperimentalTextCatalogEntry): string[] {
+  const author = entry.author.toLowerCase();
+  return (entry.authorAliases ?? [])
+    .map((a) => a.toLowerCase())
+    .filter((a) => a !== author);
+}
+
+/** Aliases every work of the group shares, which go on the card once. */
+function sharedAliases(group: ExperimentalTextAuthorGroup): string[] {
+  const [first, ...rest] = group.entries.map(lowerAliases);
+  return (first ?? []).filter((a) => rest.every((r) => r.includes(a)));
+}
+
+function dataAuthorAttr(aliases: readonly string[]): string {
+  return aliases.length > 0
+    ? ` data-author="${he.escape(aliases.join(" · "))}"`
+    : "";
+}
+
+function renderWorkItemHtml(
+  entry: ExperimentalTextCatalogEntry,
+  groupAliases: readonly string[]
+): string {
   const readerHref = buildExperimentalTextsUrl({ open: entry.id });
   const sourceLabel = SOURCE_LABELS[entry.source];
 
@@ -88,29 +111,35 @@ function renderWorkItemHtml(entry: ExperimentalTextCatalogEntry): string {
 
   // `data-source`, `data-period` and `data-volume` are what
   // `<morcus-experimental-texts-view>` filters on, besides the visible author and
-  // title; the volume label (`pl 16`) is searchable but not shown. So are an
-  // author's other names (`data-author`, only when there are any: the
-  // upstream spelling and Latin / English aliases, so `hieronymus` finds
-  // Jerome).
-  const aliases = entry.authorAliases ?? [];
-  const authorAttr =
-    aliases.length > 0
-      ? ` data-author="${he.escape(
-          [entry.author, ...aliases].join(" · ").toLowerCase()
-        )}"`
-      : "";
+  // title; the volume label (`pl 16`) is searchable but not shown, and is
+  // omitted when there is none. So are an author's other names
+  // (`data-author`: the upstream spelling and Latin / English aliases, so
+  // `hieronymus` finds Jerome). Those every work of the author shares sit on
+  // the author card once; a row carries only its own extras.
+  const ownAliases = lowerAliases(entry).filter(
+    (a) => !groupAliases.includes(a)
+  );
+  const volume = (entry.volumeLabel ?? "").toLowerCase();
+  const volumeAttr =
+    volume.length > 0 ? ` data-volume="${he.escape(volume)}"` : "";
+  const linkHtml = `<a class="experimental-texts-work-link" href="${he.escape(
+    readerHref
+  )}">${he.escape(entry.title)}</a>`;
+  // Only a row with a partial-coverage note needs a column for link + note.
+  const mainHtml = entry.partialCoverage
+    ? ssr`
+      <div class="experimental-texts-work-main">
+        ${linkHtml}
+        ${partialHtml}
+      </div>`
+    : linkHtml;
   return ssr`
     <li class="experimental-texts-work-item" data-source="${
       entry.source
-    }" data-period="${entry.period}" data-volume="${he.escape(
-    (entry.volumeLabel ?? "").toLowerCase()
-  )}"${authorAttr}>
-      <div class="experimental-texts-work-main">
-        <a class="experimental-texts-work-link" href="${he.escape(
-          readerHref
-        )}">${he.escape(entry.title)}</a>
-        ${partialHtml}
-      </div>
+    }" data-period="${entry.period}"${volumeAttr}${dataAuthorAttr(
+    ownAliases
+  )}>
+      ${mainHtml}
       <div class="experimental-texts-work-badges">
         ${periodChipHtml}
         <span class="experimental-texts-meta-chip">${he.escape(
@@ -126,11 +155,14 @@ function renderWorkItemHtml(entry: ExperimentalTextCatalogEntry): string {
  * fold away authors they're not interested in without any JS.
  */
 function renderAuthorGroupHtml(group: ExperimentalTextAuthorGroup): string {
-  const worksHtml = group.entries.map((e) => renderWorkItemHtml(e)).join("\n");
+  const groupAliases = sharedAliases(group);
+  const worksHtml = group.entries
+    .map((e) => renderWorkItemHtml(e, groupAliases))
+    .join("\n");
   return ssr`
     <details class="author-card experimental-texts-author-group" id="author-${he.escape(
       group.slug
-    )}" open>
+    )}"${dataAuthorAttr(groupAliases)} open>
       <summary class="author-card-header experimental-texts-author-header">
         <h2 class="author-card-name experimental-texts-author-name">${he.escape(
           group.author

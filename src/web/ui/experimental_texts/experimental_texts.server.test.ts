@@ -201,11 +201,16 @@ describe("experimental_texts.server", () => {
     expect(row.dataset.source).toBe("patrologia_latina");
     expect(row.dataset.period).toBe("ancient");
     expect(row.dataset.volume).toBe("pl 16");
-    // The author's other names are searchable too.
-    expect(row.dataset.author).toBe(
-      "ambrosius mediolanensis (saint ambrose) · ambrose of milan"
-    );
-    // An author without other names has no `data-author`.
+    // The author's other names are searchable too. Names every work of the
+    // author shares sit on the author card once, not on each row, and the
+    // shown name (the card's heading) isn't repeated there.
+    expect(row.hasAttribute("data-author")).toBe(false);
+    expect(
+      row.closest<HTMLElement>(".experimental-texts-author-group")!.dataset
+        .author
+    ).toBe("ambrose of milan");
+    // An author without other names has no `data-author` anywhere, and a
+    // work without a volume label has no `data-volume`.
     const erasmus = doc
       .querySelector(
         'a[href="/experimentalTexts?open=ll%2Ferasmus-querela-pacis"]'
@@ -213,6 +218,12 @@ describe("experimental_texts.server", () => {
       .closest<HTMLElement>(".experimental-texts-work-item")!;
     expect(erasmus.dataset.period).toBe("neolatin");
     expect(erasmus.hasAttribute("data-author")).toBe(false);
+    expect(erasmus.hasAttribute("data-volume")).toBe(false);
+    expect(
+      erasmus
+        .closest(".experimental-texts-author-group")!
+        .hasAttribute("data-author")
+    ).toBe(false);
 
     // The "(filtered from N total)" note is hidden until the user filters.
     const count = doc.querySelector('[data-role="experimental-texts-count"]')!;

@@ -142,6 +142,13 @@
   min-width: 0;
 }
 
+/* Without a partial-coverage note the link is the row's first flex item
+   itself (no .experimental-texts-work-main column around it). */
+.experimental-texts-work-item > .experimental-texts-work-link {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .experimental-texts-work-link {
   display: flex;
   align-items: center;
