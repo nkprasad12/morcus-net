@@ -16,7 +16,7 @@ const CAESAR_ID = "phi0448.phi001.perseus-lat2";
 export const CORPUS_TEST_AUTHORS: readonly string[] = [
   "Caesar",
   "Cicero",
-  "Seneca Major",
+  "SenecaMajor",
 ];
 
 export function fakeMatch(

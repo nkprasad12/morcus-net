@@ -300,13 +300,7 @@ function authorSuggestions(
   }
   const typed = current.slice(1);
   const rows = authors
-    .filter(
-      (author) =>
-        // A name with a space can't be one token, so it would only produce an
-        // invalid query.
-        !author.includes(" ") &&
-        author.toLowerCase().startsWith(typed.toLowerCase())
-    )
+    .filter((author) => author.toLowerCase().startsWith(typed.toLowerCase()))
     .map(
       (author): CorpusCompletion => ({
         prefix: `#${author.slice(0, typed.length)}`,

@@ -1,4 +1,4 @@
-import { checkPresent } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
 import type { CorpusInputWork } from "@/common/library/corpus/corpus_common";
 import { ProcessedWork2 } from "@/common/library/library_types";
 import {
@@ -20,19 +20,19 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["Cornelius Tacitus", "Tacitus"],
   ["C. Valerius Catullus", "Catullus"],
   ["M. Tullius Cicero", "Cicero"],
-  ["Ammianus Marcellinus", "Ammianius"],
+  ["Ammianus Marcellinus", "Ammianus"],
   ["Calpurnius Siculus", "Calpurnius"],
   ["Cornelius Nepos", "Nepos"],
   ["Minucius Felix", "Minucius"],
   ["C. Suetonius Tranquillus", "Suetonius"],
-  ["L. Annaeus Seneca iunior", "Seneca Minor"],
+  ["L. Annaeus Seneca iunior", "SenecaMinor"],
   ["Titus Livius (Livy)", "Livy"],
   ["Pliny the Elder", "PlinyElder"],
   ["Curtius Rufus, Quintus", "Curtius"],
   ["Q. Horatius Flaccus", "Horace"],
-  ["Seneca the Elder", "Seneca Major"],
-  ["Seneca, Lucius Annaeus", "Seneca Minor"],
-  ["L. Annaeus Seneca", "Seneca Minor"],
+  ["Seneca the Elder", "SenecaMajor"],
+  ["Seneca, Lucius Annaeus", "SenecaMinor"],
+  ["L. Annaeus Seneca", "SenecaMinor"],
   ["Valerius Maximus", "ValeriusMaximus"],
   ["Florus, Lucius Annaeus", "Florus"],
   ["Pliny the Younger", "PlinyYounger"],
@@ -54,15 +54,27 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["Pompeius Trogus", "Trogus"],
 ]);
 
+/**
+ * An author code must be a single token in the corpus query syntax (`#Code`):
+ * no spaces, and none of the characters the grammar gives a meaning to
+ * (`(`, `)`, `,`, `[`, `]`, `@`, `#`, `~`, `/`).
+ */
+const VALID_AUTHOR_CODE = /^[A-Za-z][A-Za-z-]*$/;
+
 /** Exported for testing. */
 export function toAuthorCode(author: string): string {
-  if (author.split(" ").length === 1) {
-    return author;
-  }
-  return checkPresent(
-    AUTHOR_CODE_MAP.get(author),
-    "No code for author " + author
+  const code =
+    author.split(" ").length === 1
+      ? author
+      : checkPresent(
+          AUTHOR_CODE_MAP.get(author),
+          "No code for author " + author
+        );
+  assert(
+    VALID_AUTHOR_CODE.test(code),
+    `Author code "${code}" (for "${author}") can't be written as #${code} in a corpus query`
   );
+  return code;
 }
 
 /**

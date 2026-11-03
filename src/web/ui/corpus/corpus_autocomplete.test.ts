@@ -109,13 +109,15 @@ describe("corpusSuggestions", () => {
   });
 
   describe("#author", () => {
-    test("completes in the corpus's case, and skips names with spaces", () => {
+    test("completes in the corpus's case", () => {
       expect(suggest("#")).toEqual([
         '#[Caesar ] => "#Caesar "',
         '#[Cicero ] => "#Cicero "',
+        '#[SenecaMajor ] => "#SenecaMajor "',
       ]);
       expect(suggest("#ci")).toEqual(['#Ci[cero ] => "#Cicero "']);
-      expect(suggest("#se")).toEqual(["❌ no author matches `#se`"]);
+      expect(suggest("#se")).toEqual(['#Se[necaMajor ] => "#SenecaMajor "']);
+      expect(suggest("#x")).toEqual(["❌ no author matches `#x`"]);
     });
 
     test("must come first, and only once", () => {
@@ -502,7 +504,7 @@ describe("<morcus-corpus-suggestions>", () => {
   test("arrows move the highlight, wrapping at both ends", () => {
     const { input, listbox } = mount();
     input.focus();
-    type(input, "#");
+    type(input, "#c");
     expect(rowTexts(listbox)).toEqual(["#Caesar ", "#Cicero "]);
 
     const down = press(input, "ArrowDown");
@@ -524,7 +526,7 @@ describe("<morcus-corpus-suggestions>", () => {
   test("ArrowUp with nothing highlighted starts from the last row", () => {
     const { input } = mount();
     input.focus();
-    type(input, "#");
+    type(input, "#c");
     press(input, "ArrowUp");
     expect(activeRow(input)).toBe("#Cicero ");
   });

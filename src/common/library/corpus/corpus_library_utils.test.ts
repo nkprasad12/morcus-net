@@ -363,14 +363,31 @@ describe("toAuthorCode", () => {
     ["Silius Italicus", "Silius"],
     ["Cato, Marcus Porcius", "Cato"],
     ["Jerome, Saint", "Jerome"],
-    ["Seneca, Lucius Annaeus", "Seneca Minor"],
+    ["Seneca, Lucius Annaeus", "SenecaMinor"],
   ])("maps the Phase 2B author %s", (author, code) => {
+    expect(toAuthorCode(author)).toBe(code);
+  });
+
+  it.each([
+    ["Seneca the Elder", "SenecaMajor"],
+    ["L. Annaeus Seneca iunior", "SenecaMinor"],
+    ["L. Annaeus Seneca", "SenecaMinor"],
+    ["Ammianus Marcellinus", "Ammianus"],
+  ])("maps %s to %s", (author, code) => {
     expect(toAuthorCode(author)).toBe(code);
   });
 
   it("passes a one-word author through", () => {
     expect(toAuthorCode("Boethius")).toBe("Boethius");
+    expect(toAuthorCode("Pseudo-Caesar")).toBe("Pseudo-Caesar");
   });
+
+  it.each(["Cicero,", "Cicero(", "Cicero/Brutus", "#Cicero", "Cicero~"])(
+    "rejects a one-word author %s that can't be a query token",
+    (author) => {
+      expect(() => toAuthorCode(author)).toThrow(/corpus query/);
+    }
+  );
 
   it("rejects an unknown multi-word author", () => {
     expect(() => toAuthorCode("Nobody Inparticular")).toThrow(/No code/);

@@ -51,11 +51,6 @@ V1 is frozen.
 
 V1 (and V2) accept one `#Author` at the start of the query. Extensions:
 
-### 2.1 Space-free author names in the corpus build
-
-- **Gap:** `Seneca Major` and `Seneca Minor` in [`corpus_library_utils.ts`](../../../common/library/corpus/corpus_library_utils.ts) contain spaces, so the space-splitting tokenizer in [`corpus_syntax.common.ts`](corpus_syntax.common.ts) cannot express `#Seneca Minor`. (Other multi-word authors already use `PlinyElder`, `PlinyYounger`, `ValeriusMaximus`, `ValeriusFlaccus`.)
-- **Fix:** Normalize to `SenecaMajor` and `SenecaMinor` in `AUTHOR_MAP` in [`corpus_library_utils.ts`](../../../common/library/corpus/corpus_library_utils.ts) and rebuild the corpus.
-
 ### 2.2 Single-work filter (`#Author/Work`)
 
 - **Context:** Each entry in `work_lookup` ([`WorkLookupEntry`](../../../../corpus_rust/src/corpus_index.rs)) already stores `work_id`, `info` (`WorkData`), and `rows` with exact token ranges, and [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) already resolves an author to `[start_work_idx, end_work_idx]`. A single work is just `start_work_idx == end_work_idx`.
