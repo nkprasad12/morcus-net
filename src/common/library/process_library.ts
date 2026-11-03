@@ -10,6 +10,7 @@ import {
   EnglishTranslations,
   LOCAL_REPO_WORKS,
 } from "@/common/library/library_constants";
+import { urlify, urlifyAuthor } from "@/common/library/library_slugs";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import {
   loadPatches,
@@ -45,39 +46,6 @@ const LOCAL_REPO_ROOT = "texts/latin/perseus";
 const LOCAL_REPO_WORK_PATHS = LOCAL_REPO_WORKS.map(
   (work) => `${LOCAL_REPO_ROOT}/${work}`
 );
-
-const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
-  ["Julius Caesar", "caesar"],
-  ["P. Ovidius Naso", "ovid"],
-  ["Cornelius Tacitus", "tacitus"],
-  ["C. Valerius Catullus", "catullus"],
-  ["M. Tullius Cicero", "cicero"],
-  ["C. Suetonius Tranquillus", "suetonius"],
-  ["L. Annaeus Seneca iunior", "seneca_minor"],
-  ["Titus Livius (Livy)", "livy"],
-  ["Pseudo-Caesar", "pseudo_caesar"],
-  ["Sextus Propertius", "propertius"],
-  ["Valerius Flaccus", "valerius_flaccus"],
-  ["Vitruvius Pollio", "vitruvius"],
-  ["Aulus Gellius", "gellius"],
-  // Seneca the Younger's Perseus works joined his PHI ones in Phase 2B. The
-  // old `seneca,_lucius_annaeus` slug still resolves and redirects; see
-  // `LEGACY_AUTHOR_SLUGS` in reader_loader.server.ts.
-  ["Seneca, Lucius Annaeus", "seneca_minor"],
-  ["Scriptores Historiae Augustae", "historia_augusta"],
-  ["Ausonius, Decimus Magnus", "ausonius"],
-  ["Q. Tullius Cicero", "quintus_cicero"],
-  ["Sidonius Apollinaris", "sidonius"],
-  ["Silius Italicus", "silius_italicus"],
-  ["Cato, Marcus Porcius", "cato"],
-  ["Jerome, Saint", "jerome"],
-  ["Augustine, Saint", "augustine"],
-  ["T. Maccius Plautus", "plautus"],
-  ["Publius Terentius Afer (Terence)", "terence"],
-  // Slugs from before `urlify` dropped punctuation, kept so links still work.
-  ["Curtius Rufus, Quintus", "curtius_rufus,_quintus"],
-  ["Florus, Lucius Annaeus", "florus,_lucius_annaeus"],
-]);
 
 const NAME_TO_DISPLAY_NAME = new Map<string, string>([
   ["de Origine et Situ Germanorum Liber", "Germania"],
@@ -249,33 +217,6 @@ export const SHORT_TITLE_BY_WORK_ID = new Map<string, string>([
   ["stoa0261.stoa002.perseus-lat1", "Epistulae"],
   ["phi1017.phi001.perseus-lat2", "Hercules Furens"],
 ]);
-
-/**
- * The URL slug for `input`: its entry in `customs`, else the lower-cased
- * words joined by `_`, with accents removed and only `[a-z0-9_-]` kept.
- * Exported for testing.
- */
-export function urlify(input: string, customs: Map<string, string>): string {
-  const custom = customs.get(input);
-  if (custom !== undefined) {
-    return custom;
-  }
-  const slug = input
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_-]/g, "")
-    .replace(/_+/g, "_")
-    .replace(/^_|_$/g, "");
-  assert(slug.length > 0, () => `Empty URL slug for "${input}"`);
-  return slug;
-}
-
-function urlifyAuthor(input: string): string {
-  return urlify(input, AUTHOR_TO_URL_LOOKUP);
-}
 
 function urlifyName(input: string): string {
   return urlify(input, NAME_TO_URL_LOOKUP);

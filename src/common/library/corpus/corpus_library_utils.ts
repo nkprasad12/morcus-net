@@ -1,5 +1,9 @@
-import { assert, checkPresent } from "@/common/assert";
+import { assert } from "@/common/assert";
 import type { CorpusInputWork } from "@/common/library/corpus/corpus_common";
+import {
+  authorCodeFromSlug,
+  urlifyAuthor,
+} from "@/common/library/library_slugs";
 import { ProcessedWork2 } from "@/common/library/library_types";
 import {
   BLOCK_CONTENT_KINDS,
@@ -14,62 +18,20 @@ export const LIB_CORPUS_INPUT_DIR = "build-tmp/library_corpus_input";
 // This is a duplicate of Heroides, which we have the macronized edition of.
 const SKIPS = new Set(["phi0959.phi002.perseus-lat2"]);
 
-const AUTHOR_CODE_MAP = new Map<string, string>([
-  ["Julius Caesar", "Caesar"],
-  ["P. Ovidius Naso", "Ovid"],
-  ["Cornelius Tacitus", "Tacitus"],
-  ["C. Valerius Catullus", "Catullus"],
-  ["M. Tullius Cicero", "Cicero"],
-  ["Ammianus Marcellinus", "Ammianus"],
-  ["Calpurnius Siculus", "Calpurnius"],
-  ["Cornelius Nepos", "Nepos"],
-  ["Minucius Felix", "Minucius"],
-  ["C. Suetonius Tranquillus", "Suetonius"],
-  ["L. Annaeus Seneca iunior", "SenecaMinor"],
-  ["Titus Livius (Livy)", "Livy"],
-  ["Pliny the Elder", "PlinyElder"],
-  ["Curtius Rufus, Quintus", "Curtius"],
-  ["Q. Horatius Flaccus", "Horace"],
-  ["Seneca the Elder", "SenecaMajor"],
-  ["Seneca, Lucius Annaeus", "SenecaMinor"],
-  ["L. Annaeus Seneca", "SenecaMinor"],
-  ["Valerius Maximus", "ValeriusMaximus"],
-  ["Florus, Lucius Annaeus", "Florus"],
-  ["Pliny the Younger", "PlinyYounger"],
-  ["Sextus Propertius", "Propertius"],
-  ["Valerius Flaccus", "ValeriusFlaccus"],
-  ["Vitruvius Pollio", "Vitruvius"],
-  ["Aulus Gellius", "Gellius"],
-  ["Scriptores Historiae Augustae", "HistoriaAugusta"],
-  ["Ausonius, Decimus Magnus", "Ausonius"],
-  ["Appendix Vergiliana", "AppVerg"],
-  ["Q. Tullius Cicero", "QuintusCicero"],
-  ["Sidonius Apollinaris", "Sidonius"],
-  ["Silius Italicus", "Silius"],
-  ["Cato, Marcus Porcius", "Cato"],
-  ["Jerome, Saint", "Jerome"],
-  ["Augustine, Saint", "Augustine"],
-  ["T. Maccius Plautus", "Plautus"],
-  ["Publius Terentius Afer (Terence)", "Terence"],
-  ["Pompeius Trogus", "Trogus"],
-]);
-
 /**
  * An author code must be a single token in the corpus query syntax (`#Code`):
  * no spaces, and none of the characters the grammar gives a meaning to
  * (`(`, `)`, `,`, `[`, `]`, `@`, `#`, `~`, `/`).
  */
-const VALID_AUTHOR_CODE = /^[A-Za-z][A-Za-z-]*$/;
+const VALID_AUTHOR_CODE = /^[A-Za-z]+$/;
 
-/** Exported for testing. */
+/**
+ * The corpus `#Author` code for a work's author, derived from the reader URL
+ * slug (`nepos` -> `Nepos`, `pliny_elder` -> `PlinyElder`) so the corpus and
+ * the reader name authors the same way. Exported for testing.
+ */
 export function toAuthorCode(author: string): string {
-  const code =
-    author.split(" ").length === 1
-      ? author
-      : checkPresent(
-          AUTHOR_CODE_MAP.get(author),
-          "No code for author " + author
-        );
+  const code = authorCodeFromSlug(urlifyAuthor(author));
   assert(
     VALID_AUTHOR_CODE.test(code),
     `Author code "${code}" (for "${author}") can't be written as #${code} in a corpus query`

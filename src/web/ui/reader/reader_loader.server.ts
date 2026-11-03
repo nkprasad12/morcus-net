@@ -1,5 +1,6 @@
 import { WORK_ID_ALIASES } from "@/common/library/library_constants";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
+import { RETIRED_AUTHOR_SLUGS } from "@/common/library/library_slugs";
 import {
   LIBRARY_DB,
   V2PreprocessedPage,
@@ -63,13 +64,10 @@ const storesByDir = new Map<string, LibraryStore>();
 /**
  * Author slugs that used to be canonical, by the slug that replaced them.
  * `<legacy>/<urlName>` keeps resolving to the work, and the reader route
- * redirects it to the canonical URL. Exported for testing.
+ * redirects it to the canonical URL. Defined next to the slugs themselves in
+ * `library_slugs.ts`. Exported for testing.
  */
-export const LEGACY_AUTHOR_SLUGS: ReadonlyMap<string, readonly string[]> =
-  new Map([
-    // Phase 2B moved Seneca the Younger's Perseus works under `seneca_minor`.
-    ["seneca_minor", ["seneca,_lucius_annaeus"]],
-  ]);
+export const LEGACY_AUTHOR_SLUGS = RETIRED_AUTHOR_SLUGS;
 
 function isSummaryRow(val: unknown): val is SummaryRow {
   return (

@@ -37,7 +37,7 @@ const DE_CLEMENTIA: V2PreprocessedWork = {
   id: "phi1017.phi014.perseus-lat2",
   title: "De Clementia",
   author: "Seneca, Lucius Annaeus",
-  urlAuthor: "seneca_minor",
+  urlAuthor: "seneca_younger",
   urlName: "de_clementia",
   attribution: "perseus",
   hasMacra: false,
@@ -100,7 +100,7 @@ const MEDEA: V2PreprocessedWork = {
   id: "phi1017.phi004.perseus-lat2",
   title: "Medea",
   author: "Seneca, Lucius Annaeus",
-  urlAuthor: "seneca_minor",
+  urlAuthor: "seneca_younger",
   urlName: "medea",
   attribution: "perseus",
   hasMacra: false,
@@ -182,7 +182,14 @@ describe("legacy work slugs", () => {
     );
 
     expect(res.status).toBe(302);
-    expect(res.header.location).toBe("/work/seneca_minor/de_clementia");
+    expect(res.header.location).toBe("/work/seneca_younger/de_clementia");
+  });
+
+  test("redirect from every retired slug, not just the oldest", async () => {
+    const res = await request(app()).get("/work/seneca_minor/de_clementia");
+
+    expect(res.status).toBe(302);
+    expect(res.header.location).toBe("/work/seneca_younger/de_clementia");
   });
 
   test("keep the page and the query string", async () => {
@@ -192,7 +199,7 @@ describe("legacy work slugs", () => {
 
     expect(res.status).toBe(302);
     expect(res.header.location).toBe(
-      "/work/seneca_minor/de_clementia/1.2?q=imperitos&matchText=Scio"
+      "/work/seneca_younger/de_clementia/1.2?q=imperitos&matchText=Scio"
     );
   });
 
@@ -202,7 +209,7 @@ describe("legacy work slugs", () => {
     );
 
     expect(res.status).toBe(302);
-    expect(res.header.location).toBe("/work/seneca_minor/de_clementia/1.1");
+    expect(res.header.location).toBe("/work/seneca_younger/de_clementia/1.1");
   });
 
   test("keep a legacy jump for the canonical URL to resolve", async () => {
@@ -212,12 +219,14 @@ describe("legacy work slugs", () => {
 
     expect(res.status).toBe(302);
     expect(res.header.location).toBe(
-      "/work/seneca_minor/de_clementia?jump=1.2.1"
+      "/work/seneca_younger/de_clementia?jump=1.2.1"
     );
   });
 
   test("leave the canonical URL alone", async () => {
-    const res = await request(app()).get("/work/seneca_minor/de_clementia/1.2");
+    const res = await request(app()).get(
+      "/work/seneca_younger/de_clementia/1.2"
+    );
 
     expect(res.status).toBe(200);
     expect(res.text).toContain("Scio male audire");
@@ -261,25 +270,25 @@ describe("non-canonical page ids", () => {
   });
 
   test("redirect a line to its card page", async () => {
-    const res = await request(app()).get("/work/seneca_minor/medea/130");
+    const res = await request(app()).get("/work/seneca_younger/medea/130");
 
     expect(res.status).toBe(302);
-    expect(res.header.location).toBe("/work/seneca_minor/medea/116#sec-130");
+    expect(res.header.location).toBe("/work/seneca_younger/medea/116#sec-130");
   });
 
   test("redirect a deeper citation to its page", async () => {
     const res = await request(app()).get(
-      "/work/seneca_minor/de_clementia/1.2.1"
+      "/work/seneca_younger/de_clementia/1.2.1"
     );
 
     expect(res.status).toBe(302);
     expect(res.header.location).toBe(
-      "/work/seneca_minor/de_clementia/1.2#sec-1.2.1"
+      "/work/seneca_younger/de_clementia/1.2#sec-1.2.1"
     );
   });
 
   test("leave canonical page ids alone", async () => {
-    const res = await request(app()).get("/work/seneca_minor/medea/116");
+    const res = await request(app()).get("/work/seneca_younger/medea/116");
 
     expect(res.status).toBe(200);
     expect(res.text).toContain("Occidimus");

@@ -100,12 +100,12 @@ describe("legacy author slugs", () => {
     return {
       ...fakeWork(id, urlName),
       author: "Seneca, Lucius Annaeus",
-      urlAuthor: "seneca_minor",
+      urlAuthor: "seneca_younger",
     };
   }
 
   test("Seneca's old author slug resolves to the work", async () => {
-    expect(LEGACY_AUTHOR_SLUGS.get("seneca_minor")).toContain(
+    expect(LEGACY_AUTHOR_SLUGS.get("seneca_younger")).toContain(
       "seneca,_lucius_annaeus"
     );
     saveV2LibraryDb(libDir, [
@@ -116,7 +116,7 @@ describe("legacy author slugs", () => {
       "seneca,_lucius_annaeus/de_clementia",
       libDir
     );
-    const canonical = await getV2Work("seneca_minor/de_clementia", libDir);
+    const canonical = await getV2Work("seneca_younger/de_clementia", libDir);
 
     expect(legacy?.id).toBe("phi1017.phi014.perseus-lat2");
     expect(canonical?.id).toBe("phi1017.phi014.perseus-lat2");
