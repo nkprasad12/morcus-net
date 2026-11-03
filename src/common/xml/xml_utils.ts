@@ -450,8 +450,10 @@ function removeMatchFromChunk(chunk: MatchedChunk) {
 
   const start = chunk.startIdx === 0 ? chunk.endIdx : 0;
   const end = chunk.startIdx === 0 ? textLength : chunk.startIdx;
-  chunk.data.parent.children[chunk.data.textIndex] =
-    chunk.data.text.substring(start, end);
+  chunk.data.parent.children[chunk.data.textIndex] = chunk.data.text.substring(
+    start,
+    end
+  );
 }
 
 export const XmlOperations = {

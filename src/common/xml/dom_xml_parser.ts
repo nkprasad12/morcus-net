@@ -20,9 +20,7 @@ const XML_NAMED_ENTITIES: Readonly<Record<string, string>> = {
 export function parseXmlRootWithDomParser(rawXml: string): Element {
   const Ctor: typeof DOMParser | undefined = globalThis.DOMParser;
   if (typeof Ctor !== "function") {
-    throw new Error(
-      "DOMParser is not available; run in a DOM environment."
-    );
+    throw new Error("DOMParser is not available; run in a DOM environment.");
   }
   const expanded = rawXml.replace(
     /&([A-Za-z][A-Za-z0-9]*);/g,
