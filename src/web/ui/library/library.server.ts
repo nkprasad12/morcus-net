@@ -221,9 +221,9 @@ export async function renderLibraryPageHtml(): Promise<string> {
               sortedWorks.length,
               "work"
             )}</span> &middot; <span data-role="library-shown-authors">${countLabel(
-              byAuthor.size,
-              "author"
-            )}</span>
+    byAuthor.size,
+    "author"
+  )}</span>
           </p>
           <button type="button" class="library-toggle-link" data-role="library-toggle-all">Collapse all</button>
         </div>
