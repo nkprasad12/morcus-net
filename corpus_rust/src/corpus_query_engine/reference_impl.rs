@@ -2,6 +2,7 @@
 
 use std::cmp::{max, min};
 use std::env::set_current_dir;
+use std::path::Path;
 
 use crate::api::{PageData, QueryGlobalInfo, QueryOptions};
 use crate::corpus_index::deserialize_corpus;
@@ -18,22 +19,33 @@ use crate::{
 
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
+/// Loads the query engine for the built corpus.
+///
+/// Returns `None` (with a warning) only if the corpus hasn't been built, e.g. in
+/// a fresh checkout. Panics if the corpus exists but fails to load, so tests
+/// can't silently pass when something is wrong.
 pub(super) fn get_engine_unsafe() -> Option<CorpusQueryEngine> {
-    set_current_dir("..").unwrap();
-    let index = match deserialize_corpus(CORPUS_ROOT) {
-        Ok(index) => index,
-        Err(e) => {
-            eprintln!("Failed to load corpus: {e}");
-            return None;
-        }
-    };
-    match CorpusQueryEngine::new(index) {
-        Ok(e) => Some(e),
-        Err(e) => {
-            eprintln!("Failed to create query engine: {e}");
-            None
-        }
+    // The corpus JSON stores its data paths relative to the repo root, so the
+    // working directory has to be the repo root. It's shared by every test
+    // thread in the process, so set it to an absolute path (idempotent) rather
+    // than stepping up with a relative `..` on every call.
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("corpus_rust should be inside the repo root");
+    set_current_dir(repo_root).unwrap();
+    if !Path::new(CORPUS_ROOT).exists() {
+        eprintln!(
+            "WARNING: skipping corpus test: {CORPUS_ROOT} not found under {}",
+            repo_root.display()
+        );
+        return None;
     }
+    let index = deserialize_corpus(CORPUS_ROOT)
+        .unwrap_or_else(|e| panic!("Failed to load corpus from {CORPUS_ROOT}: {e}"));
+    Some(
+        CorpusQueryEngine::new(index)
+            .unwrap_or_else(|e| panic!("Failed to create query engine: {e}")),
+    )
 }
 
 fn arr_has_any_in_range(arr: &[u32], range: &(u32, u32)) -> bool {

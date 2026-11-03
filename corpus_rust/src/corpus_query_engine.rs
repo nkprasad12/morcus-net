@@ -249,8 +249,8 @@ mod tests {
     fn walk_pages(queries: &[&str]) {
         let engine = match reference_impl::get_engine_unsafe() {
             Some(e) => e,
-            // Note: for now we are OK silently passing the test if the corpus
-            // fails to load, because the CI doesn't handle building the index yet
+            // Skip (with a warning) only if the corpus hasn't been built; a
+            // corpus that exists but fails to load panics.
             None => return,
         };
         for query in queries {
