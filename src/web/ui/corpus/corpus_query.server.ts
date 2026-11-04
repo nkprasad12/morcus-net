@@ -126,6 +126,10 @@ type CorpusOutcome =
       readonly isExact: boolean;
       /** 0-based index of the first result on this page. */
       readonly pageStart: number;
+      /**
+       * The engine's own query time, for telemetry (`corpusEngineMs`). Not
+       * shown on the page.
+       */
       readonly timingMs?: number;
       readonly next?: PageData;
     };

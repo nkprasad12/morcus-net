@@ -117,6 +117,9 @@ describe("corpus page", () => {
     expect(text(doc, ".corpus-summary-detail")).toContain(
       "Showing results 1 to 1"
     );
+    // The engine's query time goes to telemetry, not the page.
+    expect(doc.querySelector(".corpus-timing")).toBeNull();
+    expect(text(doc, ".corpus-summary-detail")).not.toMatch(/\d ms\]/);
     expect(doc.querySelector(".corpus-syntax-link")?.textContent).toContain(
       "Syntax guide"
     );

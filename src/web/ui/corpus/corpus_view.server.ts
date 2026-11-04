@@ -71,7 +71,7 @@ function renderSummary(view: CorpusSearchView): SafeHtml {
   if (outcome.kind !== "results") {
     return html`<div class="corpus-summary" ${raw(slotAttr("summary"))}></div>`;
   }
-  const { estimatedTotal, isExact, pageStart, results, timingMs } = outcome;
+  const { estimatedTotal, isExact, pageStart, results } = outcome;
   const headline =
     estimatedTotal === 0
       ? html`No results found for`
@@ -86,13 +86,6 @@ function renderSummary(view: CorpusSearchView): SafeHtml {
     items.push(
       html`<span
         >Showing results ${pageStart + 1} to ${pageStart + results.length}</span
-      >`
-    );
-  }
-  if (timingMs !== undefined) {
-    items.push(
-      html`<span class="corpus-timing" data-volatile
-        >[${timingMs.toFixed(3)} ms]</span
       >`
     );
   }

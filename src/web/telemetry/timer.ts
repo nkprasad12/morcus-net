@@ -31,6 +31,15 @@ export class Timer {
     return elapsed;
   }
 
+  /**
+   * Records a duration measured elsewhere (e.g. inside the corpus engine) as
+   * `name`, reported alongside the events. Unlike `event`, the value is not
+   * time since the timer started.
+   */
+  record(name: string, ms: number): void {
+    this.events.push([name, Math.round(100 * ms) / 100]);
+  }
+
   getEvents(): { [key: string]: number } {
     const result: { [key: string]: number } = {};
     this.events.forEach(([eventName, time]) => (result[eventName] = time));

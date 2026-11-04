@@ -102,7 +102,14 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
             engine,
             await loadAuthors()
           );
-          requestTimer(res).mark("lookupComplete");
+          const timer = requestTimer(res);
+          timer.mark("lookupComplete");
+          if (
+            view.outcome.kind === "results" &&
+            view.outcome.timingMs !== undefined
+          ) {
+            timer.record("corpusEngineMs", view.outcome.timingMs);
+          }
           if (isPartial) {
             const body = renderCorpusPartialHtml(view).toString();
             setVersionedCacheControl(req, res, { scope: "private" });

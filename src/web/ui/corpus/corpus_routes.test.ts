@@ -6,6 +6,8 @@ import {
   type CorpusRoutesOptions,
 } from "@/web/ui/corpus/corpus_routes.server";
 import type { CorpusEngine } from "@/web/ui/corpus/corpus_query.server";
+import type { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
+import { telemetryMiddleware } from "@/web/ui/core/server/telemetry.server";
 import {
   CORPUS_TEST_AUTHORS,
   fakeCorpusEngine,
@@ -33,6 +35,53 @@ function makeApp(engine?: CorpusEngine, options: CorpusRoutesOptions = {}) {
   );
   return app;
 }
+
+describe("telemetry", () => {
+  function telemetryApp(rows: ApiCallData[]) {
+    const logger: TelemetryLogger = {
+      teardown: async () => {},
+      logApiCall: async (row) => {
+        rows.push(row);
+      },
+      logServerHealth: async () => {},
+    };
+    const app = express();
+    app.use(telemetryMiddleware(Promise.resolve(logger)));
+    app.use(
+      createCorpusRoutes({
+        engine: fakeCorpusEngine(),
+        loadAuthors: () => Promise.resolve(CORPUS_TEST_AUTHORS),
+      })
+    );
+    return app;
+  }
+
+  /** The row is written after the response; let it. */
+  async function settle(): Promise<void> {
+    for (let i = 0; i < 5; i++) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  }
+
+  test("logs the engine's query time as corpusEngineMs", async () => {
+    const rows: ApiCallData[] = [];
+    await request(telemetryApp(rows)).get("/corpus?q=omnis");
+    await settle();
+
+    expect(rows).toHaveLength(1);
+    // The fake engine reports 1.25 ms of timing.
+    expect(rows[0].extras?.corpusEngineMs).toBe(1.25);
+  });
+
+  test("logs no engine time when the engine isn't called", async () => {
+    const rows: ApiCallData[] = [];
+    await request(telemetryApp(rows)).get("/corpus?q=and");
+    await settle();
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].extras).not.toHaveProperty("corpusEngineMs");
+  });
+});
 
 describe("GET /corpus", () => {
   test("renders the landing page", async () => {
