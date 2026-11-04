@@ -1,5 +1,7 @@
 import {
   CORPUS_DIR,
+  MAX_QUERY_BODY_LENGTH,
+  queryBodyLength,
   type CorpusQueryRequest,
 } from "@/common/library/corpus/corpus_common";
 import { singletonOf } from "@/common/misc_utils";
@@ -28,7 +30,7 @@ export class RustCorpusQueryEngine {
   }
 
   queryCorpus(request: CorpusQueryRequest): string {
-    if (request.query.length > 100) {
+    if (queryBodyLength(request.query) > MAX_QUERY_BODY_LENGTH) {
       throw new Error("Query is too long");
     }
     const contextLen = Math.max(1, Math.min(100, request.contextLen ?? 25));

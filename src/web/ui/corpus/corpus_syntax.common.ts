@@ -116,6 +116,12 @@ export function tokenizeInput(input: string): QueryToken[] {
 // State machine     //
 // // // // // // // //
 
+/**
+ * The most `#Author` filters a query may start with. Matches the engine's
+ * `MAX_SCOPE_ITEMS` (`corpus_rust/src/corpus_query_engine.rs`).
+ */
+export const MAX_AUTHOR_FILTERS = 20;
+
 type QueryProcessState =
   | "ComplexTerm"
   | "ComplexTerm;LastWasTerm"
@@ -202,8 +208,11 @@ function feedStateMachine(
       const context = i === 0 ? "at start" : `after \`${sequence[j][0]}\``;
       return `\`${token}\` not allowed ${context}`;
     }
-    if (matchingOption[0] === "workFilter" && workFilters > 1) {
-      return "only one #author filter allowed";
+    if (
+      matchingOption[0] === "workFilter" &&
+      workFilters > MAX_AUTHOR_FILTERS
+    ) {
+      return `at most ${MAX_AUTHOR_FILTERS} #author filters allowed`;
     }
     if (matchingOption[1] === "InSpan") {
       // Completing a term in a span resets the logical operator.
@@ -219,8 +228,7 @@ function feedStateMachine(
     groups[groups.length - 1].push([token, startIdx, tokenType]);
   }
   const nextOptions = getOptions()
-    // Only one work filter per query.
-    .filter((o) => workFilters === 0 || o[0] !== "workFilter")
+    .filter((o) => workFilters < MAX_AUTHOR_FILTERS || o[0] !== "workFilter")
     .map((o) => o[0]);
   return { nextOptions, termGroups: groups };
 }
@@ -515,7 +523,8 @@ export interface CanonicalizeContext {
  * Translates the user-facing syntax into the Rust engine's syntax
  * (`corpus_rust/src/query_parsing_v2.rs`):
  *
- * - `#Author` → `[Author]`
+ * - `#Author1 #Author2` → `[Author1, Author2]` (the leading filters become one
+ *   scope prefix)
  * - `~N` → `N~`, `~N>` → `N~>`
  * - Terms joined by `and` / `or` are wrapped in parentheses (closing any
  *   the user left open).
@@ -531,7 +540,18 @@ export function transformQuery(
   if (typeof grouped === "string") {
     return query;
   }
-  return grouped
+  const authorPrefix: string[] = [];
+  const terms = grouped.filter((group) => {
+    if (group[0][2] !== "workFilter") {
+      return true;
+    }
+    const name = group[0][0].slice(1);
+    authorPrefix.push(
+      (ctx.authors && canonicalAuthor(name, ctx.authors)) ?? name
+    );
+    return false;
+  });
+  const body = terms
     .map((group) => {
       const hasLogicalOp = group.some((t) => t[2].startsWith("logic:"));
       if (!hasLogicalOp) {
@@ -554,17 +574,13 @@ export function transformQuery(
       })
     )
     .map((t) =>
-      t.replace(
-        /^#(.+)$/,
-        (_m, name: string) =>
-          `[${(ctx.authors && canonicalAuthor(name, ctx.authors)) ?? name}]`
-      )
-    )
-    .map((t) =>
       t.replace(/^@(lemma|l):(.+)$/i, (m, key: string, value: string) => {
         const canon = ctx.canonicalLemma?.(value);
         return canon === undefined ? m : `@${key}:${canon}`;
       })
     )
     .join(" ");
+  return authorPrefix.length === 0
+    ? body
+    : `[${authorPrefix.join(", ")}] ${body}`.trimEnd();
 }

@@ -2,19 +2,19 @@
 
 Corpus search at `/corpus`, backed by the Rust corpus engine. Related docs: [`TODOS.md`](TODOS.md) (open work and the word-boundary rule) and the archived design, [`../docs/archive/CORPUS_DESIGN.md`](../docs/archive/CORPUS_DESIGN.md), which has the full rationale and V1 deviations.
 
-The page is a plain `GET` form. The query, including any `#Author` filter, the settings and the page cursor all live in the URL, so with JS off a user can search, change settings, page, and follow result links into the reader. With JS on, `<morcus-corpus-view>` swaps only the regions that change, and `<morcus-corpus-suggestions>` adds client-side autocomplete.
+The page is a plain `GET` form. The query, including any `#Author` filters, the settings and the page cursor all live in the URL, so with JS off a user can search, change settings, page, and follow result links into the reader. With JS on, `<morcus-corpus-view>` swaps only the regions that change, and `<morcus-corpus-suggestions>` adds client-side autocomplete.
 
 ---
 
 ## URL contract
 
-| Param        | Form control                                          | Default    | Range / format                              | Notes                                                                                                        |
-| :----------- | :---------------------------------------------------- | :--------- | :------------------------------------------ | :----------------------------------------------------------------------------------------------------------- |
-| `q`          | `<input name="q">`                                    | `""`       | ≤ 100 chars after transform (engine limit)  | Empty → landing view, engine not called. May start with one `#Author`; an unknown author is a grammar error. |
-| `pageSize`   | `<input type="number" name="pageSize">`               | 50         | clamp 10–100                                |                                                                                                              |
-| `contextLen` | `<input type="number" name="contextLen">`             | 20         | clamp 1–100                                 | V1's UI default is 20; the engine's is 25.                                                                   |
-| `strictMode` | `<input type="checkbox" name="strictMode" value="1">` | off        | `1` or absent                               | Absent when unchecked, the native checkbox behaviour.                                                        |
-| `cursor`     | none (links only)                                     | first page | `<resultId>-<resultIndex>-<candidateIndex>` | Only pager links set it. Submitting the form drops it, so a new search or new settings start at page 1.      |
+| Param        | Form control                                          | Default    | Range / format                                                      | Notes                                                                                                                                                   |
+| :----------- | :---------------------------------------------------- | :--------- | :------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `q`          | `<input name="q">`                                    | `""`       | ≤ 100 chars after transform, not counting the `[...]` author prefix | Empty → landing view, engine not called. May start with up to 20 `#Author` filters (sent as one `[A, B]` prefix); an unknown author is a grammar error. |
+| `pageSize`   | `<input type="number" name="pageSize">`               | 50         | clamp 10–100                                                        |                                                                                                                                                         |
+| `contextLen` | `<input type="number" name="contextLen">`             | 20         | clamp 1–100                                                         | V1's UI default is 20; the engine's is 25.                                                                                                              |
+| `strictMode` | `<input type="checkbox" name="strictMode" value="1">` | off        | `1` or absent                                                       | Absent when unchecked, the native checkbox behaviour.                                                                                                   |
+| `cursor`     | none (links only)                                     | first page | `<resultId>-<resultIndex>-<candidateIndex>`                         | Only pager links set it. Submitting the form drops it, so a new search or new settings start at page 1.                                                 |
 
 - The JS path serializes the form with `new FormData(form)`, like a native submit, so URLs are identical in both modes (`corpus_form_conformance.test.ts`).
 - Out-of-range numbers are clamped on the server, and the form shows the clamped value.
@@ -107,13 +107,13 @@ Both elements ship in the `corpus.js` route chunk (`corpus_entry.client.ts`). Th
 
 ## Decisions
 
-| #   | Decision                                                                                                                                                 |
-| :-- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D2  | V1 parity on paging: Next link only, Back is the browser's. A real Previous link is in [`TODOS.md`](TODOS.md#previous-page).                             |
-| D3  | V1 parity on authors: one `#Author` at the start of `q`, no separate control or param. Extensions are in [`TODOS.md`](TODOS.md#author-filter-beyond-v1). |
-| D4  | The `@`-query disclaimer is an inline `<details>` in the `results` slot; no modal, no "don't show again" storage.                                        |
-| D6  | Corpus ships in its own `corpus.js` route chunk; the ceiling is in `client_bundle_budget.ts`.                                                            |
-| D7  | A bad `cursor` is treated as the first page.                                                                                                             |
+| #   | Decision                                                                                                                                                                                   |
+| :-- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D2  | V1 parity on paging: Next link only, Back is the browser's. A real Previous link is in [`TODOS.md`](TODOS.md#previous-page).                                                               |
+| D3  | Authors are `#Author` filters at the start of `q` (up to 20), with no separate control or param. V1 allowed one. Further extensions are in [`TODOS.md`](TODOS.md#author-filter-beyond-v1). |
+| D4  | The `@`-query disclaimer is an inline `<details>` in the `results` slot; no modal, no "don't show again" storage.                                                                          |
+| D6  | Corpus ships in its own `corpus.js` route chunk; the ceiling is in `client_bundle_budget.ts`.                                                                                              |
+| D7  | A bad `cursor` is treated as the first page.                                                                                                                                               |
 
 ---
 

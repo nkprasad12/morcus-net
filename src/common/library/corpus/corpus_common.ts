@@ -27,6 +27,18 @@ export interface CorpusQueryRequest {
   strictMode?: boolean;
 }
 
+/**
+ * The longest a query (in the engine's syntax) may be, not counting its `[...]`
+ * scope prefix: the scope narrows a search and adds almost no engine work, so
+ * only the search terms count.
+ */
+export const MAX_QUERY_BODY_LENGTH = 100;
+
+/** The length of an engine query without its leading `[...]` scope prefix. */
+export function queryBodyLength(query: string): number {
+  return query.replace(/^\s*\[[^\]]*\]\s*/, "").length;
+}
+
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `latin_corpus.json`;
 export const CORPUS_RAW_TEXT = `latin_corpus_raw.txt`;

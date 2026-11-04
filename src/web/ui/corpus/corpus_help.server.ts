@@ -113,7 +113,7 @@ const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
     title: "Author scope",
     badge: "#Author",
-    description: "Restrict queries to a specific classical author:",
+    description: "Restrict queries to one or more classical authors:",
     items: [
       {
         code: "#Caesar amoris",
@@ -123,8 +123,12 @@ const GUIDE_SECTIONS: readonly GuideSection[] = [
         code: "#Cicero @case:vocative",
         text: html`Cicero vocatives`,
       },
+      {
+        code: "#Caesar #Cicero bellum",
+        text: html`Caesar's or Cicero's works`,
+      },
     ],
-    note: "One author filter permitted per query.",
+    note: "Author filters go at the start of the query.",
   },
 ];
 

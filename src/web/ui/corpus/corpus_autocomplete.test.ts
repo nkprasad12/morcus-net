@@ -13,6 +13,7 @@ import {
   type SuggestionSources,
 } from "@/web/ui/corpus/corpus_autocomplete.client";
 import { CONTEXT_LEN, PAGE_SIZE } from "@/web/ui/corpus/corpus_params.common";
+import { MAX_AUTHOR_FILTERS } from "@/web/ui/corpus/corpus_syntax.common";
 import type { CorpusSearchView } from "@/web/ui/corpus/corpus_query.server";
 import { renderCorpusContentHtml } from "@/web/ui/corpus/corpus_view.server";
 import { CORPUS_TEST_AUTHORS } from "@/web/ui/testing/fake_corpus_engine";
@@ -101,8 +102,10 @@ describe("corpusSuggestions", () => {
     expect(suggest("@case:xyz ")).toEqual([
       "❌ @case:xyz - invalid option `xyz`",
     ]);
-    // Without the author list, authors can't be checked.
+    // Without the author list, authors can't be checked. Another author may
+    // follow.
     expect(suggest("#Nobody ", {})).toEqual([
+      "[#] search in author",
       "ℹ <word> match exact word",
       "[@] match lemma or inflection",
     ]);
@@ -120,12 +123,27 @@ describe("corpusSuggestions", () => {
       expect(suggest("#x")).toEqual(["❌ no author matches `#x`"]);
     });
 
-    test("must come first, and only once", () => {
+    test("must come first", () => {
       expect(suggest("amor #c")).toEqual([
         "❌ #author filters must be at start",
       ]);
+    });
+
+    test("another author can follow, leaving out those already chosen", () => {
       expect(suggest("#Caesar #c")).toEqual([
-        "❌ only one #author filter allowed",
+        '#C[icero ] => "#Caesar #Cicero "',
+      ]);
+      // Case-insensitively, as authors are matched.
+      expect(suggest("#caesar #")).toEqual([
+        '#[Cicero ] => "#caesar #Cicero "',
+        '#[SenecaMajor ] => "#caesar #SenecaMajor "',
+      ]);
+    });
+
+    test(`at most ${MAX_AUTHOR_FILTERS}`, () => {
+      const full = "#Caesar ".repeat(MAX_AUTHOR_FILTERS);
+      expect(suggest(`${full}#c`)).toEqual([
+        `❌ at most ${MAX_AUTHOR_FILTERS} #author filters allowed`,
       ]);
     });
 
@@ -542,9 +560,10 @@ describe("<morcus-corpus-suggestions>", () => {
     expect(input.value).toBe("#Cicero ");
     expect(input.selectionStart).toBe(8);
     expect(document.activeElement).toBe(input);
-    // Suggestions follow on for the next token.
+    // Suggestions follow on for the next token, which may be another author.
     expect(input.hasAttribute("aria-activedescendant")).toBe(false);
     expect(rowTexts(listbox)).toEqual([
+      "# | search in author",
       "word | match exact word",
       "@ | match lemma or inflection",
     ]);

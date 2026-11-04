@@ -53,7 +53,7 @@ V1 is frozen.
 
 ### Author filter beyond V1
 
-V1 (and V2) accept one `#Author` at the start of the query. Extensions:
+V1 accepted one `#Author` at the start of the query; V2 accepts up to 20. Extensions:
 
 ### 2.2 Single-work filter (`#Author/Work`)
 
@@ -66,7 +66,7 @@ V1 (and V2) accept one `#Author` at the start of the query. Extensions:
 
 ### 2.3 Multi-author and multi-work filters (Multiple `IndexRange`s)
 
-- **Status:** The engine side is done. A query's `[...]` scope may list up to 20 authors and/or work IDs (`[Cicero, Vergil]`, `[phi0690.phi003.perseus-lat2]`); [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) resolves each to whole-work token ranges, and `TokenScope` sorts and merges them. Indices are sliced once over the span of all of them and `MatchIterator` drops candidates in the gaps (Option B below), so a scope never costs more than an unfiltered query. Still to do: the UI, which allows only one `#` filter ([`corpus_syntax.common.ts`](corpus_syntax.common.ts)) and has no `#Author/Work` (2.2).
+- **Status:** The engine side is done. A query's `[...]` scope may list up to 20 authors and/or work IDs (`[Cicero, Vergil]`, `[phi0690.phi003.perseus-lat2]`); [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) resolves each to whole-work token ranges, and `TokenScope` sorts and merges them. Indices are sliced once over the span of all of them and `MatchIterator` drops candidates in the gaps (Option B below), so a scope never costs more than an unfiltered query. The UI accepts up to 20 `#Author` filters ([`corpus_syntax.common.ts`](corpus_syntax.common.ts)), sent as one `[A, B]` prefix, and the 100-character query limit no longer counts that prefix. Still to do: `#Author/Work` (2.2).
 - **Performance analysis (why $K$ ranges is NOT $K\times$ the cost of a query):**
   1. **Parse & metadata lookup (`convert_query_term`):** Looking up `StoredMapValue` (`offset`, `len`) for each word, lemma, or inflection tag depends only on the query terms and runs **once** per query, regardless of $K$.
   2. **Slicing indices (`IndexSlice::from`):** Slicing a `BitMask` to a range `[start, end)` is an $O(1)$ zero-copy pointer slice (`&bitmask[start_word..end_word]`). Slicing a `List` is two binary searches ($O(\log N)$, ~20 comparisons, ~100 ns).

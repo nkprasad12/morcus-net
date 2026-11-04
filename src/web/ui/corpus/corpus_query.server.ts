@@ -12,6 +12,8 @@ import {
   CORPUS_AUTHORS_LIST,
   CORPUS_DIR,
   CorpusQueryResult,
+  MAX_QUERY_BODY_LENGTH,
+  queryBodyLength,
   type CorpusQueryMatch,
   type PageData,
 } from "@/common/library/corpus/corpus_common";
@@ -35,9 +37,6 @@ import { getV2LibrarySummaries } from "@/web/ui/reader/reader_loader.server";
 // // // // // // //
 // URL contract   //
 // // // // // // //
-
-/** The Rust engine rejects longer (transformed) queries. */
-const MAX_ENGINE_QUERY_LENGTH = 100;
 
 function firstString(value: unknown): string | undefined {
   if (typeof value === "string") return value;
@@ -214,7 +213,7 @@ export async function runCorpusSearch(
       ? createLemmaCanonicalizer(lemmata)
       : canonicalCorpusLemma;
   const engineQuery = transformQuery(params.q, { authors, canonicalLemma });
-  if (engineQuery.length > MAX_ENGINE_QUERY_LENGTH) {
+  if (queryBodyLength(engineQuery) > MAX_QUERY_BODY_LENGTH) {
     return view({ kind: "error", message: "The query is too long." });
   }
 

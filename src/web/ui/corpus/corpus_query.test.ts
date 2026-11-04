@@ -208,6 +208,22 @@ describe("runCorpusSearch", () => {
     expect(engine.requests).toHaveLength(0);
   });
 
+  test("the author prefix doesn't count toward the length limit", async () => {
+    const engine = fakeCorpusEngine();
+    // 95 characters of search terms, after a long author prefix.
+    const terms = "amoris ".repeat(13) + "amor";
+    expect(terms.length).toBeLessThanOrEqual(100);
+    const view = await runCorpusSearch(
+      { ...BASE, q: `#Caesar #Cicero #SenecaMajor ${terms}` },
+      engine,
+      CORPUS_TEST_AUTHORS
+    );
+    expect(view.outcome.kind).not.toBe("error");
+    expect(engine.requests[0].query).toBe(
+      `[Caesar, Cicero, SenecaMajor] ${terms}`
+    );
+  });
+
   test("an over-long query is an error", async () => {
     const engine = fakeCorpusEngine();
     const view = await runCorpusSearch(

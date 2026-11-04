@@ -10,6 +10,7 @@ import {
   errorsForToken,
   findNextOptions,
   hasInflectionFilters,
+  MAX_AUTHOR_FILTERS,
   parseProximity,
   termGroups,
   tokenizeInput,
@@ -229,6 +230,18 @@ describe("findNextOptions", () => {
   describe("after workFilter", () => {
     it("should allow another workFilter or start a span", () => {
       const tokens: QueryToken[] = [["#caesar", 0, "workFilter"]];
+      const result = findNextOptions(tokens);
+      expect(result).toEqual(
+        expect.arrayContaining(["workFilter", "wordFilter", "("])
+      );
+      expect(result).toHaveLength(3);
+    });
+
+    it("should stop offering workFilter at the limit", () => {
+      const tokens: QueryToken[] = Array.from(
+        { length: MAX_AUTHOR_FILTERS },
+        (_, i): QueryToken => [`#a${i}`, i * 5, "workFilter"]
+      );
       const result = findNextOptions(tokens);
       expect(result).toEqual(expect.arrayContaining(["wordFilter", "("]));
       expect(result).toHaveLength(2);
@@ -733,14 +746,27 @@ describe("termGroups", () => {
       expect(result).toContain("Cannot mix");
     });
 
-    it("should return error for multiple work filters", () => {
+    it("should allow several work filters, each its own group", () => {
       const tokens: QueryToken[] = [
         ["#caesar", 0, "workFilter"],
-        ["#cicero", 12, "workFilter"],
+        ["#cicero", 8, "workFilter"],
+        ["amor", 16, "wordFilter"],
       ];
+      expect(termGroups(tokens)).toEqual([
+        [["#caesar", 0, "workFilter"]],
+        [["#cicero", 8, "workFilter"]],
+        [["amor", 16, "wordFilter"]],
+      ]);
+    });
+
+    it("should return error for too many work filters", () => {
+      const tokens: QueryToken[] = Array.from(
+        { length: MAX_AUTHOR_FILTERS + 1 },
+        (_, i): QueryToken => [`#a${i}`, i * 5, "workFilter"]
+      );
       const result = termGroups(tokens);
       expect(typeof result).toBe("string");
-      expect(result).toContain("only one");
+      expect(result).toContain(`at most ${MAX_AUTHOR_FILTERS}`);
     });
 
     it("should return error for work filter not at start", () => {
@@ -767,6 +793,13 @@ describe("transformQuery", () => {
 
     it("should handle work filters", () => {
       expect(transformQuery("#caesar puella")).toBe("[caesar] puella");
+    });
+
+    it("should combine several author filters into one scope prefix", () => {
+      expect(transformQuery("#caesar #cicero puella")).toBe(
+        "[caesar, cicero] puella"
+      );
+      expect(transformQuery("#caesar #cicero")).toBe("[caesar, cicero]");
     });
 
     it("should transform proximity operators", () => {
@@ -879,6 +912,12 @@ describe("transformQuery", () => {
 
     it("canonicalizes #author when authors are provided", () => {
       expect(transformQuery("#caesar amor", { authors })).toBe("[Caesar] amor");
+    });
+
+    it("canonicalizes each of several #author filters", () => {
+      expect(transformQuery("#caesar #CICERO amor", { authors })).toBe(
+        "[Caesar, Cicero] amor"
+      );
     });
 
     it("leaves #author raw when no context is provided", () => {

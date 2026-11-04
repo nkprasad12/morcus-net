@@ -27,6 +27,7 @@ import {
 } from "@/web/ui/core/index.client";
 import {
   INFLECTION_CATEGORIES,
+  MAX_AUTHOR_FILTERS,
   SPECIAL_KEYWORDS,
   errorsForToken,
   findNextOptions,
@@ -292,15 +293,23 @@ function authorSuggestions(
   if (words.some((word) => !word.startsWith("#"))) {
     return [errorRow("#author filters must be at start")];
   }
-  if (words.length > 1) {
-    return [errorRow("only one #author filter allowed")];
+  // `words` ends with the filter being typed.
+  if (words.length > MAX_AUTHOR_FILTERS) {
+    return [errorRow(`at most ${MAX_AUTHOR_FILTERS} #author filters allowed`)];
   }
   if (authors === undefined) {
     return [infoRow("the author list is unavailable")];
   }
+  const chosen = new Set(
+    words.slice(0, -1).map((word) => word.slice(1).toLowerCase())
+  );
   const typed = current.slice(1);
   const rows = authors
-    .filter((author) => author.toLowerCase().startsWith(typed.toLowerCase()))
+    .filter(
+      (author) =>
+        !chosen.has(author.toLowerCase()) &&
+        author.toLowerCase().startsWith(typed.toLowerCase())
+    )
     .map(
       (author): CorpusCompletion => ({
         prefix: `#${author.slice(0, typed.length)}`,
