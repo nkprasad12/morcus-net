@@ -45,6 +45,11 @@ pub struct CorpusQueryEngine {
     inflections: InflectionLookup,
 }
 
+/// The most authors a query's `[...]` prefix may list. The cost of a scope
+/// depends on how much of the corpus it spans, not on how many authors it has,
+/// so this is only a sanity limit.
+const MAX_SCOPE_ITEMS: usize = 20;
+
 impl CorpusQueryEngine {
     /// Creates a new query engine from the given corpus index.
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
@@ -58,47 +63,52 @@ impl CorpusQueryEngine {
         })
     }
 
-    /// Returns the word-aligned range to slice indices with, and the exact
-    /// token scope that matches must fall within.
-    fn compute_range(&self, query: &Query) -> Result<(IndexRange, TokenScope), QueryExecError> {
-        if query.authors.len() > 1 {
-            return Err(QueryExecError::new(
-                "Multiple authors in query not currently supported",
-            ));
-        }
-        if query.authors.is_empty() {
-            let num_words = self.corpus.num_tokens.div_ceil(64);
-            let range = IndexRange {
-                start: 0,
-                end: num_words * 64,
-            };
-            let scope = TokenScope {
-                start: 0,
-                end: self.corpus.num_tokens,
-            };
-            return Ok((range, scope));
-        }
-        let author = &query.authors[0];
-        let (start, end) = match self.corpus.author_lookup.get(author) {
-            Some(v) => *v,
+    /// The `[start, end)` tokens of all of an author's works.
+    fn resolve_author(&self, author: &str) -> Result<(u32, u32), QueryExecError> {
+        // `author_lookup` holds an inclusive range of work indices.
+        let (first, last) = match self.corpus.author_lookup.get(author) {
+            Some(&works) => works,
             None => {
                 return Err(QueryExecError::new(&format!(
                     "Author '{author}' not found in corpus"
                 )));
             }
         };
-        let start = self.corpus.work_lookup[start].rows[0].1;
-        let end_work_sections = &self.corpus.work_lookup[end].rows;
-        let end = end_work_sections[end_work_sections.len() - 1].2;
+        let start = self.corpus.work_lookup[first].rows[0].1;
+        let last_rows = &self.corpus.work_lookup[last].rows;
+        let end = last_rows[last_rows.len() - 1].2;
+        Ok((start, end))
+    }
+
+    /// Returns the word-aligned range to slice indices with, and the exact
+    /// token ranges that matches must fall within.
+    fn compute_range(&self, query: &Query) -> Result<(IndexRange, TokenScope), QueryExecError> {
+        if query.authors.len() > MAX_SCOPE_ITEMS {
+            return Err(QueryExecError::new(&format!(
+                "A query can be restricted to at most {MAX_SCOPE_ITEMS} authors"
+            )));
+        }
+        let scope = if query.authors.is_empty() {
+            TokenScope::new(vec![(0, self.corpus.num_tokens)])
+        } else {
+            let ranges = query
+                .authors
+                .iter()
+                .map(|author| self.resolve_author(author))
+                .collect::<Result<Vec<_>, _>>()?;
+            TokenScope::new(ranges)
+        };
+        let (start, end) = scope
+            .bounds()
+            .ok_or_else(|| QueryExecError::new("The query's scope contains no text"))?;
         // The range must be aligned to word boundaries; the scope keeps the
-        // exact bounds so the alignment padding doesn't leak matches.
-        Ok((
-            IndexRange {
-                start: (start / 64) * 64,
-                end: end.div_ceil(64) * 64,
-            },
-            TokenScope { start, end },
-        ))
+        // exact ranges so the alignment padding and the gaps between ranges
+        // don't leak matches.
+        let range = IndexRange {
+            start: (start / 64) * 64,
+            end: end.div_ceil(64) * 64,
+        };
+        Ok((range, scope))
     }
 
     /// Queries the corpus with the given parameters.
@@ -253,6 +263,12 @@ mod tests {
             // corpus that exists but fails to load panics.
             None => return,
         };
+        walk_pages_with(&engine, queries);
+    }
+
+    /// Compares the first `PAGES_PER_QUERY` pages of each query against the
+    /// reference implementation, following the engine's own cursors.
+    fn walk_pages_with<S: AsRef<str>>(engine: &CorpusQueryEngine, queries: &[S]) {
         for query in queries {
             for &(page_size, context_len) in TEST_OPTIONS {
                 let options = QueryOptions {
@@ -262,12 +278,64 @@ mod tests {
                 };
                 let mut page_data = PageData::default();
                 for _ in 0..PAGES_PER_QUERY {
-                    match engine.compare_ref_impl_results(query, &page_data, &options) {
+                    match engine.compare_ref_impl_results(query.as_ref(), &page_data, &options) {
                         Some(next) => page_data = next,
                         None => break,
                     }
                 }
             }
         }
+    }
+
+    /// Several authors: far apart (most of the span between them excluded),
+    /// next to each other (merged into one range), and a mix of three.
+    #[test]
+    fn validate_multi_author_queries() {
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            None => return,
+        };
+        let mut by_first_work: Vec<_> = engine.corpus.author_lookup.iter().collect();
+        by_first_work.sort_by_key(|(_, works)| works.0);
+        let (prev, next) = by_first_work
+            .windows(2)
+            .find(|pair| pair[0].1.1 + 1 == pair[1].1.0)
+            .map(|pair| (pair[0].0, pair[1].0))
+            .expect("two authors with adjacent works");
+        let scopes = [
+            "Cicero, Vergil".to_string(),
+            format!("{prev}, {next}"),
+            "Grattius, Vergil, Ovid".to_string(),
+        ];
+        let queries: Vec<String> = scopes
+            .iter()
+            .flat_map(|scope| {
+                ["et", "@case:dat @case:acc", "in @case:abl"]
+                    .map(|query| format!("[{scope}] {query}"))
+            })
+            .collect();
+        walk_pages_with(&engine, &queries);
+    }
+
+    #[test]
+    fn scope_errors() {
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            None => return,
+        };
+        let options = QueryOptions {
+            page_size: 5,
+            context_len: 5,
+            strict_mode: false,
+        };
+        let run = |query: &str| engine.query_corpus(query, &PageData::default(), &options);
+
+        let unknown = run("[Cicero, Nobody] et").unwrap_err();
+        assert!(unknown.message.contains("'Nobody'"), "{}", unknown.message);
+
+        let items = |n: usize| vec!["Cicero"; n].join(", ");
+        assert!(run(&format!("[{}] et", items(MAX_SCOPE_ITEMS))).is_ok());
+        let too_many = run(&format!("[{}] et", items(MAX_SCOPE_ITEMS + 1))).unwrap_err();
+        assert!(too_many.message.contains("at most"), "{}", too_many.message);
     }
 }

@@ -66,7 +66,7 @@ V1 (and V2) accept one `#Author` at the start of the query. Extensions:
 
 ### 2.3 Multi-author and multi-work filters (Multiple `IndexRange`s)
 
-- **Context:** [`query_parsing_v2.rs`](../../../../corpus_rust/src/query_parsing_v2.rs) already parses `[Author1, Author2]`, but [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) rejects `query.authors.len() > 1`, and [`corpus_syntax.common.ts`](corpus_syntax.common.ts) allows only one `#` filter.
+- **Status:** Multiple authors are done in the engine. A query's `[...]` prefix may list up to 20 authors (`[Cicero, Vergil]`); [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) resolves each to its works' token range, and `TokenScope` sorts and merges them. Indices are sliced once over the span of all of them and `MatchIterator` drops candidates in the gaps (Option B below), so a scope never costs more than an unfiltered query. Still to do: work IDs as scope items (for 2.2), and the UI, which allows only one `#` filter ([`corpus_syntax.common.ts`](corpus_syntax.common.ts)).
 - **Performance analysis (why $K$ ranges is NOT $K\times$ the cost of a query):**
   1. **Parse & metadata lookup (`convert_query_term`):** Looking up `StoredMapValue` (`offset`, `len`) for each word, lemma, or inflection tag depends only on the query terms and runs **once** per query, regardless of $K$.
   2. **Slicing indices (`IndexSlice::from`):** Slicing a `BitMask` to a range `[start, end)` is an $O(1)$ zero-copy pointer slice (`&bitmask[start_word..end_word]`). Slicing a `List` is two binary searches ($O(\log N)$, ~20 comparisons, ~100 ns).

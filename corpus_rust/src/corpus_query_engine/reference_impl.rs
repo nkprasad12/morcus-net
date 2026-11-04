@@ -233,14 +233,24 @@ impl CorpusQueryEngine {
         Ok(CorpusQueryMatch { metadata, text })
     }
 
-    /// Returns the author's token range as `[start, end)`.
-    fn resolve_author_data(&self, name: Option<&String>) -> Option<(u32, u32)> {
-        let name = name?;
-        // `author_lookup` holds an inclusive range of work indices.
-        let (start, end) = self.corpus.author_lookup.get(name)?;
-        let start_token = self.corpus.work_lookup[*start].rows.first()?.1;
-        let end_token = self.corpus.work_lookup[*end].rows.last()?.2;
-        Some((start_token, end_token))
+    /// The `[start, end)` token range of each author's works, or `None` for an
+    /// unrestricted query. Resolved independently of the production engine's
+    /// `compute_range`.
+    fn resolve_authors_ref_impl(&self, authors: &[String]) -> Option<Vec<(u32, u32)>> {
+        if authors.is_empty() {
+            return None;
+        }
+        let ranges = authors
+            .iter()
+            .map(|author| {
+                // `author_lookup` holds an inclusive range of work indices.
+                let (first, last) = self.corpus.author_lookup[author];
+                let start = self.corpus.work_lookup[first].rows.first().unwrap().1;
+                let end = self.corpus.work_lookup[last].rows.last().unwrap().2;
+                (start, end)
+            })
+            .collect();
+        Some(ranges)
     }
 
     fn query_corpus_ref_impl(
@@ -293,9 +303,7 @@ impl CorpusQueryEngine {
         }
 
         let hard_breaks = self.hard_breaks_ref_impl()?;
-        // Just for now.
-        assert!(query.authors.len() <= 1);
-        let author_data = self.resolve_author_data(query.authors.first());
+        let scope = self.resolve_authors_ref_impl(&query.authors);
         let match_ids: Vec<SpanCandidate> = candidates
             .iter()
             .map(|SpanCandidate { ids, span_length }| {
@@ -303,10 +311,15 @@ impl CorpusQueryEngine {
                     .iter()
                     // -2 because we only care about breaks between tokens, not after the last token.
                     .filter(|x| !arr_has_any_in_range(&hard_breaks, &(**x, **x + span_length - 2)));
-                let ids: Vec<u32> = if let Some(author_data) = author_data {
-                    ids.filter(|x| **x >= author_data.0 && **x + span_length - 1 < author_data.1)
-                        .copied()
-                        .collect()
+                // A match must lie entirely within one of the scope's ranges.
+                let ids: Vec<u32> = if let Some(ranges) = &scope {
+                    ids.filter(|x| {
+                        ranges
+                            .iter()
+                            .any(|&(start, end)| **x >= start && **x + span_length - 1 < end)
+                    })
+                    .copied()
+                    .collect()
                 } else {
                     ids.copied().collect()
                 };

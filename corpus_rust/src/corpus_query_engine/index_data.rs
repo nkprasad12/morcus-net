@@ -16,16 +16,40 @@ impl IndexRange {
     }
 }
 
-/// The exact `[start, end)` token bounds a query is restricted to. An
-/// `IndexRange` is rounded out to 64-token boundaries for zero-copy bitmask
-/// slicing, so candidates must also be clipped to this. Always a whole number
-/// of works (see `MatchIterator::new`).
+/// The exact token ranges a query is restricted to: sorted, disjoint,
+/// non-adjacent `[start, end)` ranges, each a whole number of works (see
+/// `MatchIterator::new`). Indices are sliced with one `IndexRange` covering all
+/// of them, rounded out to 64-token boundaries for zero-copy bitmask slicing,
+/// so candidates must also be clipped to these ranges.
 #[derive(Debug, PartialEq, Eq)]
 pub struct TokenScope {
-    // The first token in scope, inclusive.
-    pub start: u32,
-    // The end of the scope, exclusive.
-    pub end: u32,
+    ranges: Vec<(u32, u32)>,
+}
+
+impl TokenScope {
+    /// Sorts `ranges`, merges any that overlap or touch, and drops empty ones.
+    pub fn new(mut ranges: Vec<(u32, u32)>) -> Self {
+        ranges.retain(|&(start, end)| start < end);
+        ranges.sort_unstable();
+        let mut merged: Vec<(u32, u32)> = Vec::with_capacity(ranges.len());
+        for (start, end) in ranges {
+            match merged.last_mut() {
+                Some(last) if start <= last.1 => last.1 = last.1.max(end),
+                _ => merged.push((start, end)),
+            }
+        }
+        TokenScope { ranges: merged }
+    }
+
+    /// The ranges, sorted and disjoint.
+    pub fn ranges(&self) -> &[(u32, u32)] {
+        &self.ranges
+    }
+
+    /// The smallest `[start, end)` covering every range, or `None` if empty.
+    pub fn bounds(&self) -> Option<(u32, u32)> {
+        Some((self.ranges.first()?.0, self.ranges.last()?.1))
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -601,6 +625,27 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn token_scope_sorts_merges_and_drops_empty_ranges() {
+        let scope = TokenScope::new(vec![(50, 60), (0, 10), (5, 20), (20, 30), (40, 40)]);
+        // (0, 10) and (5, 20) overlap; (20, 30) touches; (40, 40) is empty.
+        assert_eq!(scope.ranges(), &[(0, 30), (50, 60)]);
+        assert_eq!(scope.bounds(), Some((0, 60)));
+    }
+
+    #[test]
+    fn token_scope_keeps_a_range_inside_another_merged() {
+        let scope = TokenScope::new(vec![(0, 100), (10, 20)]);
+        assert_eq!(scope.ranges(), &[(0, 100)]);
+    }
+
+    #[test]
+    fn token_scope_empty() {
+        let scope = TokenScope::new(vec![(5, 5)]);
+        assert_eq!(scope.ranges(), &[] as &[(u32, u32)]);
+        assert_eq!(scope.bounds(), None);
+    }
 
     fn list_slice(list: &[u32], start: u32, end: u32) -> Vec<u32> {
         let range = IndexRange { start, end };
