@@ -948,6 +948,11 @@ describe("row_text_parity: extractRowText vs V2 reader tokenization", () => {
           }
         }
 
+        console.log(
+          `Parity sweep: ${totalRows} rows in ${totalWorks} works, ` +
+            `${mismatchedRows} mismatched, ${caseOnlyRows} differing only in ` +
+            `case (${caseOnlyByWork.size} works)`
+        );
         if (mismatchedRows > 0) {
           const lines: string[] = [
             `Found ${mismatchedRows} mismatched row(s) across ${mismatchesByWork.size}/${totalWorks} works (${totalRows} rows checked):`,

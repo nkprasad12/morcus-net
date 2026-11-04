@@ -17,16 +17,17 @@ Editorial tags (`<add>`, `<corr>`, `<hi>`, …) wrap whatever stretch of text th
 3. **Exception to 2:** if the first tag ends in `-`, it's a word hyphenated across a line break, so join: Pliny `<hi>lon-</hi><hi>gitudo</hi>`.
 4. **Structure always breaks:** lines, blocks, headings, `br`, and note, gap and space markers.
 
-**Review.** Every seam in the library at the time of the review (125 works) where the rule changes the tokens (a tag meeting text or another tag, with word characters on both sides; 9,661 seams) was checked against Morceus: is the joined form a word, the split pieces, or both? Everything ambiguous or contradicting the rule was then read by hand (checking the raw TEI where needed), and a sample of the rest. Works added since haven't been reviewed ([4.6](#46-recheck-word-boundaries-on-the-full-library)).
+**Review.** Every seam in the library at the time of the review (125 works) where the rule changes the tokens (a tag meeting text or another tag, with word characters on both sides; 9,661 seams) was checked against Morceus: is the joined form a word, the split pieces, or both? Everything ambiguous or contradicting the rule was then read by hand (checking the raw TEI where needed), and a sample of the rest. Works added since haven't been reviewed ([4.6](#46-review-tag-seams-in-works-added-since-the-word-boundary-review)).
 
 | Seam                          | Count | Result                                                                                                                                                                                                            |
 | :---------------------------- | :---- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Tag meets tag (rule 2: split) | 143   | 125 correct, 17 are manuscript sigla (`R²E²v`) in Pliny's main text where it doesn't matter, 1 hyphenation miss (now rule 3)                                                                                      |
 | Tag meets text (rule 1: join) | 9,518 | All correct except ≈10, which are missing spaces in the source TEI ([below](#45-source-typos-missing-space-after-a-tag)). Includes 90 numeral + `vir` forms (`<num>x</num>viros`, _decemviros_), correctly joined |
 
-**Where the rule is implemented.** At the time of the review (125 works), no row's corpus word
-offsets disagreed with the V2 reader's word count (0 of 146,951 rows); not yet rechecked on the
-full library ([4.6](#46-recheck-word-boundaries-on-the-full-library)). Keep these three in step:
+**Where the rule is implemented.** No row's corpus word offsets disagree with the V2 reader's
+word count: 0 of 335,585 rows across all 317 works (run the opt-in sweep in
+`row_text_parity.test.ts` with `LIBRARY_PARITY_SWEEP=1` after building the library and corpus).
+Keep these three in step:
 
 - **Indexer:** [`extractRowText`](../../../common/library/corpus/corpus_library_utils.ts)
   concatenates siblings directly, relying on the source's own whitespace, and adds breaks only at
@@ -196,9 +197,8 @@ Non-leaf rows (e.g. a chapter heading row `1.2` above sections `1.2.1…`) are i
 
 **How to find more.** List every seam where a tag meets text and the characters on both sides are word characters (not `isTextBreakChar`, not whitespace). Keep the ones where Morceus (`MorceusCruncher`) recognizes both split pieces but not the joined form. Drop numeral + `vir` forms and Pliny's Greek names and plant names (the analyzer doesn't know them). This gave 189 candidates, and the rows above are what survived reading them.
 
-### 4.6 Recheck word boundaries on the full library
+### 4.6 Review tag seams in works added since the word-boundary review
 
-**Status:** Open. The [word-boundary review](#word-boundary-rule) and the corpus/reader row-parity check covered the 125 works in the library at the time. The library now has many more, mostly from a different source (thelatinlibrary) with its own markup, so neither result has been confirmed for them.
+**Status:** Open, low priority. The [seam review](#word-boundary-rule) covered the 125 works in the library at the time. The row-parity sweep now passes on the full library (317 works), so the corpus and the reader agree on word boundaries everywhere; what hasn't been checked for the newer works (mostly thelatinlibrary, with its own markup) is whether those shared boundaries are right, i.e. source typos like those in [4.5](#45-source-typos-missing-space-after-a-tag).
 
-1. Re-run the row-parity check (corpus word offsets vs. the V2 reader's word count, per row) on the full library. Any disagreeing row is a bug in one of the three implementations above.
-2. Re-run the seam review on the new works only, using the method in [4.5](#45-source-typos-missing-space-after-a-tag) ("How to find more"), and add any source typos to that table.
+Re-run the seam review on the new works only, using the method in 4.5 ("How to find more"), and add any source typos to that table.
