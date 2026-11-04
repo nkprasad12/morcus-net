@@ -16,6 +16,9 @@ impl IndexRange {
     }
 }
 
+/// A `[start, end)` range of token IDs.
+pub type TokenRange = (u32, u32);
+
 /// The exact token ranges a query is restricted to: sorted, disjoint,
 /// non-adjacent `[start, end)` ranges, each a whole number of works (see
 /// `MatchIterator::new`). Indices are sliced with one `IndexRange` covering all
@@ -23,15 +26,15 @@ impl IndexRange {
 /// so candidates must also be clipped to these ranges.
 #[derive(Debug, PartialEq, Eq)]
 pub struct TokenScope {
-    ranges: Vec<(u32, u32)>,
+    ranges: Vec<TokenRange>,
 }
 
 impl TokenScope {
     /// Sorts `ranges`, merges any that overlap or touch, and drops empty ones.
-    pub fn new(mut ranges: Vec<(u32, u32)>) -> Self {
+    pub fn new(mut ranges: Vec<TokenRange>) -> Self {
         ranges.retain(|&(start, end)| start < end);
         ranges.sort_unstable();
-        let mut merged: Vec<(u32, u32)> = Vec::with_capacity(ranges.len());
+        let mut merged: Vec<TokenRange> = Vec::with_capacity(ranges.len());
         for (start, end) in ranges {
             match merged.last_mut() {
                 Some(last) if start <= last.1 => last.1 = last.1.max(end),
@@ -42,12 +45,12 @@ impl TokenScope {
     }
 
     /// The ranges, sorted and disjoint.
-    pub fn ranges(&self) -> &[(u32, u32)] {
+    pub fn ranges(&self) -> &[TokenRange] {
         &self.ranges
     }
 
     /// The smallest `[start, end)` covering every range, or `None` if empty.
-    pub fn bounds(&self) -> Option<(u32, u32)> {
+    pub fn bounds(&self) -> Option<TokenRange> {
         Some((self.ranges.first()?.0, self.ranges.last()?.1))
     }
 }
@@ -643,7 +646,7 @@ mod tests {
     #[test]
     fn token_scope_empty() {
         let scope = TokenScope::new(vec![(5, 5)]);
-        assert_eq!(scope.ranges(), &[] as &[(u32, u32)]);
+        assert_eq!(scope.ranges(), &[] as &[TokenRange]);
         assert_eq!(scope.bounds(), None);
     }
 

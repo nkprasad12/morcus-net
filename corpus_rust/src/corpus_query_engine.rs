@@ -15,7 +15,9 @@ use crate::corpus_query_engine::corpus_data_readers::{
     CorpusText, IndexBuffers, InflectionLookup, TokenStarts,
 };
 use crate::corpus_query_engine::corpus_result_resolution::get_match_page;
-use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange, TokenScope};
+use crate::corpus_query_engine::index_data::{
+    IndexData, IndexDataRoO, IndexRange, TokenRange, TokenScope,
+};
 use crate::corpus_query_engine::query_pruning::prune_query;
 use crate::corpus_query_engine::query_validation::is_query_currently_supported;
 use crate::query_parsing_v2::{Query, parse_query};
@@ -23,6 +25,7 @@ use crate::query_parsing_v2::{Query, parse_query};
 use super::corpus_index::LatinCorpusIndex;
 use super::profiler::TimeProfiler;
 
+use std::collections::HashMap;
 use std::error::Error;
 
 fn empty_result() -> CorpusQueryResult<'static> {
@@ -36,6 +39,46 @@ fn empty_result() -> CorpusQueryResult<'static> {
     }
 }
 
+/// The token range of each work and of each author's works, keyed by work ID or
+/// author name: everything a query's `[...]` scope can name.
+type ScopeRanges = HashMap<String, TokenRange>;
+
+/// Builds the `ScopeRanges` for `corpus`. Fails if a work has no rows, or if an
+/// author has the same name as a work ID (a scope item must name exactly one
+/// thing).
+fn compute_scope_ranges(corpus: &LatinCorpusIndex) -> Result<ScopeRanges, String> {
+    let works = &corpus.work_lookup;
+    let work_range = |first: usize, last: usize| -> Result<TokenRange, String> {
+        let start = works[first].rows.first().map(|row| row.1);
+        let end = works[last].rows.last().map(|row| row.2);
+        match (start, end) {
+            (Some(start), Some(end)) => Ok((start, end)),
+            _ => Err(format!(
+                "Work '{}' has no rows",
+                if start.is_none() {
+                    &works[first].work_id
+                } else {
+                    &works[last].work_id
+                }
+            )),
+        }
+    };
+    let mut ranges = HashMap::with_capacity(works.len() + corpus.author_lookup.len());
+    for (i, work) in works.iter().enumerate() {
+        ranges.insert(work.work_id.clone(), work_range(i, i)?);
+    }
+    // `author_lookup` holds an inclusive range of work indices.
+    for (author, &(first, last)) in &corpus.author_lookup {
+        if ranges
+            .insert(author.clone(), work_range(first, last)?)
+            .is_some()
+        {
+            return Err(format!("Author '{author}' has the same name as a work ID"));
+        }
+    }
+    Ok(ranges)
+}
+
 /// An engine for querying a corpus.
 pub struct CorpusQueryEngine {
     corpus: LatinCorpusIndex,
@@ -43,18 +86,22 @@ pub struct CorpusQueryEngine {
     raw_buffers: IndexBuffers,
     starts: TokenStarts,
     inflections: InflectionLookup,
+    /// For resolving a query's `[...]` scope.
+    scope_ranges: ScopeRanges,
 }
 
-/// The most authors a query's `[...]` prefix may list. The cost of a scope
-/// depends on how much of the corpus it spans, not on how many authors it has,
-/// so this is only a sanity limit.
+/// The most authors and works a query's `[...]` scope may list. The cost of a
+/// scope depends on how much of the corpus it spans, not on how many items it
+/// has, so this is only a sanity limit.
 const MAX_SCOPE_ITEMS: usize = 20;
 
 impl CorpusQueryEngine {
     /// Creates a new query engine from the given corpus index.
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
         let readers = corpus_data_readers::data_readers(&corpus)?;
+        let scope_ranges = compute_scope_ranges(&corpus)?;
         Ok(CorpusQueryEngine {
+            scope_ranges,
             corpus,
             starts: readers.0,
             text: readers.1,
@@ -63,38 +110,29 @@ impl CorpusQueryEngine {
         })
     }
 
-    /// The `[start, end)` tokens of all of an author's works.
-    fn resolve_author(&self, author: &str) -> Result<(u32, u32), QueryExecError> {
-        // `author_lookup` holds an inclusive range of work indices.
-        let (first, last) = match self.corpus.author_lookup.get(author) {
-            Some(&works) => works,
-            None => {
-                return Err(QueryExecError::new(&format!(
-                    "Author '{author}' not found in corpus"
-                )));
-            }
-        };
-        let start = self.corpus.work_lookup[first].rows[0].1;
-        let last_rows = &self.corpus.work_lookup[last].rows;
-        let end = last_rows[last_rows.len() - 1].2;
-        Ok((start, end))
+    /// The `[start, end)` tokens of a scope item: all of an author's works, or a
+    /// single work by ID.
+    fn resolve_scope_item(&self, item: &str) -> Result<TokenRange, QueryExecError> {
+        self.scope_ranges.get(item).copied().ok_or_else(|| {
+            QueryExecError::new(&format!("Author or work '{item}' not found in corpus"))
+        })
     }
 
     /// Returns the word-aligned range to slice indices with, and the exact
     /// token ranges that matches must fall within.
     fn compute_range(&self, query: &Query) -> Result<(IndexRange, TokenScope), QueryExecError> {
-        if query.authors.len() > MAX_SCOPE_ITEMS {
+        if query.scope.len() > MAX_SCOPE_ITEMS {
             return Err(QueryExecError::new(&format!(
-                "A query can be restricted to at most {MAX_SCOPE_ITEMS} authors"
+                "A query can be restricted to at most {MAX_SCOPE_ITEMS} authors and works"
             )));
         }
-        let scope = if query.authors.is_empty() {
+        let scope = if query.scope.is_empty() {
             TokenScope::new(vec![(0, self.corpus.num_tokens)])
         } else {
             let ranges = query
-                .authors
+                .scope
                 .iter()
-                .map(|author| self.resolve_author(author))
+                .map(|item| self.resolve_scope_item(item))
                 .collect::<Result<Vec<_>, _>>()?;
             TokenScope::new(ranges)
         };
@@ -317,6 +355,61 @@ mod tests {
         walk_pages_with(&engine, &queries);
     }
 
+    /// Work IDs in a scope: a single work, an author together with one of their
+    /// own works (overlapping ranges, merged), and authors mixed with works.
+    #[test]
+    fn validate_work_scope_queries() {
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            None => return,
+        };
+        let corpus = &engine.corpus;
+        let work_of = |author: &str, nth: usize| {
+            corpus.work_lookup[corpus.author_lookup[author].0 + nth]
+                .work_id
+                .clone()
+        };
+        let scopes = [
+            work_of("Vergil", 0),
+            format!("Cicero, {}", work_of("Cicero", 3)),
+            format!("Grattius, {}, Ovid", work_of("Vergil", 0)),
+        ];
+        let queries: Vec<String> = scopes
+            .iter()
+            .flat_map(|scope| {
+                ["et", "@case:dat @case:acc", "in @case:abl"]
+                    .map(|query| format!("[{scope}] {query}"))
+            })
+            .collect();
+        walk_pages_with(&engine, &queries);
+    }
+
+    /// Every author and work resolves to the same range as the reference impl
+    /// computes from `work_lookup`.
+    #[test]
+    fn scope_ranges_match_reference() {
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            None => return,
+        };
+        let corpus = &engine.corpus;
+        let items: Vec<String> = corpus
+            .author_lookup
+            .keys()
+            .cloned()
+            .chain(corpus.work_lookup.iter().map(|work| work.work_id.clone()))
+            .collect();
+        assert_eq!(engine.scope_ranges.len(), items.len());
+        for item in items {
+            let expected = engine.resolve_scope_ref_impl(std::slice::from_ref(&item));
+            assert_eq!(
+                engine.resolve_scope_item(&item).ok(),
+                expected.map(|ranges| ranges[0]),
+                "{item}"
+            );
+        }
+    }
+
     #[test]
     fn scope_errors() {
         let engine = match reference_impl::get_engine_unsafe() {
@@ -332,6 +425,14 @@ mod tests {
 
         let unknown = run("[Cicero, Nobody] et").unwrap_err();
         assert!(unknown.message.contains("'Nobody'"), "{}", unknown.message);
+        let unknown_work = run("[phi9999.phi999.perseus-lat9] et").unwrap_err();
+        assert!(
+            unknown_work
+                .message
+                .contains("'phi9999.phi999.perseus-lat9'"),
+            "{}",
+            unknown_work.message
+        );
 
         let items = |n: usize| vec!["Cicero"; n].join(", ");
         assert!(run(&format!("[{}] et", items(MAX_SCOPE_ITEMS))).is_ok());

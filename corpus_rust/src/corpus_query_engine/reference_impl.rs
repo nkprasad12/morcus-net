@@ -233,21 +233,32 @@ impl CorpusQueryEngine {
         Ok(CorpusQueryMatch { metadata, text })
     }
 
-    /// The `[start, end)` token range of each author's works, or `None` for an
-    /// unrestricted query. Resolved independently of the production engine's
-    /// `compute_range`.
-    fn resolve_authors_ref_impl(&self, authors: &[String]) -> Option<Vec<(u32, u32)>> {
-        if authors.is_empty() {
+    /// The `[start, end)` token range of each scope item (an author's works, or
+    /// one work by ID), or `None` for an unrestricted query. Resolved
+    /// independently of the production engine's `compute_range`.
+    pub(super) fn resolve_scope_ref_impl(&self, scope: &[String]) -> Option<Vec<(u32, u32)>> {
+        if scope.is_empty() {
             return None;
         }
-        let ranges = authors
+        let work_range = |first: usize, last: usize| {
+            let start = self.corpus.work_lookup[first].rows.first().unwrap().1;
+            let end = self.corpus.work_lookup[last].rows.last().unwrap().2;
+            (start, end)
+        };
+        let ranges = scope
             .iter()
-            .map(|author| {
+            .map(|item| match self.corpus.author_lookup.get(item) {
                 // `author_lookup` holds an inclusive range of work indices.
-                let (first, last) = self.corpus.author_lookup[author];
-                let start = self.corpus.work_lookup[first].rows.first().unwrap().1;
-                let end = self.corpus.work_lookup[last].rows.last().unwrap().2;
-                (start, end)
+                Some(&(first, last)) => work_range(first, last),
+                None => {
+                    let work = self
+                        .corpus
+                        .work_lookup
+                        .iter()
+                        .position(|w| &w.work_id == item)
+                        .unwrap_or_else(|| panic!("Unknown scope item {item}"));
+                    work_range(work, work)
+                }
             })
             .collect();
         Some(ranges)
@@ -303,7 +314,7 @@ impl CorpusQueryEngine {
         }
 
         let hard_breaks = self.hard_breaks_ref_impl()?;
-        let scope = self.resolve_authors_ref_impl(&query.authors);
+        let scope = self.resolve_scope_ref_impl(&query.scope);
         let match_ids: Vec<SpanCandidate> = candidates
             .iter()
             .map(|SpanCandidate { ids, span_length }| {
