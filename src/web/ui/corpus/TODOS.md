@@ -87,26 +87,123 @@ Our engine indexes `@feature → token_id` (Stage 1: set operations on `IndexSli
     2. Each branch runs through the existing span/bitmask engine **completely unchanged** (preserving exact per-branch span lengths for `filter_breaks` and highlight resolution).
     3. Merge the $k$ resulting match streams in `(start_token_id, end_token_id)` order when collecting the page.
 
-### 3.4 Prefix / suffix matching (`am*`, `*or`, `am*or`)
+### 3.4 Prefix / suffix matching (`con*`, `*que`, `in*bilis`)
 
-- **Context:** PHI searches raw character strings with `#` for word boundaries; our engine indexes whole tokens and lemmata (~350k unique words at the theoretical 8M tokens).
-- **Syntax & guardrails:**
-  - Allow `*` on bare word atoms: prefix (`bell*`), suffix (`*tio`), or prefix+suffix (`in*bilis`).
-  - Require at least 2–3 literal ASCII letters alongside `*` in `errorsForToken` (`"wildcard terms must have at least 2 letters"`).
-- **Step 1 — Vocabulary lookup (matching unique word IDs in `id_table["word"]`):**
-  - Neither option requires changing the serialized corpus format on disk:
-    - **Option A (Zero-index linear scan):** Scan `id_table["word"]` keys with `starts_with` / `ends_with`. Takes **~2 ms** in Rust for ~350k words (measured at ~1–1.5 ms for 205k), **0 extra RAM**, and trivially supports `am*`, `*or`, `am*or`, and even `*mor*`.
-    - **Option B (Two sorted arrays built at `CorpusQueryEngine::new` init):** Build `forward_vocab` (sorted lexicographically) and `reverse_vocab` (sorted by reversed chars) once at engine startup (~100 ms, ~7 MB RAM for ~350k words). Prefix and suffix lookups become $O(\log V + M)$ binary-search `partition_point` slices (**~200 ns**).
-- **Step 2 — Single-pass union of the $M$ matched word indices (avoiding pairwise AST `OR`):**
-  - Do **not** rewrite `bell*` into a syntactic `(w1 or w2 or ... or wM)` `TokenConstraint::Composed` node, which would fold `apply_or_to_indices` $M$ times and reallocate/copy `Vec<u32>` $O(M^2)$ times.
-  - Instead, add `TokenConstraintAtom::Affix` (or `Wildcard`) and merge the $M$ `IndexSlice`s in a **single pass** inside `index_for_atom(range)`:
-    1. Slice each of the $M$ word indices to `range` (`IndexSlice::from`) and sum their lengths into `total_hits`.
-    2. **Fast Path 1 — `BitMask` accumulator (when `total_hits > 4096` or any matched word is a `BitMask`):**
-       Allocate **one** zeroed `Vec<u64>` of length `(range.end - range.start) / 64` (at most 1 MB, for the whole theoretical 8M-token corpus; smaller for author/work ranges). Set the bits for each `List` slice (`mask[(id - range.start) / 64] |= 1 << (bit % 64)`) and bitwise-OR any `BitMask` slice in place. Runs in **< 0.5 ms** with a single allocation even if a pattern matches 400k tokens.
-    3. **Fast Path 2 — Merging $M$ pre-sorted `List` slices (when `total_hits <= 4096` and all slices are `List`s):**
-       Each of the $M$ slices is already sorted and disjoint, so we can merge them in $O(N \log M)$ rather than $O(N \log N)$ — either via a $k$-way merge / balanced pairwise merge of the slices, or by appending the $M$ ascending runs into `Vec::with_capacity(total_hits)` and calling Rust's run-aware `vec.sort()` (`driftsort`, which detects existing sorted runs and merges them in $O(N \log M)$) or `sort_unstable()` (~10–20 µs for $\le 4096$ `u32`s). Keeping the result as a `List` when `total_hits <= 4096` keeps downstream intersections on the fast `List` path.
-- **Step 3 — Stage 2 (`has_matching_inflections`) needs zero changes:**
-  - Because each token has only one surface word string, `Affix` is exact at Stage 1 (just like `TokenConstraintAtom::Word`) and needs no per-analysis validation in `does_inflection_match` — even when combined with an inflection filter like `(bell* and @case:abl)`.
+**Status:** Designed and prototyped; not wired in. Choose option B (sorted word IDs) below. The prototype is [`sorted_vocab.rs`](../../../../corpus_rust/src/sorted_vocab.rs), and [`examples/vocab_proto.rs`](../../../../corpus_rust/examples/vocab_proto.rs) produced every number in this section (`cargo run --release -p corpus --example vocab_proto -- [--cold]`, from the repo root after building the corpus).
+
+> [!NOTE]
+> Both files are unreviewed prototypes, kept so the numbers can be reproduced. When this work concludes, review them properly (folding `SortedVocab` into the real implementation) or delete them.
+
+**Measured on the current build, not the 8M-token sizing example:** 6.47M tokens and 297k unique words (2.76 MB of text, 9.3 bytes on average), on a 24-vCPU EPYC 7B12 cloudtop. Costs scale roughly linearly with vocabulary size and with hits.
+
+#### What a wildcard costs: find the words, then merge their lists
+
+A wildcard term runs in two steps:
+
+1. **Find the words.** List every word in the vocabulary that matches the pattern. `in*` matches 15.7k words.
+2. **Merge their lists.** Each word has a sorted list of the token positions where it occurs (`servum` → `[1, 19, 3480, …]`, in `latin_corpus_buffers.bin`). The rest of the engine (span matching, proximity, scope filtering) expects one set of positions per term, so the matched words' lists are unioned into one bitmask: one bit per token in the query's range, so ~790 KB for the whole corpus (1 MB at the 8M-token example). The bitmask goes into the existing pipeline the way a dense index like `@case:abl` does today.
+
+The merge costs time in proportion to **hits** (positions set), not to the number of matched words. A dense term is nothing new for the engine (`@case:abl` is far denser than any allowed wildcard). The new costs are finding the words and the merge itself.
+
+#### Options for finding the words
+
+- **Option A (rejected): scan `id_table["word"]`.** Test every key with `starts_with` / `ends_with`. No new data, and it handles `*mor*`. But the word table is a `HashMap<String, u32>` whose keys are separate heap strings, so the scan jumps around memory. It measured **3.4–6.6 ms warm and 10–13 ms with cold caches**, all of it blocking Node's event loop, since `runQuery` is synchronous. (An earlier estimate of "~1–1.5 ms for 205k words" was never measured, and doesn't hold.) Scanning a contiguous copy of the words halves the warm cost (1.7–3.0 ms), at ~5 MB of extra RAM.
+- **Option B (chosen): number words in sorted order.** The word ID is used for one thing only: indexing `indices["word"]` (`get_str_keyed_metadata("word", …)` in `corpus_index_calculation.rs`). No per-token data stores word IDs, and the packed inflection data holds lemma IDs, not word IDs. So if the build assigns word IDs in sorted byte order, a sorted array of the words _is_ the ID table: a word's position in it is its ID.
+  - **Exact lookup** becomes a binary search (about 18 comparisons for 297k words).
+  - **`prefix*`** becomes a contiguous ID range, found with two binary searches.
+  - **`*suffix`** uses one more array, `by_suffix`: the word IDs sorted by reversed spelling, so words ending in the same letters are adjacent. Comparisons are on UTF-8 bytes, so a byte suffix match is also a character suffix match.
+  - **`prefix*suffix`** takes the prefix range and filters it with `ends_with`.
+  - Because the build writes word lists in ID order, **the lists for a prefix match sit back to back in the buffer file**, so the merge reads one contiguous stretch rather than jumping around.
+
+#### Option B: memory and startup (measured)
+
+|                     | Today (`HashMap<String, u32>` in the JSON)                                | Option B (sorted vocabulary file, memory-mapped)                                              |
+| :------------------ | :------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------- |
+| Word table in RAM   | **26.8 MB** malloc-reserved (20.1 MB requested), per Node process         | **5.14 MB**: 2.76 MB of packed text + 1.19 MB of offsets + 1.19 MB `by_suffix`                |
+| Kind of memory      | Ordinary heap memory. Can't be evicted, and `prod` and `dev` each pay it. | Page cache. Evictable, and shared between containers whose images have the same corpus layer. |
+| `latin_corpus.json` | 24.6 MB; parse ~228 ms; live heap 63.7 MB; RSS +58.6 MB                   | 19.0 MB without the word table; parse ~119 ms; live heap 36.9 MB; RSS +31.7 MB                |
+
+So option B **saves ~22 MB of heap per process and ~110 ms of parsing at startup**, before counting the ~5 MB file it maps. The prototype builds the sorted array at load time (~155 ms); the real version writes it at corpus build time, so startup pays nothing for it.
+
+#### Option B: query time (measured)
+
+"Cold" means that before each timed run, the benchmark reads a 64 MB buffer (4× the core's 16 MB L3) to evict L1/L2/L3 and the TLB, with the process pinned to one core. That is the pessimistic case of a one-off query arriving between unrelated Node work. Page cache stays warm: the engine maps its files with `MAP_POPULATE`, and prod has 8 GB of RAM against ~215 MB of corpus files, so they stay resident. Whatever a real query already has in hand (its own text, the IDs the previous step produced) is touched after evicting. Medians are shown; p90 is within ~10% throughout.
+
+**Exact lookup** (one word, 2000 samples; uniform and frequency-weighted query words gave the same results):
+
+|                                                    | `HashMap` (today) |        Binary search (B) |
+| :------------------------------------------------- | ----------------: | -----------------------: |
+| Warm-ish (random words, no eviction): median / p99 |     0.47 / 1.1 µs |            0.71 / 2.3 µs |
+| Cold: median / p99                                 |      2.8 / 4.0 µs |            6.5 / 11.5 µs |
+| Comparisons                                        |                 — | 18.2 average, 19 at most |
+
+Cold, binary search is ~2.3× slower, about +4 µs per word in the query, likely from TLB misses (each probe touches a different 4 KB page). Against queries that take milliseconds this doesn't matter. If it ever does, a small table keyed on the first two letters would roughly halve the probes.
+
+**Wildcards, cold** (40 one-shot runs, ms, median):
+
+| Pattern    | Words | Hits | A: find (scan) | A: merge (scattered) | **A total** | B: find (sorted) | B: merge (contiguous) | **B total** |
+| :--------- | ----: | ---: | -------------: | -------------------: | ----------: | ---------------: | --------------------: | ----------: |
+| `bell*`    |   209 |  10k |           11.2 |                 0.18 |    **11.4** |            0.016 |                  0.09 |    **0.10** |
+| `am*`      |  1.9k |  25k |           11.3 |                 0.60 |    **11.9** |            0.033 |                  0.15 |    **0.19** |
+| `con*`     | 10.6k | 107k |           10.9 |                 2.32 |    **13.1** |             0.11 |                  0.40 |    **0.51** |
+| `in*`      | 15.7k | 275k |           11.4 |                 3.28 |    **14.6** |             0.15 |                  0.77 |    **0.92** |
+| `*tio`     |  1.3k |  25k |           13.5 |                 0.47 |    **13.9** |            0.018 |                  0.34 |    **0.36** |
+| `*que`     | 27.8k | 171k |           13.2 |                 3.56 |    **16.9** |            0.035 |                  2.83 |    **2.87** |
+| `in*bilis` |    78 |  446 |           10.0 |                 0.10 |    **10.1** |             0.13 |                  0.07 |    **0.20** |
+
+- **Finding the words** drops from 10–13 ms to at most 0.15 ms. The prefix cases take that long only because the prototype copies the matched IDs into a list; the range itself costs two binary searches.
+- **Contiguous lists make prefix merges 3–6× faster cold** (`con*` 2.32 → 0.40 ms) and ~2× warm. Warm, I checked this with the buffers copied into the heap, to rule out mmap effects. Suffix matches aren't contiguous in sorted order, so they gain only ~1.1–1.3×.
+- **Counting hits** (summing the matched words' list lengths) takes ≤ 0.04 ms, cheap enough to check the budget below before allocating anything.
+- **B's worst case today is ~3 ms** (`*que`), against 10–17 ms for A.
+
+#### Which patterns to allow
+
+Hits for every 2–4 letter prefix and suffix in the current build:
+
+| Fixed letters | Patterns over 100k hits  | Worst cases                                                                                                |
+| :------------ | :----------------------- | :--------------------------------------------------------------------------------------------------------- |
+| 2             | 15 prefixes, 17 suffixes | `*um` 516k (8% of the corpus), `*us` 402k, `qu*` 362k, `in*` 275k (123k of which are the word _in_ itself) |
+| 3             | 3 prefixes, 3 suffixes   | `*que` 171k, `qui*` 126k, `qua*` 124k, `*tur` 111k                                                         |
+| 4             | none                     | `*ibus` 86k, `quae*` 48k                                                                                   |
+
+Rules, checked in the engine (`query_validation.rs`) and mirrored in `errorsForToken` so the autocomplete reports them while typing:
+
+1. **At least 3 fixed letters** in the pattern (`con*`, `*que`, `in*bilis`). Easy to explain; rejects `in*`, `*um` and `qu*`, which return nothing useful; caps today's worst case at ~171k hits.
+2. **A hit budget per query, checked before merging:** reject when the wildcard terms' hits add up to more than ~200k (~3% of the corpus), with a message like "`*xyz` matches too many words; add letters". Nothing with 3+ letters reaches it today. It holds the line as the corpus grows, and covers queries with several wildcard terms.
+3. **One `*` per term**: at the start, at the end, or once in the middle (`in*bilis`). No `*mor*`: matching inside words needs a scan, which option B doesn't speed up. Revisit if anyone asks; a scan over the packed vocabulary costs ~2–3 ms.
+4. **At most 2–3 wildcard terms per query**, sharing the hit budget, including inside `or` groups (`(am* or bell*)`).
+5. **Words only for now.** `@lemma:am*` needs lemma IDs renumbered too, and lemma IDs are stored in the packed inflection data, so that's a bigger build change. Inflection values (`@case:…`) don't need wildcards.
+6. **Normalize, then check:** lowercase the pattern (word keys are stored lowercase), and reject `*` on its own and non-letters around the `*`. A pattern that matches no words is an error ("no word matches `xyz*`"), not an empty search.
+
+#### Implementation plan
+
+1. **Build (TS, `build_corpus.ts` / `corpus_serialization.ts`).**
+   - After collecting the corpus, renumber word IDs in sorted order, and permute `indices["word"]` to match before writing the buffers. Lists are written in ID order, so this alone makes prefix matches contiguous.
+   - Sort by UTF-8 bytes (`Buffer.compare`), not JavaScript's default UTF-16 order, so the order matches Rust's `[u8]` comparisons.
+   - Write `latin_corpus_vocab.bin`: a word count, then `offsets: u32[V + 1]`, then `by_suffix: u32[V]`, then the packed text. Drop `idTable.word` from `latin_corpus.json`; keep `lemma` and `breaks`.
+   - `stats.uniqueWords` (`indices.word.length`) is unchanged. Nothing else in TS reads `idTable.word`.
+   - The Rust builder (`build_corpus_v2`) must make the same change when it stops being a stub.
+2. **Engine load.** Map the vocabulary file with the existing `byte_reader` (populated mmap). Make `SortedVocab` borrow its three arrays from the mapping, not own `Vec`s as the prototype does. Replace the `id_table["word"]` lookup in `get_metadata_for` with `vocab.lookup(&word.to_lowercase())`.
+3. **Query language.** Add `TokenConstraintAtom::Affix { prefix, suffix }`, parsed in `query_parsing_v2.rs`, and the rules above in `query_validation.rs`.
+4. **Index calculation.** In `index_for_atom`, resolve the matched IDs, check the hit budget, then union the lists in one pass, never by folding `apply_or_to_indices` M times (that reallocates and copies O(M²)):
+   - **Over 4096 hits:** allocate one zeroed bitmask over the query's range, set bits from each list, and OR in any list stored as a bitmask (none in the current build: no word reaches the bitmask threshold).
+   - **4096 hits or fewer:** append the M sorted lists into one `Vec` and sort it (Rust's run-aware sort merges sorted runs in O(N log M)), and return a `List`, so later intersections stay on the fast list path.
+   - **With a scope** (`[Caesar] con*`): slice each list to the range (`IndexSlice::from`) before merging. Prefix lists are still contiguous.
+5. **Stage 2 (`has_matching_inflections`) needs no changes.** A token has one spelling, so `Affix` is exact at Stage 1, like `Word`, even inside `(bell* and @case:abl)`.
+6. **UI.** Add the syntax to `corpus_help.server.ts`. In the autocomplete, explain a wildcard as "words starting with `con`" and surface rule violations as errors. A later option: a prefix endpoint over the sorted vocabulary for bare-word completions and match counts ("`bell*`: 209 forms").
+
+### 3.5 Pool bitmask buffers (measure first)
+
+**Status:** Idea, not measured. Every dense intermediate (a merge, an AND of two bitmasks, a proximity shift) allocates a fresh `Vec<u64>` of up to ~790 KB (1 MB at the 8M-token example). A small pool of reusable buffers would skip the allocation.
+
+**Expected gain is modest; profile first.** glibc already behaves like a pool once warm. The first allocation of that size is served by `mmap`, but freeing it raises glibc's mmap threshold, so later allocations of that size come from the heap's free lists. A pool would mainly save the ~190 first-touch page faults per fresh buffer, plus the zeroing (`memset`, ~20–40 µs) on buffers an operation overwrites completely anyway. Probably tens to low hundreds of µs per bitmask-heavy query. Profile a dense query (for example `@case:abl @case:abl ~ @case:acc`) for time spent allocating before building this. Switching the allocator to mimalloc, which caches freed pages, is a one-line alternative to compare against.
+
+**How to do it without fighting lifetimes:**
+
+- **The problem with handing out references.** Lending `&'p mut [u64]` from a pool needs `&mut pool` for each loan, so two bitmasks in use at once are two mutable borrows of the pool, which the borrow checker rejects. And `query_corpus` takes `&self`, so a pool inside the engine can't be borrowed mutably at all.
+- **Hand out ownership instead.** `BitmaskPool { free: Mutex<Vec<Vec<u64>>> }` lives in `CorpusQueryEngine`. An uncontended `Mutex` costs ~20 ns; `RefCell` works if the engine never crosses threads. `take(len)` pops a `Vec` (or allocates one) and returns it by value inside a guard, `PooledBitmask<'a> { buf: Vec<u64>, pool: &'a BitmaskPool }`. The guard's `Drop` pushes the `Vec` back, and it derefs to `&[u64]` / `&mut [u64]`.
+- **No new lifetime.** `IndexSlice<'a>` already borrows from the engine for `'a` (its `Ref` variant points into the memory-mapped buffers), and the pool lives in the same engine. So `IndexDataOwned::BitMask(Vec<u64>)` becomes `BitMask(PooledBitmask<'a>)` under the existing `'a`. Two buffers in use are just two separate owned `Vec`s, with no overlapping borrows. To avoid even the extra field, an `Arc<BitmaskPool>` handle in the guard removes the lifetime, at the cost of one refcount bump per loan.
+- **Details.** Hand out any buffer with enough capacity (`truncate` / `resize` it), since scoped queries need smaller bitmasks. Offer zeroed loans, for merges and shifts that set only some bits, and unzeroed loans, for AND / OR outputs that overwrite every word. Cap the pool at 4–8 buffers, so one heavy query doesn't hold memory forever.
 
 ---
 
