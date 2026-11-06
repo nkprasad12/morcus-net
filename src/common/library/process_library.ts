@@ -10,7 +10,14 @@ import {
   EnglishTranslations,
   LOCAL_REPO_WORKS,
 } from "@/common/library/library_constants";
-import { urlify, urlifyAuthor } from "@/common/library/library_slugs";
+import {
+  SHORT_TITLE_BY_WORK_ID,
+  shortWorkTitle,
+  URL_NAME_BY_WORK_ID,
+  urlifyAuthor,
+  urlifyWork,
+} from "@/common/library/library_slugs";
+export { SHORT_TITLE_BY_WORK_ID, URL_NAME_BY_WORK_ID };
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import {
   loadPatches,
@@ -46,53 +53,6 @@ const LOCAL_REPO_ROOT = "texts/latin/perseus";
 const LOCAL_REPO_WORK_PATHS = LOCAL_REPO_WORKS.map(
   (work) => `${LOCAL_REPO_ROOT}/${work}`
 );
-
-const NAME_TO_DISPLAY_NAME = new Map<string, string>([
-  ["de Origine et Situ Germanorum Liber", "Germania"],
-  ["De Vita Iulii Agricolae", "Agricola"],
-  ["The Catilinarian Conspiracy", "Bellum Catilinae"],
-  ["Laelius De Amicitia", "De Amicitia"],
-  ["Pro P. Quinctio", "Pro Quinctio"],
-  ["Medicamina faciei femineae", "Medicamina"],
-  [
-    "Pro C. Rabirio Perduellionis Reo Ad Quirites",
-    "Pro Rabirio Perduellionis Reo",
-  ],
-  ["In L. Catilinam", "In Catilinam"],
-  ["De domo sua ad pontifices", "de Domo Sua"],
-  ["De haruspicum responso in P. Clodium", "De Haruspicum Responso"],
-  ["In P. Vatinium testem interrogatio", "In P. Vatinium"],
-  ["Pro L. Cornelio Balbo", "Pro Balbo"],
-  ["In L. Calpurnium Pisonem", "In Pisonem"],
-  ["Pro C. Rabirio Postumo", "Pro Rabirio Postumo"],
-  ["Pro M. Tullio", "Pro Tullio"],
-  ["De Imperio Cn. Pompei Ad Quirites", "De Imperio Cn. Pompei"],
-  ["Pro A. Cluentio", "Pro Cluentio"],
-  ["Pro L. Murena", "Pro Murena"],
-]);
-
-const NAME_TO_URL_LOOKUP = new Map<string, string>([
-  ["de Origine et Situ Germanorum Liber", "germania"],
-  ["De Vita Iulii Agricolae", "agricola"],
-  ["The Catilinarian Conspiracy", "catalina1"],
-  ["Medicamina faciei femineae", "medicamina"],
-  ["Pro P. Quinctio", "pro_quinctio"],
-  [
-    "Pro C. Rabirio Perduellionis Reo Ad Quirites",
-    "pro_rabirio_perduellionis_reo",
-  ],
-  ["In L. Catilinam", "in_catilinam"],
-  ["De domo sua ad pontifices", "de_domo_sua"],
-  ["De haruspicum responso in P. Clodium", "de_haruspicum_responso"],
-  ["In P. Vatinium testem interrogatio", "in_p_vatinium"],
-  ["Pro L. Cornelio Balbo", "pro_balbo"],
-  ["In L. Calpurnium Pisonem", "in_pisonem"],
-  ["Pro C. Rabirio Postumo", "pro_rabirio_postumo"],
-  ["Pro M. Tullio", "pro_tullio"],
-  ["De Imperio Cn. Pompei Ad Quirites", "de_imperio_cn_pompei"],
-  ["Pro A. Cluentio", "pro_cluentio"],
-  ["Pro L. Murena", "pro_murena"],
-]);
 
 /** Index just past the `<!DOCTYPE ...>` that starts at `start`. */
 function endOfDoctype(xml: string, start: number): number {
@@ -149,79 +109,6 @@ export function stripXmlProlog(xml: string): string {
   }
 }
 
-/**
- * URL slugs pinned by work id. Slugs are derived from the TEI title, so when
- * upstream retitles a work its reader URL would move; pinning keeps old links
- * and saved spots working. Add an entry whenever a sync changes a slug.
- */
-export const URL_NAME_BY_WORK_ID = new Map<string, string>([
-  // canonical-latinLit 0700a6b7 (2026-10) retitled these.
-  ["phi0474.phi003.perseus-lat2", "quintus_roscius"],
-  ["phi0474.phi007.perseus-lat2", "pro_fonteio"],
-  ["phi0474.phi018.perseus-lat2", "cum_populo_gratias_egi"],
-  ["phi0474.phi020.perseus-lat2", "de_domo_sua"],
-  ["phi0474.phi021.perseus-lat2", "de_haruspicum_responso"],
-  ["phi0474.phi023.perseus-lat2", "in_p_vatinium"],
-  ["phi0474.phi025.perseus-lat2", "de_provinciis_consularibus"],
-  ["phi0474.phi034.perseus-lat2", "pro_rege_deiotaro"],
-  ["phi0474.phi038.perseus-lat2", "de_partitione_oratoria"],
-  ["phi0474.phi043.perseus-lat2", "de_republica"],
-  ["phi0474.phi051.perseus-lat2", "de_senectute"],
-  ["phi1351.phi001.perseus-lat2", "agricola"],
-  // Slugs from before `urlify` dropped punctuation, kept so links still work.
-  ["phi0474.phi004.perseus-lat2", "divinatio_in_q._caecilium"],
-  ["phi0474.phi008.perseus-lat2", "pro_a._caecina"],
-  ["phi0474.phi015.perseus-lat2", "pro_p._sulla"],
-  ["phi0474.phi017.perseus-lat2", "pro_l._flacco"],
-  ["phi0474.phi022.perseus-lat2", "pro_p._sestio"],
-  ["phi0474.phi024.perseus-lat2", "pro_m._caelio"],
-  ["phi0474.phi028.perseus-lat2", "pro_cn._plancio"],
-  ["phi0474.phi029.perseus-lat2", "pro_m._scauro"],
-  ["phi0474.phi031.perseus-lat2", "pro_t._annio_milone"],
-  ["phi0474.phi032.perseus-lat2", "pro_m._marcello"],
-  ["phi0474.phi033.perseus-lat2", "pro_q._ligario"],
-  // Phase 2B: TEI titles that are too long, or wrong (stoa014's is OCR'd
-  // with a line break), to make a good slug. Named after `__cts__.xml`.
-  ["stoa0045.stoa010.perseus-lat2", "epigrammata"],
-  // Both are titled "Epistularum" in the TEI.
-  ["stoa0045.stoa011.perseus-lat2", "epistulae"],
-  ["stoa0045.stoa014.perseus-lat2", "gratiarum_actio"],
-  ["stoa0045.stoa016.perseus-lat2", "protrepticus_ad_nepotem"],
-  ["stoa0058.stoa023.perseus-lat1", "contra_eutychen_et_nestorium"],
-  ["stoa0058.stoa025.perseus-lat1", "de_trinitate"],
-  ["stoa0058.stoa028.perseus-lat1", "utrum_pater_et_filius"],
-  ["stoa0162.stoa004.perseus-lat2", "epistulae"],
-  ["stoa0040.stoa011.perseus-lat2", "epistulae"],
-  ["phi0845.phi002.perseus-lat3", "res_rustica"],
-  ["stoa0261.stoa002.perseus-lat1", "epistulae"],
-  // Phase 3: Seneca's Hercules Furens (TEI title is just "Hercules", distinct from Hercules Oetaeus).
-  ["phi1017.phi001.perseus-lat2", "hercules_furens"],
-]);
-
-/** Short display titles pinned by work id, for the same reason. */
-export const SHORT_TITLE_BY_WORK_ID = new Map<string, string>([
-  ["phi0474.phi020.perseus-lat2", "de Domo Sua"],
-  ["phi0474.phi021.perseus-lat2", "De Haruspicum Responso"],
-  ["phi0474.phi023.perseus-lat2", "In P. Vatinium"],
-  ["phi1351.phi001.perseus-lat2", "Agricola"],
-  ["stoa0045.stoa010.perseus-lat2", "Epigrammata"],
-  ["stoa0045.stoa011.perseus-lat2", "Epistulae"],
-  ["stoa0045.stoa014.perseus-lat2", "Gratiarum Actio"],
-  ["stoa0045.stoa016.perseus-lat2", "Protrepticus ad Nepotem"],
-  ["stoa0058.stoa023.perseus-lat1", "Contra Eutychen et Nestorium"],
-  ["stoa0058.stoa025.perseus-lat1", "De Trinitate"],
-  ["stoa0058.stoa028.perseus-lat1", "Utrum Pater et Filius"],
-  ["stoa0162.stoa004.perseus-lat2", "Epistulae"],
-  ["stoa0040.stoa011.perseus-lat2", "Epistulae"],
-  ["phi0845.phi002.perseus-lat3", "Res Rustica"],
-  ["stoa0261.stoa002.perseus-lat1", "Epistulae"],
-  ["phi1017.phi001.perseus-lat2", "Hercules Furens"],
-]);
-
-function urlifyName(input: string): string {
-  return urlify(input, NAME_TO_URL_LOOKUP);
-}
-
 function processTeiCts2(
   root: XmlNode,
   workId: string,
@@ -267,12 +154,8 @@ function isTranslationId(workId: string): boolean {
 
 /** Exported for testing. */
 export function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
-  const rawTitle = info.title;
-  const shortName =
-    SHORT_TITLE_BY_WORK_ID.get(info.workId) ??
-    NAME_TO_DISPLAY_NAME.get(rawTitle);
   const decorated: DocumentInfo = { ...info };
-  decorated.shortTitle = shortName;
+  decorated.shortTitle = shortWorkTitle(info.workId, info.title);
   return decorated;
 }
 
@@ -290,7 +173,7 @@ export function extractWorkMetadata(
     author: info.author,
     name: info.shortTitle ?? info.title,
     urlAuthor: urlifyAuthor(info.author),
-    urlName: URL_NAME_BY_WORK_ID.get(id) ?? urlifyName(info.title),
+    urlName: urlifyWork(id, info.title),
     translationId: args?.translationId,
     isTranslation: args?.isTranslation,
     attribution: info.attribution ?? "perseus",

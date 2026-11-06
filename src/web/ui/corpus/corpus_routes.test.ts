@@ -149,6 +149,28 @@ describe("GET /corpus", () => {
     expect(res.text).toContain('role="alert"');
   });
 
+  test("resolves #Author/Work on GET /corpus and reports invalid works on the 200 error page", async () => {
+    const engine = fakeCorpusEngine();
+    const app = makeApp(engine);
+
+    const ok = await request(app).get(
+      "/corpus?q=%23Caesar%2FDeBelloGallico+omnis"
+    );
+    expect(ok.status).toBe(200);
+    expect(ok.text).toContain('class="corpus-result"');
+    expect(engine.requests).toEqual([
+      expect.objectContaining({
+        query: "[phi0448.phi001.perseus-lat2] omnis",
+      }),
+    ]);
+
+    const bad = await request(app).get("/corpus?q=%23Caesar%2FNope+omnis");
+    expect(bad.status).toBe(200);
+    expect(bad.text).toContain('role="alert"');
+    expect(bad.text).toContain("invalid work #Caesar/Nope");
+    expect(engine.requests).toHaveLength(1);
+  });
+
   test("without an engine, answers 503", async () => {
     const res = await request(makeApp()).get("/corpus?q=omnis");
     expect(res.status).toBe(503);
@@ -254,11 +276,11 @@ describe("GET /corpus", () => {
 });
 
 describe("GET /corpus: autocomplete host", () => {
-  test("carries the author list", async () => {
+  test("renders the host without embedding the author list", async () => {
     const res = await request(makeApp(fakeCorpusEngine())).get("/corpus");
 
     expect(res.text).toContain("<morcus-corpus-suggestions");
-    expect(res.text).toContain("data-authors=");
+    expect(res.text).not.toContain("data-authors=");
   });
 
   test("a partial response has no host: it sits outside every slot", async () => {
@@ -266,6 +288,57 @@ describe("GET /corpus: autocomplete host", () => {
       .get("/corpus?q=omnis")
       .set("X-Requested-With", "fetch");
     expect(res.text).not.toContain("morcus-corpus-suggestions");
+  });
+});
+
+describe("GET /api/corpus/authors", () => {
+  const savedCommit = process.env.COMMIT_ID;
+
+  beforeEach(() => {
+    process.env.COMMIT_ID = "abc123";
+  });
+
+  afterEach(() => {
+    if (savedCommit === undefined) {
+      delete process.env.COMMIT_ID;
+    } else {
+      process.env.COMMIT_ID = savedCommit;
+    }
+  });
+
+  test("at the current version, returns the author/work map and caches immutably", async () => {
+    const loadAuthors = jest.fn(() => Promise.resolve(CORPUS_TEST_AUTHORS));
+    const app = makeApp(undefined, { loadAuthors });
+
+    const res = await request(app).get("/api/corpus/authors?v=abc123");
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/^application\/json/);
+    expect(res.headers["cache-control"]).toBe(
+      "public, max-age=31536000, immutable"
+    );
+    expect(res.body).toEqual(CORPUS_TEST_AUTHORS);
+
+    // Precompressed once per router.
+    await request(app).get("/api/corpus/authors?v=abc123");
+    expect(loadAuthors).toHaveBeenCalledTimes(1);
+  });
+
+  test("without a version or with a stale version, revalidates", async () => {
+    const app = makeApp();
+    for (const url of ["/api/corpus/authors", "/api/corpus/authors?v=old"]) {
+      const res = await request(app).get(url);
+      expect(res.status).toBe(200);
+      expect(res.headers["cache-control"]).toBe("no-cache");
+    }
+  });
+
+  test("without the author list, answers 503", async () => {
+    const app = makeApp(undefined, {
+      loadAuthors: () => Promise.resolve(undefined),
+    });
+    const res = await request(app).get("/api/corpus/authors?v=abc123");
+    expect(res.status).toBe(503);
+    expect(res.headers["cache-control"]).toBe("no-store");
   });
 });
 

@@ -6,6 +6,7 @@ import {
   precompressJson,
   sendPrecompressedJson,
   type PrecompressedJsonStore,
+  type PrecompressedRow,
 } from "@/web/ui/core/server/precompressed_json.server";
 import { isPartialRequest } from "@/web/ui/core/server/request_params.server";
 import { requestTimer } from "@/web/ui/core/server/telemetry.server";
@@ -20,6 +21,7 @@ import {
   runCorpusSearch,
   type CorpusEngine,
 } from "@/web/ui/corpus/corpus_query.server";
+import type { CorpusAuthorList } from "@/web/ui/corpus/corpus_syntax.common";
 import {
   renderCorpusPageHtml,
   renderCorpusPartialHtml,
@@ -49,7 +51,7 @@ export interface CorpusRoutesOptions {
   /** The Rust engine; without one, `/corpus` answers 503. */
   readonly engine?: CorpusEngine;
   /** Overrides the author list source (tests). */
-  readonly loadAuthors?: () => Promise<readonly string[] | undefined>;
+  readonly loadAuthors?: () => Promise<CorpusAuthorList | undefined>;
   /** Overrides the lemma list source (tests). */
   readonly loadLemmata?: () => Promise<readonly string[] | undefined>;
   /** Pre-rendered static pages; see `static_pages.server.ts`. */
@@ -60,6 +62,18 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
   const router = Router();
   const { getAsync } = createAsyncRegistrars(router);
   const loadAuthors = options.loadAuthors ?? loadCorpusAuthors;
+
+  let authorsRow: Promise<PrecompressedRow | undefined> | null = null;
+  const loadAuthorsRow = (): Promise<PrecompressedRow | undefined> => {
+    if (authorsRow === null) {
+      authorsRow = loadAuthors().then((authors) =>
+        authors === undefined
+          ? undefined
+          : precompressJson(JSON.stringify(authors))
+      );
+    }
+    return authorsRow;
+  };
 
   let lemmaStore: Promise<PrecompressedJsonStore | undefined> | null = null;
   const loadLemmaStore = (): Promise<PrecompressedJsonStore | undefined> => {
@@ -127,6 +141,20 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
       console.error("Error running corpus search:", err);
       res.status(500).send("Error running corpus search");
     }
+  });
+
+  // The authors and their works, for `#Author` and `#Author/Work` autocomplete.
+  getAsync("/api/corpus/authors", async (req, res) => {
+    const row = await loadAuthorsRow();
+    requestTimer(res).mark("lookupComplete");
+    if (row === undefined) {
+      res.setHeader("Cache-Control", "no-store");
+      res.status(503).json({ error: "Corpus authors unavailable." });
+      return;
+    }
+    // Without the current version, the URL outlives a corpus rebuild.
+    setVersionedCacheControl(req, res);
+    sendPrecompressedJson(req, res, row);
   });
 
   // The lemmata starting with one letter, for the autocomplete.

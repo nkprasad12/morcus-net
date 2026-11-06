@@ -59,7 +59,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     "common.js": { maxBrotliBytes: 19.75 * 1024 },
     "reader.js": { maxBrotliBytes: 13 * 1024 },
     "dict.js": { maxBrotliBytes: 8.5 * 1024 },
-    "corpus.js": { maxBrotliBytes: 5.5 * 1024 },
+    "corpus.js": { maxBrotliBytes: 6 * 1024 },
     // Includes the Experimental Texts reader, which parses texts in the
     // browser: `parseTeiDocument` (`DOMParser`) and
     // `parseLatinLibraryExperimentalText` (`src/common/thelatinlibrary/`), plus the
@@ -76,7 +76,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   routes: {
     about: { maxBrotliBytes: 19.75 * 1024 },
     dicts: { maxBrotliBytes: 27.75 * 1024 },
-    corpus: { maxBrotliBytes: 24.75 * 1024 },
+    corpus: { maxBrotliBytes: 25.5 * 1024 },
     library: { maxBrotliBytes: 32.5 * 1024 },
     external: { maxBrotliBytes: 57.75 * 1024 },
     macronizer: { maxBrotliBytes: 23.25 * 1024 },

@@ -2,15 +2,15 @@
 
 Corpus search at `/corpus`, backed by the Rust corpus engine. Related docs: [`TODOS.md`](TODOS.md) (open work and the word-boundary rule) and the archived design, [`../docs/archive/CORPUS_DESIGN.md`](../docs/archive/CORPUS_DESIGN.md), which has the full rationale and V1 deviations.
 
-The page is a plain `GET` form. The query, including any `#Author` filters, the settings and the page cursor all live in the URL, so with JS off a user can search, change settings, page, and follow result links into the reader. With JS on, `<morcus-corpus-view>` swaps only the regions that change, and `<morcus-corpus-suggestions>` adds client-side autocomplete.
+The page is a plain `GET` form. The query, including any `#Author` or `#Author/Work` filters, the settings and the page cursor all live in the URL, so with JS off a user can search, change settings, page, and follow result links into the reader. With JS on, `<morcus-corpus-view>` swaps only the regions that change, and `<morcus-corpus-suggestions>` adds client-side autocomplete.
 
 ---
 
 ## URL contract
 
-| Param        | Form control                                          | Default    | Range / format                                                      | Notes                                                                                                                                                   |
-| :----------- | :---------------------------------------------------- | :--------- | :------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `q`          | `<input name="q">`                                    | `""`       | ≤ 100 chars after transform, not counting the `[...]` author prefix | Empty → landing view, engine not called. May start with up to 20 `#Author` filters (sent as one `[A, B]` prefix); an unknown author is a grammar error. |
+| Param        | Form control                                          | Default    | Range / format                                                     | Notes                                                                                                                                                                            |
+| :----------- | :---------------------------------------------------- | :--------- | :----------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `q`          | `<input name="q">`                                    | `""`       | ≤ 100 chars after transform, not counting the `[...]` scope prefix | Empty → landing view, engine not called. May start with up to 20 `#Author` or `#Author/Work` filters (sent as one `[A, B]` prefix); an unknown author or work is a grammar error. |
 | `pageSize`   | `<input type="number" name="pageSize">`               | 50         | clamp 10–100                                                        |                                                                                                                                                         |
 | `contextLen` | `<input type="number" name="contextLen">`             | 20         | clamp 1–100                                                         | V1's UI default is 20; the engine's is 25.                                                                                                              |
 | `strictMode` | `<input type="checkbox" name="strictMode" value="1">` | off        | `1` or absent                                                       | Absent when unchecked, the native checkbox behaviour.                                                                                                   |
@@ -63,6 +63,7 @@ The server imports `reader_loader.server.ts` and `reader_highlight.common.ts` (t
 | Route                             | Response                                                                                                                                                                                                                                                                                                            |
 | :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `GET /corpus`                     | Full page (no `Cache-Control`), or slot templates (`X-Requested-With: fetch`). JS swaps carry `?v=<build version>` (`swapSlots({ versioned: true })`); a request at the server's current version gets `Cache-Control: private, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`). |
+| `GET /api/corpus/authors`         | JSON map of author code → works (`[{ id, code, name }, ...]`), for `#Author` and `#Author/Work` autocomplete. URLs carry `?v=<build version>` (`withBuildVersion`); cached immutably at the current version (`setVersionedCacheControl`).                                                                           |
 | `GET /api/corpus/lemmata/:letter` | JSON array of lemmata starting with `letter` (one lowercased char). URLs carry `?v=<build version>` (`withBuildVersion`, from `<html data-version>`); a request at the server's current version gets `Cache-Control: public, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`).   |
 
 ---
@@ -92,9 +93,9 @@ The server imports `reader_loader.server.ts` and `reader_highlight.common.ts` (t
 
 ### Autocomplete boundary
 
-**`<morcus-corpus-suggestions>`** (`corpus_autocomplete.client.ts`) is built on `ComboboxController` (`core/widgets/combobox.client.ts`). It creates only the `<li>` options (an allowlisted subtree), reads authors from `data-authors` on the server-rendered host, and fetches lemmata in one-letter shards through `LemmaShardCache`.
+**`<morcus-corpus-suggestions>`** (`corpus_autocomplete.client.ts`) is built on `ComboboxController` (`core/widgets/combobox.client.ts`). It creates only the `<li>` options (an allowlisted subtree), fetches authors and works on demand through `AuthorCache`, and fetches lemmata in one-letter shards through `LemmaShardCache`.
 
-`corpus_syntax.common.ts` holds the shared grammar: tokenizing, `validateQuery`, `transformQuery` (`#A` → `[A]`, `~N` → `N~`) and the category tables the help section renders.
+`corpus_syntax.common.ts` holds the shared grammar: tokenizing, `validateQuery`, `transformQuery` (`#Author` → `[Author]`, `#Author/Work` → `[workId]`, `~N` → `N~`) and the category tables the help section renders.
 
 Both elements ship in the `corpus.js` route chunk (`corpus_entry.client.ts`). The boundary between them is kept so autocomplete could be lazy-loaded later:
 
@@ -107,13 +108,13 @@ Both elements ship in the `corpus.js` route chunk (`corpus_entry.client.ts`). Th
 
 ## Decisions
 
-| #   | Decision                                                                                                                                                                                   |
-| :-- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D2  | V1 parity on paging: Next link only, Back is the browser's. A real Previous link is in [`TODOS.md`](TODOS.md#previous-page).                                                               |
-| D3  | Authors are `#Author` filters at the start of `q` (up to 20), with no separate control or param. V1 allowed one. Further extensions are in [`TODOS.md`](TODOS.md#author-filter-beyond-v1). |
-| D4  | The `@`-query disclaimer is an inline `<details>` in the `results` slot; no modal, no "don't show again" storage.                                                                          |
-| D6  | Corpus ships in its own `corpus.js` route chunk; the ceiling is in `client_bundle_budget.ts`.                                                                                              |
-| D7  | A bad `cursor` is treated as the first page.                                                                                                                                               |
+| #   | Decision                                                                                                                                                           |
+| :-- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D2  | V1 parity on paging: Next link only, Back is the browser's. A real Previous link is in [`TODOS.md`](TODOS.md#previous-page).                                       |
+| D3  | Author and work scopes are `#Author` and `#Author/Work` filters at the start of `q` (up to 20), with no separate control or param. V1 allowed one `#Author`.       |
+| D4  | The `@`-query disclaimer is an inline `<details>` in the `results` slot; no modal, no "don't show again" storage.                                                  |
+| D6  | Corpus ships in its own `corpus.js` route chunk; the ceiling is in `client_bundle_budget.ts`.                                                                      |
+| D7  | A bad `cursor` is treated as the first page.                                                                                                                       |
 
 ---
 
@@ -129,7 +130,7 @@ corpus_help.server.ts          # static syntax help
 corpus_lemmata.server.ts       # lemma shard builder
 corpus_routes.server.ts        # createCorpusRoutes
 corpus_view.client.ts          # <morcus-corpus-view>
-corpus_autocomplete.client.ts  # <morcus-corpus-suggestions> + LemmaShardCache
+corpus_autocomplete.client.ts  # <morcus-corpus-suggestions>, AuthorCache, LemmaShardCache
 corpus_entry.client.ts         # corpus.js route chunk entry
 corpus.css
 ```

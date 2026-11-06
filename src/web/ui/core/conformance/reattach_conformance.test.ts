@@ -154,7 +154,7 @@ const FIXTURES: Record<string, string> = {
     <form class="search-form corpus-form" action="/corpus" method="GET">
       <div class="input-wrapper">
         <input type="text" name="q" id="corpus-q" class="input" value="@case:" />
-        <morcus-corpus-suggestions data-js-only data-input="corpus-q" data-authors='["Caesar"]'>
+        <morcus-corpus-suggestions data-js-only data-input="corpus-q">
           <ul id="corpus-suggestions" class="suggestions corpus-suggestions" role="listbox" hidden></ul>
         </morcus-corpus-suggestions>
       </div>

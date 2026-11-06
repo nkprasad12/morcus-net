@@ -111,24 +111,24 @@ const GUIDE_SECTIONS: readonly GuideSection[] = [
     ],
   },
   {
-    title: "Author scope",
-    badge: "#Author",
-    description: "Restrict queries to one or more classical authors:",
+    title: "Author & work scope",
+    badge: "#Author, #Author/Work",
+    description: "Restrict queries to specific authors or works:",
     items: [
       {
         code: "#Caesar amoris",
         text: html`Caesar's works only`,
       },
       {
-        code: "#Cicero @case:vocative",
-        text: html`Cicero vocatives`,
+        code: "#Vergil/Aeneid fatum",
+        text: html`Vergil's <i>Aeneid</i> only`,
       },
       {
         code: "#Caesar #Cicero bellum",
         text: html`Caesar's or Cicero's works`,
       },
     ],
-    note: "Author filters go at the start of the query.",
+    note: "Author and work filters go at the start of the query.",
   },
 ];
 

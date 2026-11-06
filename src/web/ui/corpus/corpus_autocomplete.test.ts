@@ -6,9 +6,11 @@ import "@/web/ui/corpus/corpus_autocomplete.client";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
+  AuthorCache,
   LemmaShardCache,
   MAX_LEMMA_ROWS,
   corpusSuggestions,
+  resetAuthorCacheForTest,
   type CorpusSuggestion,
   type SuggestionSources,
 } from "@/web/ui/corpus/corpus_autocomplete.client";
@@ -111,16 +113,45 @@ describe("corpusSuggestions", () => {
     ]);
   });
 
-  describe("#author", () => {
-    test("completes in the corpus's case", () => {
+  describe("#author and #author/work", () => {
+    test("completes author without a space, then offers all works and #Author/ once complete", () => {
       expect(suggest("#")).toEqual([
-        '#[Caesar ] => "#Caesar "',
-        '#[Cicero ] => "#Cicero "',
-        '#[SenecaMajor ] => "#SenecaMajor "',
+        '#[Caesar] => "#Caesar"',
+        '#[Cicero] => "#Cicero"',
+        '#[SenecaMajor] => "#SenecaMajor"',
       ]);
-      expect(suggest("#ci")).toEqual(['#Ci[cero ] => "#Cicero "']);
-      expect(suggest("#se")).toEqual(['#Se[necaMajor ] => "#SenecaMajor "']);
+      expect(suggest("#ci")).toEqual(['#Ci[cero] => "#Cicero"']);
+      expect(suggest("#se")).toEqual(['#Se[necaMajor] => "#SenecaMajor"']);
+      expect(suggest("#caesar")).toEqual([
+        '#Caesar[ ] all works => "#Caesar "',
+        '#Caesar[/] search in work => "#Caesar/"',
+      ]);
       expect(suggest("#x")).toEqual(["❌ no author matches `#x`"]);
+    });
+
+    test("completes works after #Author/", () => {
+      expect(suggest("#caesar/")).toEqual([
+        '#Caesar/[DeBelloCivili ] De Bello Civili => "#Caesar/DeBelloCivili "',
+        '#Caesar/[DeBelloGallico ] De Bello Gallico => "#Caesar/DeBelloGallico "',
+      ]);
+      expect(suggest("#Caesar/DeBelloG")).toEqual([
+        '#Caesar/DeBelloG[allico ] De Bello Gallico => "#Caesar/DeBelloGallico "',
+      ]);
+      expect(suggest("#Caesar/xyz")).toEqual([
+        "❌ no work matches `#Caesar/xyz`",
+      ]);
+      expect(suggest("#Nobody/xyz")).toEqual([
+        "❌ no author matches `#Nobody`",
+      ]);
+    });
+
+    test("excludes works already chosen, or informs when the whole author was chosen", () => {
+      expect(suggest("#Caesar/DeBelloCivili #Caesar/")).toEqual([
+        '#Caesar/[DeBelloGallico ] De Bello Gallico => "#Caesar/DeBelloCivili #Caesar/DeBelloGallico "',
+      ]);
+      expect(suggest("#Caesar #Caesar/")).toEqual([
+        "ℹ all of #Caesar is already selected",
+      ]);
     });
 
     test("must come first", () => {
@@ -130,13 +161,11 @@ describe("corpusSuggestions", () => {
     });
 
     test("another author can follow, leaving out those already chosen", () => {
-      expect(suggest("#Caesar #c")).toEqual([
-        '#C[icero ] => "#Caesar #Cicero "',
-      ]);
+      expect(suggest("#Caesar #c")).toEqual(['#C[icero] => "#Caesar #Cicero"']);
       // Case-insensitively, as authors are matched.
       expect(suggest("#caesar #")).toEqual([
-        '#[Cicero ] => "#caesar #Cicero "',
-        '#[SenecaMajor ] => "#caesar #SenecaMajor "',
+        '#[Cicero] => "#caesar #Cicero"',
+        '#[SenecaMajor] => "#caesar #SenecaMajor"',
       ]);
     });
 
@@ -147,8 +176,11 @@ describe("corpusSuggestions", () => {
       ]);
     });
 
-    test("without the author list", () => {
-      expect(suggest("#c", {})).toEqual(["ℹ the author list is unavailable"]);
+    test("while loading, or when the author list failed", () => {
+      expect(suggest("#c", {})).toEqual(["ℹ loading authors…"]);
+      expect(suggest("#c", { authors: null })).toEqual([
+        "ℹ the author list is unavailable",
+      ]);
     });
   });
 
@@ -271,7 +303,7 @@ describe("corpusSuggestions", () => {
 });
 
 // // // // // // // // // //
-// LemmaShardCache          //
+// AuthorCache & LemmaShardCache
 // // // // // // // // // //
 
 interface FetchControl {
@@ -383,11 +415,55 @@ describe("LemmaShardCache", () => {
   });
 });
 
+describe("AuthorCache", () => {
+  const originalFetch = window.fetch;
+
+  afterEach(() => {
+    window.fetch = originalFetch;
+    delete document.documentElement.dataset.version;
+    jest.restoreAllMocks();
+  });
+
+  test("shares one request, then returns the cached map", async () => {
+    document.documentElement.dataset.version = "abc";
+    const fetch = controlFetch();
+    const cache = new AuthorCache();
+
+    expect(cache.get()).toBeUndefined();
+    const first = cache.load();
+    const second = cache.load();
+    expect(second).toBe(first);
+    expect(fetch.mock.mock.calls).toEqual([["/api/corpus/authors?v=abc"]]);
+
+    fetch.respond(CORPUS_TEST_AUTHORS);
+    await first;
+
+    expect(cache.get()).toEqual(CORPUS_TEST_AUTHORS);
+    await cache.load();
+    expect(fetch.mock).toHaveBeenCalledTimes(1);
+  });
+
+  test("a failed or malformed response is remembered as null, not retried", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const fetch = controlFetch();
+    const cache = new AuthorCache();
+
+    const load = cache.load();
+    fetch.respond(["not", "a", "map"]);
+    await load;
+    expect(cache.get()).toBeNull();
+
+    await cache.load();
+    expect(fetch.mock).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalled();
+  });
+});
+
 // // // // // // // // // //
 // <morcus-corpus-suggestions>
 // // // // // // // // // //
 
-function landingView(authors: readonly string[] | undefined): CorpusSearchView {
+function landingView(): CorpusSearchView {
   return {
     params: {
       q: "",
@@ -397,7 +473,6 @@ function landingView(authors: readonly string[] | undefined): CorpusSearchView {
     },
     outcome: { kind: "landing" },
     showInflectionDisclaimer: false,
-    authors,
   };
 }
 
@@ -409,9 +484,8 @@ interface Mounted {
 
 /** Renders the real corpus page content and returns its parts. */
 function mount(withAuthors: boolean = true): Mounted {
-  document.body.innerHTML = renderCorpusContentHtml(
-    landingView(withAuthors ? CORPUS_TEST_AUTHORS : undefined)
-  );
+  resetAuthorCacheForTest(withAuthors ? CORPUS_TEST_AUTHORS : undefined);
+  document.body.innerHTML = renderCorpusContentHtml(landingView());
   // The input lives in <morcus-corpus-view>, which this test doesn't define.
   // Mark it running, as on a live page, so the activation gate in
   // `LifetimeScope.listen` lets Enter / submit through.
@@ -523,7 +597,7 @@ describe("<morcus-corpus-suggestions>", () => {
     const { input, listbox } = mount();
     input.focus();
     type(input, "#c");
-    expect(rowTexts(listbox)).toEqual(["#Caesar ", "#Cicero "]);
+    expect(rowTexts(listbox)).toEqual(["#Caesar", "#Cicero"]);
 
     const down = press(input, "ArrowDown");
     expect(down.defaultPrevented).toBe(true);
@@ -533,12 +607,12 @@ describe("<morcus-corpus-suggestions>", () => {
     expect(listbox.children[0].getAttribute("aria-selected")).toBe("true");
 
     press(input, "ArrowDown");
-    expect(activeRow(input)).toBe("#Cicero ");
+    expect(activeRow(input)).toBe("#Cicero");
     expect(listbox.children[0].getAttribute("aria-selected")).toBe("false");
     press(input, "ArrowDown");
-    expect(activeRow(input)).toBe("#Caesar ");
+    expect(activeRow(input)).toBe("#Caesar");
     press(input, "ArrowUp");
-    expect(activeRow(input)).toBe("#Cicero ");
+    expect(activeRow(input)).toBe("#Cicero");
   });
 
   test("ArrowUp with nothing highlighted starts from the last row", () => {
@@ -546,7 +620,7 @@ describe("<morcus-corpus-suggestions>", () => {
     input.focus();
     type(input, "#c");
     press(input, "ArrowUp");
-    expect(activeRow(input)).toBe("#Cicero ");
+    expect(activeRow(input)).toBe("#Cicero");
   });
 
   test("Enter chooses the highlighted completion and keeps focus", () => {
@@ -557,15 +631,14 @@ describe("<morcus-corpus-suggestions>", () => {
     const enter = press(input, "Enter");
 
     expect(enter.defaultPrevented).toBe(true);
-    expect(input.value).toBe("#Cicero ");
-    expect(input.selectionStart).toBe(8);
+    expect(input.value).toBe("#Cicero");
+    expect(input.selectionStart).toBe(7);
     expect(document.activeElement).toBe(input);
-    // Suggestions follow on for the next token, which may be another author.
+    // Completing an author without a space immediately offers all works or /.
     expect(input.hasAttribute("aria-activedescendant")).toBe(false);
     expect(rowTexts(listbox)).toEqual([
-      "# | search in author",
-      "word | match exact word",
-      "@ | match lemma or inflection",
+      "#Cicero  | all works",
+      "#Cicero/ | search in work",
     ]);
   });
 
@@ -600,7 +673,7 @@ describe("<morcus-corpus-suggestions>", () => {
     press(input, "ArrowDown");
     press(input, "Enter");
     expect(input.value).toBe("#Caesar @lemma:fero");
-    expect(input.selectionStart).toBe(8);
+    expect(input.selectionStart).toBe(7);
 
     // Mid-token suffix-inserted completion (`@case:da|tive et` -> `@case:dative et`)
     type(input, "@case:dative et", 8);
@@ -639,7 +712,7 @@ describe("<morcus-corpus-suggestions>", () => {
     press(input, "ArrowDown");
     const tab = press(input, "Tab");
     expect(tab.defaultPrevented).toBe(true);
-    expect(input.value).toBe("#Caesar ");
+    expect(input.value).toBe("#Caesar");
   });
 
   test("Escape closes the list until the next edit", () => {
@@ -699,7 +772,7 @@ describe("<morcus-corpus-suggestions>", () => {
     });
     option?.dispatchEvent(click);
     expect(click.defaultPrevented).toBe(true);
-    expect(input.value).toBe("#Cicero ");
+    expect(input.value).toBe("#Cicero");
     expect(document.activeElement).toBe(input);
   });
 
@@ -744,25 +817,56 @@ describe("<morcus-corpus-suggestions>", () => {
     expect(listbox.hidden).toBe(true);
   });
 
-  test("without data-authors, author completion says the list is unavailable", () => {
+  test("fetches authors on demand when # is typed, then chains into #Author/Work", async () => {
+    document.documentElement.dataset.version = "v1";
+    const fetch = controlFetch();
     const { input, listbox } = mount(false);
-    expect(
-      document
-        .querySelector("morcus-corpus-suggestions")
-        ?.hasAttribute("data-authors")
-    ).toBe(false);
     input.focus();
-    type(input, "#c");
-    expect(rowTexts(listbox)).toEqual(["the author list is unavailable"]);
+
+    // Focusing an empty input or typing a word does not fetch authors.
+    type(input, "amor");
+    expect(fetch.mock).not.toHaveBeenCalled();
+
+    type(input, "#ca");
+    expect(rowTexts(listbox)).toEqual(["loading authors…"]);
+    expect(fetch.mock.mock.calls).toEqual([["/api/corpus/authors?v=v1"]]);
+
+    fetch.respond(CORPUS_TEST_AUTHORS);
+    await settle();
+    expect(rowTexts(listbox)).toEqual(["#Caesar"]);
+
+    // Choosing "#Caesar" completes without a space and immediately offers all works or /.
+    press(input, "ArrowDown");
+    press(input, "Enter");
+    expect(input.value).toBe("#Caesar");
+    expect(rowTexts(listbox)).toEqual([
+      "#Caesar  | all works",
+      "#Caesar/ | search in work",
+    ]);
+
+    // Choosing "#Caesar/" keeps the token open and immediately suggests works.
+    press(input, "ArrowDown");
+    press(input, "ArrowDown");
+    press(input, "Enter");
+    expect(input.value).toBe("#Caesar/");
+    expect(rowTexts(listbox)).toEqual([
+      "#Caesar/DeBelloCivili  | De Bello Civili",
+      "#Caesar/DeBelloGallico  | De Bello Gallico",
+    ]);
+
+    press(input, "ArrowDown");
+    press(input, "Enter");
+    expect(input.value).toBe("#Caesar/DeBelloCivili ");
+    expect(fetch.mock).toHaveBeenCalledTimes(1);
+    delete document.documentElement.dataset.version;
   });
 
   test("adopts text typed before it upgraded", () => {
+    resetAuthorCacheForTest(CORPUS_TEST_AUTHORS);
     // Everything but the host goes live first, as if its definition loaded
     // late while the user was already typing.
     const template = document.createElement("template");
-    template.innerHTML = renderCorpusContentHtml(
-      landingView(CORPUS_TEST_AUTHORS)
-    );
+    template.innerHTML = renderCorpusContentHtml(landingView());
     const host = template.content.querySelector("morcus-corpus-suggestions");
     const slot = document.createComment("host");
     host?.replaceWith(slot);
@@ -772,14 +876,14 @@ describe("<morcus-corpus-suggestions>", () => {
       throw new Error("unexpected corpus markup");
     }
     input.focus();
-    input.value = "#ci";
+    input.value = "#ca";
 
     slot.replaceWith(host);
 
     const listbox = document.getElementById("corpus-suggestions");
-    expect(input.value).toBe("#ci");
+    expect(input.value).toBe("#ca");
     expect(listbox?.hidden).toBe(false);
-    expect(rowTexts(listbox!)).toEqual(["#Cicero "]);
+    expect(rowTexts(listbox!)).toEqual(["#Caesar"]);
   });
 
   test("removing the host leaves a plain input", () => {

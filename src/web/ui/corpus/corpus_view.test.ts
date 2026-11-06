@@ -266,31 +266,21 @@ describe("corpus page", () => {
     expect(text(doc, ".inflect-chip.is-on")).toBe("Strict");
   });
 
-  test("the autocomplete host: JS-only, pointing at the input, with the authors", async () => {
+  test("the autocomplete host: JS-only, pointing at the input", async () => {
     const doc = parse(renderCorpusPageHtml(await search()));
     const host = doc.querySelector<HTMLElement>("morcus-corpus-suggestions");
     const input = doc.querySelector("input[name=q]");
 
     expect(host?.hasAttribute("data-js-only")).toBe(true);
+    expect(host?.hasAttribute("data-authors")).toBe(false);
     expect(host?.closest("form")).toBe(input?.closest("form"));
     expect(doc.getElementById(host?.dataset.input ?? "")).toBe(input);
-    expect(JSON.parse(host?.dataset.authors ?? "")).toEqual(
-      CORPUS_TEST_AUTHORS
-    );
     // The element only fills in options; the listbox is the server's.
     const listbox = host?.firstElementChild;
     expect(listbox?.getAttribute("role")).toBe("listbox");
     expect(listbox?.id).toBe("corpus-suggestions");
     expect(listbox?.hasAttribute("hidden")).toBe(true);
     expect(listbox?.children).toHaveLength(0);
-  });
-
-  test("the autocomplete host omits what the server doesn't know", async () => {
-    const view = await runCorpusSearch(BASE, fakeCorpusEngine(), undefined);
-    const host = parse(renderCorpusPageHtml(view)).querySelector(
-      "morcus-corpus-suggestions"
-    );
-    expect(host?.hasAttribute("data-authors")).toBe(false);
   });
 
   test("unavailable page", () => {

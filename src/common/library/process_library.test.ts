@@ -8,7 +8,13 @@ import {
   stripXmlProlog,
   URL_NAME_BY_WORK_ID,
 } from "@/common/library/process_library";
-import { urlify } from "@/common/library/library_slugs";
+import { buildCorpusAuthorsList } from "@/common/library/corpus/corpus_serialization";
+import {
+  authorCodeFromSlug,
+  toWorkCorpusCode,
+  urlify,
+  urlifyAuthor,
+} from "@/common/library/library_slugs";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { replaceEnvVar } from "@/common/test_helpers";
 import {
@@ -1023,6 +1029,87 @@ describe("onboarded work slugs", () => {
   it("cover distinct URLs", () => {
     const slugs = ONBOARDED_SLUGS.map((row) => row[3]);
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("produce valid, distinct CamelCase #Author and #Author/Work corpus codes", () => {
+    const byAuthor = new Map<string, string[]>();
+    for (const [id, author, title, slug] of ONBOARDED_SLUGS) {
+      const [expectedUrlAuthor] = slug.split("/");
+      const authorCode = authorCodeFromSlug(urlifyAuthor(author));
+      const workCode = toWorkCorpusCode(id, title);
+      expect(authorCode).toBe(authorCodeFromSlug(expectedUrlAuthor));
+      expect(authorCode).toMatch(/^[A-Z][A-Za-z0-9]*$/);
+      expect(workCode).toMatch(/^[A-Z][A-Za-z0-9]*$/);
+      byAuthor.set(authorCode, [...(byAuthor.get(authorCode) ?? []), workCode]);
+    }
+    for (const codes of byAuthor.values()) {
+      expect(new Set(codes.map((c) => c.toLowerCase())).size).toBe(codes.length);
+    }
+  });
+});
+
+describe("toWorkCorpusCode and buildCorpusAuthorsList", () => {
+  it("converts underscored, dotted, and hyphenated work slugs to CamelCase", () => {
+    expect(
+      toWorkCorpusCode("phi0448.phi001.perseus-lat2", "De bello Gallico")
+    ).toBe("DeBelloGallico");
+    // Pinned slug with a period (`pro_a._caecina`).
+    expect(
+      toWorkCorpusCode("phi0474.phi008.perseus-lat2", "Pro A. Caecina")
+    ).toBe("ProACaecina");
+    expect(toWorkCorpusCode("unpinned", "Res Rustica, Books I-IX")).toBe(
+      "ResRusticaBooksIIx"
+    );
+  });
+
+  it("builds a CorpusAuthorList with short display titles and rejects duplicate work codes", () => {
+    const list = buildCorpusAuthorsList({
+      authorLookup: { Cicero: [0, 1] },
+      workLookup: [
+        [
+          "phi0474.phi008.perseus-lat2",
+          [],
+          { author: "M. Tullius Cicero", name: "Pro A. Caecina" },
+        ],
+        [
+          "phi0474.phi020.perseus-lat2",
+          [],
+          { author: "M. Tullius Cicero", name: "De domo sua ad pontifices" },
+        ],
+      ],
+    });
+    expect(list).toEqual({
+      Cicero: [
+        {
+          id: "phi0474.phi008.perseus-lat2",
+          code: "ProACaecina",
+          name: "Pro A. Caecina",
+        },
+        {
+          id: "phi0474.phi020.perseus-lat2",
+          code: "DeDomoSua",
+          name: "de Domo Sua",
+        },
+      ],
+    });
+
+    expect(() =>
+      buildCorpusAuthorsList({
+        authorLookup: { Caesar: [0, 1] },
+        workLookup: [
+          [
+            "w1",
+            [],
+            { author: "Julius Caesar", name: "De Bello Gallico" },
+          ],
+          [
+            "w2",
+            [],
+            { author: "Julius Caesar", name: "de bello gallico" },
+          ],
+        ],
+      })
+    ).toThrow(/Duplicate work code #Caesar\/DeBelloGallico/);
   });
 });
 

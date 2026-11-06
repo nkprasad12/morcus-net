@@ -10,12 +10,15 @@ import {
   errorsForToken,
   findNextOptions,
   hasInflectionFilters,
+  isCorpusAuthorList,
   MAX_AUTHOR_FILTERS,
   parseProximity,
+  resolveWork,
   termGroups,
   tokenizeInput,
   transformQuery,
   validateQuery,
+  type CorpusAuthorList,
   type QueryToken,
 } from "@/web/ui/corpus/corpus_syntax.common";
 
@@ -901,7 +904,22 @@ describe("transformQuery", () => {
   });
 
   describe("canonicalization context", () => {
-    const authors = ["Caesar", "Cicero"];
+    const authors: CorpusAuthorList = {
+      Caesar: [
+        {
+          id: "phi0448.phi001.perseus-lat2",
+          code: "DeBelloGallico",
+          name: "De Bello Gallico",
+        },
+      ],
+      Cicero: [
+        {
+          id: "phi0474.phi037.perseus-lat1",
+          code: "DeOratore",
+          name: "De Oratore",
+        },
+      ],
+    };
     const lemmaMap = new Map([
       ["fero", "fero"],
       ["Fero", "fero"],
@@ -918,6 +936,15 @@ describe("transformQuery", () => {
       expect(transformQuery("#caesar #CICERO amor", { authors })).toBe(
         "[Caesar, Cicero] amor"
       );
+    });
+
+    it("translates #Author/Work to the work ID when authors are provided", () => {
+      expect(transformQuery("#caesar/debellogallico amor", { authors })).toBe(
+        "[phi0448.phi001.perseus-lat2] amor"
+      );
+      expect(
+        transformQuery("#Caesar/DeBelloGallico #Cicero amor", { authors })
+      ).toBe("[phi0448.phi001.perseus-lat2, Cicero] amor");
     });
 
     it("leaves #author raw when no context is provided", () => {
@@ -957,8 +984,17 @@ describe("transformQuery", () => {
   });
 });
 
-describe("canonicalAuthor", () => {
-  const authors = ["Caesar", "Cicero"];
+describe("canonicalAuthor and resolveWork", () => {
+  const authors: CorpusAuthorList = {
+    Caesar: [
+      {
+        id: "phi0448.phi001.perseus-lat2",
+        code: "DeBelloGallico",
+        name: "De Bello Gallico",
+      },
+    ],
+    Cicero: [],
+  };
 
   it("matches case-insensitively and prefers exact match", () => {
     expect(canonicalAuthor("caesar", authors)).toBe("Caesar");
@@ -968,6 +1004,25 @@ describe("canonicalAuthor", () => {
 
   it("returns undefined for unknown authors", () => {
     expect(canonicalAuthor("Homer", authors)).toBeUndefined();
+  });
+
+  it("resolves work slugs case-insensitively", () => {
+    expect(resolveWork("Caesar", "DeBelloGallico", authors)?.id).toBe(
+      "phi0448.phi001.perseus-lat2"
+    );
+    expect(resolveWork("Caesar", "debellogallico", authors)?.id).toBe(
+      "phi0448.phi001.perseus-lat2"
+    );
+    expect(resolveWork("Caesar", "unknown", authors)).toBeUndefined();
+    expect(resolveWork("Homer", "iliad", authors)).toBeUndefined();
+  });
+
+  it("validates CorpusAuthorList shape", () => {
+    expect(isCorpusAuthorList(authors)).toBe(true);
+    expect(isCorpusAuthorList(null)).toBe(false);
+    expect(isCorpusAuthorList(["Caesar"])).toBe(false);
+    expect(isCorpusAuthorList({ Caesar: "nope" })).toBe(false);
+    expect(isCorpusAuthorList({ Caesar: [{ id: 1 }] })).toBe(false);
   });
 });
 
@@ -992,24 +1047,45 @@ describe("parseProximity", () => {
 });
 
 describe("errorsForToken", () => {
-  const authors = ["Caesar", "Cicero"];
+  const authors: CorpusAuthorList = {
+    Caesar: [
+      {
+        id: "phi0448.phi001.perseus-lat2",
+        code: "DeBelloGallico",
+        name: "De Bello Gallico",
+      },
+    ],
+    Cicero: [],
+  };
 
-  it("accepts known authors case-insensitively", () => {
+  it("accepts known authors and works case-insensitively", () => {
     expect(errorsForToken("#caesar", authors)).toEqual([]);
     expect(errorsForToken("#CAESAR", authors)).toEqual([]);
+    expect(errorsForToken("#caesar/debellogallico", authors)).toEqual([]);
+    expect(errorsForToken("#Caesar/DeBelloGallico", authors)).toEqual([]);
   });
 
-  it("rejects unknown authors", () => {
+  it("rejects unknown authors and works", () => {
     expect(errorsForToken("#Homer", authors)).toEqual([
       "invalid author #Homer",
     ]);
-    expect(errorsForToken("#nobody", ["Caesar"])).toEqual([
+    expect(errorsForToken("#nobody", { Caesar: [] })).toEqual([
       "invalid author #nobody",
+    ]);
+    expect(errorsForToken("#Homer/iliad", authors)).toEqual([
+      "invalid author #Homer",
+    ]);
+    expect(errorsForToken("#Caesar/", authors)).toEqual([
+      "invalid work #Caesar/",
+    ]);
+    expect(errorsForToken("#Caesar/aeneid", authors)).toEqual([
+      "invalid work #Caesar/aeneid",
     ]);
   });
 
   it("skips the author check without a list", () => {
     expect(errorsForToken("#Homer", undefined)).toEqual([]);
+    expect(errorsForToken("#Homer/iliad", undefined)).toEqual([]);
   });
 
   it("accepts long and short inflection forms and keywords", () => {
@@ -1040,13 +1116,22 @@ describe("errorsForToken", () => {
 });
 
 describe("validateQuery", () => {
-  const authors = ["Caesar"];
+  const authors: CorpusAuthorList = {
+    Caesar: [
+      {
+        id: "phi0448.phi001.perseus-lat2",
+        code: "DeBelloGallico",
+        name: "De Bello Gallico",
+      },
+    ],
+  };
 
   it("accepts valid queries", () => {
     expect(validateQuery("amor", authors)).toBeNull();
     expect(
       validateQuery("#Caesar @lemma:do and @case:dat ~3> hostis", authors)
     ).toBeNull();
+    expect(validateQuery("#Caesar/DeBelloGallico bellum", authors)).toBeNull();
   });
 
   it("reports structural errors first", () => {
@@ -1056,6 +1141,9 @@ describe("validateQuery", () => {
 
   it("reports token errors", () => {
     expect(validateQuery("#Homer amor", authors)).toBe("invalid author #Homer");
+    expect(validateQuery("#Caesar/aeneid amor", authors)).toBe(
+      "invalid work #Caesar/aeneid"
+    );
     expect(validateQuery("amor ~99 amo", authors)).toContain("1-15");
   });
 });

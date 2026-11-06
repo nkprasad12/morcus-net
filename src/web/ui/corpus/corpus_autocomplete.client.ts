@@ -1,11 +1,11 @@
 /**
  * `<morcus-corpus-suggestions>`: autocomplete for the corpus query input.
  *
- * The server renders the host and an empty listbox (`data-js-only`), with the
- * corpus authors in `data-authors`. This element fills in the options for the
- * text before the caret, using the shared grammar, and splices a chosen one
- * in at the caret. Lemma completions come from per-letter shards fetched on
- * demand ({@link LemmaShardCache}).
+ * The server renders the host and an empty listbox (`data-js-only`). This
+ * element fills in the options for the text before the caret, using the shared
+ * grammar, and splices a chosen one in at the caret. Author/work completions
+ * ({@link AuthorCache}) and per-letter lemma shards ({@link LemmaShardCache})
+ * are fetched on demand.
  *
  * Kept splittable: only `corpus_entry.client.ts` imports this
  * module, it reaches `<morcus-corpus-view>` only through the DOM they share
@@ -29,13 +29,16 @@ import {
   INFLECTION_CATEGORIES,
   MAX_AUTHOR_FILTERS,
   SPECIAL_KEYWORDS,
+  canonicalAuthor,
   errorsForToken,
   findNextOptions,
   invalidInflectionOption,
+  isCorpusAuthorList,
   isInflectionValue,
   parseProximity,
   resolveKeyword,
   tokenizeInput,
+  type CorpusAuthorList,
   type NonSpaceToken,
   type QueryToken,
 } from "@/web/ui/corpus/corpus_syntax.common";
@@ -69,8 +72,11 @@ interface CorpusStatus {
 export type CorpusSuggestion = CorpusCompletion | CorpusStatus;
 
 export interface SuggestionSources {
-  /** The corpus authors. `undefined` if unknown, which skips author checks. */
-  readonly authors?: readonly string[];
+  /**
+   * The corpus authors and their works. `undefined` while loading, `null` if
+   * they couldn't be loaded; either skips author checks.
+   */
+  readonly authors?: CorpusAuthorList | null;
   /**
    * Up to {@link MAX_LEMMA_ROWS} lemmata starting with `prefix`: `undefined`
    * while they load, `null` if they couldn't be loaded.
@@ -211,13 +217,15 @@ function newTokenSuggestions(
   input: string,
   tokens: readonly QueryToken[],
   words: readonly string[],
-  authors: readonly string[] | undefined
+  authors: CorpusAuthorList | null | undefined
 ): CorpusSuggestion[] {
   const next = findNextOptions([...tokens]);
   if (typeof next === "string") {
     return [errorRow(next)];
   }
-  const errors = words.flatMap((word) => errorsForToken(word, authors));
+  const errors = words.flatMap((word) =>
+    errorsForToken(word, authors ?? undefined)
+  );
   if (errors.length > 0) {
     return errors.map(errorRow);
   }
@@ -288,7 +296,7 @@ function authorSuggestions(
   current: string,
   words: readonly string[],
   before: string,
-  authors: readonly string[] | undefined
+  authors: CorpusAuthorList | null | undefined
 ): CorpusSuggestion[] {
   if (words.some((word) => !word.startsWith("#"))) {
     return [errorRow("#author filters must be at start")];
@@ -298,26 +306,79 @@ function authorSuggestions(
     return [errorRow(`at most ${MAX_AUTHOR_FILTERS} #author filters allowed`)];
   }
   if (authors === undefined) {
+    return [infoRow("loading authors…")];
+  }
+  if (authors === null) {
     return [infoRow("the author list is unavailable")];
   }
   const chosen = new Set(
     words.slice(0, -1).map((word) => word.slice(1).toLowerCase())
   );
   const typed = current.slice(1);
-  const rows = authors
-    .filter(
-      (author) =>
-        !chosen.has(author.toLowerCase()) &&
-        author.toLowerCase().startsWith(typed.toLowerCase())
-    )
-    .map(
-      (author): CorpusCompletion => ({
-        prefix: `#${author.slice(0, typed.length)}`,
-        option: `${author.slice(typed.length)} `,
-        // The engine matches author names case-sensitively.
+  const slash = typed.indexOf("/");
+  if (slash !== -1) {
+    const rawAuthor = typed.slice(0, slash);
+    const workPrefix = typed.slice(slash + 1);
+    const author = canonicalAuthor(rawAuthor, authors);
+    if (author === undefined) {
+      return [errorRow(`no author matches \`#${rawAuthor}\``)];
+    }
+    const authorLower = author.toLowerCase();
+    if (chosen.has(authorLower)) {
+      return [infoRow(`all of #${author} is already selected`)];
+    }
+    const works = authors[author] ?? [];
+    const rows = works
+      .filter(
+        (work) =>
+          !chosen.has(`${authorLower}/${work.code.toLowerCase()}`) &&
+          work.code.toLowerCase().startsWith(workPrefix.toLowerCase())
+      )
+      .map(
+        (work): CorpusCompletion => ({
+          prefix: `#${author}/${work.code.slice(0, workPrefix.length)}`,
+          option: `${work.code.slice(workPrefix.length)} `,
+          help: work.name,
+          replacement: `${before}#${author}/${work.code} `,
+        })
+      );
+    return rows.length > 0
+      ? rows
+      : [errorRow(`no work matches \`${current}\``)];
+  }
+  const rows: CorpusCompletion[] = [];
+  for (const author of Object.keys(authors)) {
+    const authorLower = author.toLowerCase();
+    if (
+      chosen.has(authorLower) ||
+      !authorLower.startsWith(typed.toLowerCase())
+    ) {
+      continue;
+    }
+    if (typed.toLowerCase() === authorLower) {
+      rows.push({
+        prefix: `#${author}`,
+        option: " ",
+        help: "all works",
         replacement: `${before}#${author} `,
-      })
-    );
+      });
+      if ((authors[author]?.length ?? 0) > 0) {
+        rows.push({
+          prefix: `#${author}`,
+          option: "/",
+          help: "search in work",
+          replacement: `${before}#${author}/`,
+        });
+      }
+      continue;
+    }
+    rows.push({
+      prefix: `#${author.slice(0, typed.length)}`,
+      option: author.slice(typed.length),
+      // The engine matches author names case-sensitively.
+      replacement: `${before}#${author}`,
+    });
+  }
   return rows.length > 0
     ? rows
     : [errorRow(`no author matches \`${current}\``)];
@@ -538,19 +599,65 @@ export class LemmaShardCache {
 /** Shared by every `<morcus-corpus-suggestions>` on the page. */
 const LEMMA_SHARDS = new LemmaShardCache();
 
+/**
+ * Corpus authors and their works (`GET /api/corpus/authors`, see
+ * `corpus_routes.server.ts`). Fetched once on demand when the user types `#`
+ * and kept for the life of the page.
+ */
+export class AuthorCache {
+  readonly #cache = new KeyedFetchCache<CorpusAuthorList | null>({
+    fetch: async () => {
+      try {
+        const res = await fetch(withBuildVersion("/api/corpus/authors"));
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body: unknown = await res.json();
+        if (!isCorpusAuthorList(body)) {
+          throw new Error("not a corpus author list");
+        }
+        return body;
+      } catch (err: unknown) {
+        console.warn("Corpus authors unavailable:", err);
+        return null;
+      }
+    },
+  });
+
+  constructor(initial?: CorpusAuthorList | null) {
+    if (initial !== undefined) {
+      this.#cache.set("authors", initial);
+    }
+  }
+
+  /**
+   * The cached author list: `undefined` until loaded, `null` if it couldn't
+   * be loaded.
+   */
+  get(): CorpusAuthorList | null | undefined {
+    return this.#cache.get("authors");
+  }
+
+  /**
+   * Fetches the author list unless it's already loaded or loading. Never
+   * rejects: a failure is kept as `null` and not retried.
+   */
+  load(): Promise<CorpusAuthorList | null> {
+    return this.#cache.load("authors");
+  }
+}
+
+/** Shared by every `<morcus-corpus-suggestions>` on the page. */
+let AUTHORS = new AuthorCache();
+
+/** Replaces the shared author cache (for unit tests). */
+export function resetAuthorCacheForTest(
+  initial?: CorpusAuthorList | null
+): void {
+  AUTHORS = new AuthorCache(initial);
+}
+
 // // // // // // // //
 // Element           //
 // // // // // // // //
-
-function parseAuthors(json: string | undefined): readonly string[] | undefined {
-  if (json === undefined) return undefined;
-  try {
-    const parsed: unknown = JSON.parse(json);
-    return isStringArray(parsed) ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 function renderRow(row: CorpusSuggestion): SafeHtml {
   if (isCompletion(row)) {
@@ -601,9 +708,8 @@ interface Parts {
  * Combobox ARIA, keyboard navigation, and focus retention are managed
  * by the core `ComboboxController`.
  */
-class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
+class MorcusCorpusSuggestions extends BaseElement<"lemmata" | "authors"> {
   #parts: Parts | null = null;
-  #authors: readonly string[] | undefined;
   #combobox: ComboboxController<CorpusSuggestion> | null = null;
 
   readonly #lemmata = (prefix: string) => {
@@ -625,7 +731,6 @@ class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
       );
     }
     this.#parts = { input, listbox };
-    this.#authors = parseAuthors(this.dataset.authors);
 
     if (!this.#combobox) {
       this.#combobox = new ComboboxController<CorpusSuggestion>({
@@ -645,6 +750,7 @@ class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
         onVisibilityChange: (open) => {
           if (!open) {
             this.scope.cancel("lemmata");
+            this.scope.cancel("authors");
           }
         },
       });
@@ -666,12 +772,26 @@ class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
       return;
     }
     this.scope.cancel("lemmata");
+    this.scope.cancel("authors");
     const caret = input.selectionStart ?? input.value.length;
-    const suggestions = corpusSuggestions(input.value.slice(0, caret), {
-      authors: this.#authors,
+    const beforeCaret = input.value.slice(0, caret);
+    const authors = AUTHORS.get();
+    if (authors === undefined && beforeCaret.includes("#")) {
+      this.#loadAuthors();
+    }
+    const suggestions = corpusSuggestions(beforeCaret, {
+      authors,
       lemmata: this.#lemmata,
     });
     this.#combobox?.setItems(suggestions);
+  }
+
+  /** Fetches the author list, then re-suggests unless superseded. */
+  #loadAuthors(): void {
+    const signal = this.scope.latest("authors");
+    void AUTHORS.load().then(() => {
+      if (!signal.aborted) this.#refresh();
+    });
   }
 
   /** Fetches the shard for `prefix`, then re-suggests unless superseded. */

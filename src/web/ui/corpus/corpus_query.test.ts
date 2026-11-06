@@ -13,7 +13,7 @@ import {
 import {
   CorpusUnavailableError,
   parseCorpusParams,
-  readCorpusSuggestionList,
+  readCorpusAuthorsList,
   runCorpusSearch,
 } from "@/web/ui/corpus/corpus_query.server";
 import { renderCorpusPageHtml } from "@/web/ui/corpus/corpus_view.server";
@@ -206,6 +206,43 @@ describe("runCorpusSearch", () => {
     );
     expect(view.outcome.kind).toBe("error");
     expect(engine.requests).toHaveLength(0);
+  });
+
+  test("resolves #Author/Work to its work ID and rejects unknown works or missing author lists", async () => {
+    const engine = fakeCorpusEngine();
+    const okView = await runCorpusSearch(
+      { ...BASE, q: "#Caesar/DeBelloGallico amor" },
+      engine,
+      CORPUS_TEST_AUTHORS
+    );
+    expect(okView.outcome.kind).toBe("results");
+    expect(engine.requests).toEqual([
+      expect.objectContaining({
+        query: "[phi0448.phi001.perseus-lat2] amor",
+      }),
+    ]);
+
+    const badWork = await runCorpusSearch(
+      { ...BASE, q: "#Caesar/Nope amor" },
+      engine,
+      CORPUS_TEST_AUTHORS
+    );
+    expect(badWork.outcome).toEqual({
+      kind: "error",
+      message: "invalid work #Caesar/Nope",
+    });
+    expect(engine.requests).toHaveLength(1);
+
+    const noAuthors = await runCorpusSearch(
+      { ...BASE, q: "#Caesar/DeBelloGallico amor" },
+      engine,
+      undefined
+    );
+    expect(noAuthors.outcome).toEqual({
+      kind: "error",
+      message: "the author list is unavailable",
+    });
+    expect(engine.requests).toHaveLength(1);
   });
 
   test("the author prefix doesn't count toward the length limit", async () => {
@@ -406,7 +443,7 @@ describe("runCorpusSearch", () => {
   });
 });
 
-describe("readCorpusSuggestionList", () => {
+describe("readCorpusAuthorsList", () => {
   let tmpDir: string;
 
   beforeEach(() => {
@@ -417,31 +454,30 @@ describe("readCorpusSuggestionList", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test("reads a gzipped JSON string array", async () => {
+  test("reads a gzipped JSON CorpusAuthorList", async () => {
     const fileName = "list.json";
     fs.writeFileSync(
       path.join(tmpDir, fileName),
-      zlib.gzipSync(Buffer.from(JSON.stringify(["Caesar", "Ovid"]), "utf8"))
+      zlib.gzipSync(
+        Buffer.from(JSON.stringify(CORPUS_TEST_AUTHORS), "utf8")
+      )
     );
 
-    await expect(readCorpusSuggestionList(fileName, tmpDir)).resolves.toEqual([
-      "Caesar",
-      "Ovid",
-    ]);
+    await expect(readCorpusAuthorsList(fileName, tmpDir)).resolves.toEqual(
+      CORPUS_TEST_AUTHORS
+    );
   });
 
-  test("rejects non-string-array payloads with a warning", async () => {
+  test("rejects malformed payloads with a warning", async () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     const fileName = "bad.json";
     fs.writeFileSync(
       path.join(tmpDir, fileName),
-      zlib.gzipSync(
-        Buffer.from(JSON.stringify({ w: { data: ["Caesar"] } }), "utf8")
-      )
+      zlib.gzipSync(Buffer.from(JSON.stringify(["Caesar"]), "utf8"))
     );
 
     await expect(
-      readCorpusSuggestionList(fileName, tmpDir)
+      readCorpusAuthorsList(fileName, tmpDir)
     ).resolves.toBeUndefined();
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
@@ -450,7 +486,7 @@ describe("readCorpusSuggestionList", () => {
   test("returns undefined when the file is missing", async () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     await expect(
-      readCorpusSuggestionList("missing.json", tmpDir)
+      readCorpusAuthorsList("missing.json", tmpDir)
     ).resolves.toBeUndefined();
     warn.mockRestore();
   });

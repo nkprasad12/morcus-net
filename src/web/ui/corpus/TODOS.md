@@ -49,39 +49,6 @@ V1 is frozen.
 
 ---
 
-## Phase 2: Author & Work Scope Filtering
-
-### Author filter beyond V1
-
-V1 accepted one `#Author` at the start of the query; V2 accepts up to 20. Extensions:
-
-### 2.2 Single-work filter (`#Author/Work`)
-
-- **Context:** Each entry in `work_lookup` ([`WorkLookupEntry`](../../../../corpus_rust/src/corpus_index.rs)) already stores `work_id`, `info` (`WorkData`), and `rows` with exact token ranges, and [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) already resolves an author to `[start_work_idx, end_work_idx]`. A single work is just `start_work_idx == end_work_idx`.
-- **Chosen syntax:** **`#Author/Work`** (e.g. `#Cicero/de_oratore`, `#Vergil/aeneid`).
-  - Matches the V2 reader URL structure (`/work/:urlAuthor/:urlName`).
-  - Avoids colliding with `@keyword:value` colon error checks in [`errorsForToken`](corpus_syntax.common.ts).
-  - Typing `#Cicero/` in autocomplete switches suggestions from authors to Cicero's works (using the space-free `urlName` slugs from `getV2LibrarySummaries()`, with full work titles shown as secondary labels in the dropdown).
-- **Engine wire format:** Translate `#Author/Work` in `transformQuery` to `[Author/Work]` (or `[work_id]`) so the engine resolves it directly to `[work_idx, work_idx]`.
-
-### 2.3 Multi-author and multi-work filters (Multiple `IndexRange`s)
-
-- **Status:** The engine side is done. A query's `[...]` scope may list up to 20 authors and/or work IDs (`[Cicero, Vergil]`, `[phi0690.phi003.perseus-lat2]`); [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) resolves each to whole-work token ranges, and `TokenScope` sorts and merges them. Indices are sliced once over the span of all of them and `MatchIterator` drops candidates in the gaps (Option B below), so a scope never costs more than an unfiltered query. The UI accepts up to 20 `#Author` filters ([`corpus_syntax.common.ts`](corpus_syntax.common.ts)), sent as one `[A, B]` prefix, and the 100-character query limit no longer counts that prefix. Still to do: `#Author/Work` (2.2).
-- **Performance analysis (why $K$ ranges is NOT $K\times$ the cost of a query):**
-  1. **Parse & metadata lookup (`convert_query_term`):** Looking up `StoredMapValue` (`offset`, `len`) for each word, lemma, or inflection tag depends only on the query terms and runs **once** per query, regardless of $K$.
-  2. **Slicing indices (`IndexSlice::from`):** Slicing a `BitMask` to a range `[start, end)` is an $O(1)$ zero-copy pointer slice (`&bitmask[start_word..end_word]`). Slicing a `List` is two binary searches ($O(\log N)$, ~20 comparisons, ~100 ns).
-  3. **Computing span candidates (`AND` / `OR` / break-mask / proximity):** Every operation is linear in the **length of the slice**, not the full corpus. Filtering to `#Cicero #Quintilian` (~18% + ~5% of the corpus) processes 23% of the words/elements that an unfiltered query processes. Adjacent works (e.g., all works of an author, or adjacent work ranges) also sort and merge into fewer contiguous ranges before any index work runs.
-  4. **Paging & text resolution (`get_match_page` + `resolve_match_tokens`):** Stops as soon as `page_size` (50) matches are collected across ranges, so text resolution is capped at 50 matches total.
-- **Implementation options in the Rust engine:**
-
-| Approach                                                                       | Mechanism                                                                                                                                                                                                                                               | Trade-offs & Best Fit                                                                                                                                                                                                                              |
-| :----------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Option A: Per-range slice loop** (sorted, merged disjoint `Vec<IndexRange>`) | Parse query terms once; for each disjoint range $r_i$, slice indices ($O(1)$ bitmask / $O(\log N)$ list) and run `candidates_for_spans` on $r_i$. Chain the per-range `MatchIterator`s.                                                                 | **Best for 1–10 authors/works (the 99% case).** Only touches memory inside the selected authors/works, skipping 70–95% of the corpus. Runs _faster_ than an unfiltered query. Fixed per-range overhead is just ~2 binary searches per `List` term. |
-| **Option B: Bounding-box range + post-filter**                                 | Set a single `IndexRange = [min(start_i), max(end_i)]` (zero changes to `candidates_for_spans`), and in `MatchIterator` skip candidate token IDs falling in the gaps between allowed `[start_i, end_i)` intervals (or AND with a cached scope bitmask). | **Best for many scattered works or sparse `List` queries.** When the final candidate set is a `List` of a few hundred token IDs, skipping out-of-range IDs in `MatchIterator` takes nanoseconds with a single pass over `candidates_for_spans`.    |
-| **Option C: Hybrid**                                                           | Use Option A when `ranges.len()` is small (e.g. $\le 8$), or Option B when `ranges.len()` is large / candidate set is a `List`.                                                                                                                         | Avoids worst-case behavior in both regimes if we ever add broad category/period filters that expand to dozens of non-contiguous works.                                                                                                             |
-
----
-
 ## Phase 3: Query Language Enhancements & Architectural Notes
 
 ### Architectural context: Two-stage evaluation (`token_id` indices vs. per-analysis validation)

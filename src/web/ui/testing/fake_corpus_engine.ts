@@ -9,15 +9,39 @@ import type {
 } from "@/common/library/corpus/corpus_common";
 import type { CorpusQueryRequest } from "@/common/library/corpus/corpus_common";
 import type { CorpusEngine } from "@/web/ui/corpus/corpus_query.server";
+import type { CorpusAuthorList } from "@/web/ui/corpus/corpus_syntax.common";
 
 /** In `MOCK_V2_SUMMARIES` as `caesar/de_bello_gallico`. */
 const CAESAR_ID = "phi0448.phi001.perseus-lat2";
 
-export const CORPUS_TEST_AUTHORS: readonly string[] = [
-  "Caesar",
-  "Cicero",
-  "SenecaMajor",
-];
+export const CORPUS_TEST_AUTHORS: CorpusAuthorList = {
+  Caesar: [
+    {
+      id: "phi0448.phi002.perseus-lat2",
+      code: "DeBelloCivili",
+      name: "De Bello Civili",
+    },
+    {
+      id: CAESAR_ID,
+      code: "DeBelloGallico",
+      name: "De Bello Gallico",
+    },
+  ],
+  Cicero: [
+    {
+      id: "phi0474.phi037.perseus-lat1",
+      code: "DeOratore",
+      name: "De Oratore",
+    },
+  ],
+  SenecaMajor: [
+    {
+      id: "phi1014.phi001.perseus-lat1",
+      code: "Controversiae",
+      name: "Controversiae",
+    },
+  ],
+};
 
 export function fakeMatch(
   overrides: Partial<CorpusQueryMatch["metadata"]> = {},
