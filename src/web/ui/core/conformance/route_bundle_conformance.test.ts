@@ -32,6 +32,10 @@ import {
 } from "@/web/ui/corpus/corpus_params.common";
 import { runCorpusSearch } from "@/web/ui/corpus/corpus_query.server";
 import {
+  buildCorpusReferencePageHtml,
+  renderCorpusReferencePageHtml,
+} from "@/web/ui/corpus/corpus_reference.server";
+import {
   renderCorpusPageHtml,
   renderCorpusPartialHtml,
   renderCorpusUnavailableHtml,
@@ -660,6 +664,16 @@ describe("Route-to-Bundle Conformance Harness", () => {
         name: "/corpus (503 unavailable)",
         url: "/corpus?q=amo",
         fullHtml: renderCorpusUnavailableHtml(),
+      },
+      {
+        name: "/corpus/reference",
+        url: "/corpus/reference",
+        fullHtml: await buildCorpusReferencePageHtml(CORPUS_TEST_AUTHORS),
+      },
+      {
+        name: "/corpus/reference (503 author list unavailable)",
+        url: "/corpus/reference",
+        fullHtml: renderCorpusReferencePageHtml(undefined),
       },
       {
         name: "/macronizer (landing + results + slot partials)",

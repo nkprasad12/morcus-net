@@ -15,10 +15,15 @@ import { ABOUT_PAGE_KEY, LIBRARY_PAGE_KEY } from "@/web/ui/app_router.server";
 import { renderAboutPageHtml } from "@/web/ui/about/about.server";
 import { corpusLandingPageKey } from "@/web/ui/corpus/corpus_routes.server";
 import {
+  loadCorpusAuthors,
   parseCorpusParams,
   runCorpusSearch,
   type CorpusEngine,
 } from "@/web/ui/corpus/corpus_query.server";
+import {
+  CORPUS_REFERENCE_PAGE_KEY,
+  buildCorpusReferencePageHtml,
+} from "@/web/ui/corpus/corpus_reference.server";
 import { renderCorpusPageHtml } from "@/web/ui/corpus/corpus_view.server";
 import {
   saveStaticPagesDb,
@@ -82,6 +87,11 @@ export function staticPageSeeds(): StaticPageSeed[] {
           await runCorpusSearch(corpusParams, NO_CORPUS_ENGINE, undefined)
         ),
     },
+    {
+      key: CORPUS_REFERENCE_PAGE_KEY,
+      render: async () =>
+        buildCorpusReferencePageHtml(await loadCorpusAuthors()),
+    },
     ...dictViews.map((view) => {
       const state = defaultDictLandingState(view);
       return {
@@ -122,6 +132,11 @@ async function checkSeedInputs(): Promise<void> {
   ) {
     throw new Error(
       "Static pages: the Experimental Texts catalog is missing; build it first."
+    );
+  }
+  if ((await loadCorpusAuthors()) === undefined) {
+    throw new Error(
+      "Static pages: the corpus author list is missing; build the corpus first."
     );
   }
 }

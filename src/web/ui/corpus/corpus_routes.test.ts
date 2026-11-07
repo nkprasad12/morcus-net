@@ -291,6 +291,31 @@ describe("GET /corpus: autocomplete host", () => {
   });
 });
 
+describe("GET /corpus/reference", () => {
+  test("renders the full reference page with authors and works even without an engine", async () => {
+    const res = await request(makeApp()).get("/corpus/reference");
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("<!DOCTYPE html>");
+    expect(res.text).toContain("Corpus search reference");
+    expect(res.text).toContain("#Caesar/DeBelloGallico");
+    expect(res.text).toContain("Julius Caesar");
+  });
+
+  test("without the author list, answers 503 and is not cached", async () => {
+    const app = makeApp(undefined, {
+      loadAuthors: () => Promise.resolve(undefined),
+    });
+    const res = await request(app).get("/corpus/reference");
+
+    expect(res.status).toBe(503);
+    expect(res.headers["cache-control"]).toBe("no-store");
+    expect(res.text).toContain(
+      "The corpus author and work list is not available on this server."
+    );
+  });
+});
+
 describe("GET /api/corpus/authors", () => {
   const savedCommit = process.env.COMMIT_ID;
 

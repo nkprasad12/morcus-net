@@ -21,13 +21,20 @@ import {
   runCorpusSearch,
   type CorpusEngine,
 } from "@/web/ui/corpus/corpus_query.server";
+import {
+  CORPUS_REFERENCE_PAGE_KEY,
+  buildCorpusReferencePageHtml,
+} from "@/web/ui/corpus/corpus_reference.server";
 import type { CorpusAuthorList } from "@/web/ui/corpus/corpus_syntax.common";
 import {
   renderCorpusPageHtml,
   renderCorpusPartialHtml,
   renderCorpusUnavailableHtml,
 } from "@/web/ui/corpus/corpus_view.server";
-import type { CorpusParams } from "@/web/ui/corpus/corpus_params.common";
+import {
+  CORPUS_REFERENCE_PATH,
+  type CorpusParams,
+} from "@/web/ui/corpus/corpus_params.common";
 import {
   sendStaticPageOr,
   type StaticPageLookup,
@@ -141,6 +148,25 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
       console.error("Error running corpus search:", err);
       res.status(500).send("Error running corpus search");
     }
+  });
+
+  // Full reference manual for corpus query syntax and author/work codes.
+  getAsync(CORPUS_REFERENCE_PATH, async (req, res) => {
+    await sendStaticPageOr(
+      req,
+      res,
+      options.staticPages,
+      CORPUS_REFERENCE_PAGE_KEY,
+      async () => {
+        const authors = await loadAuthors();
+        requestTimer(res).mark("lookupComplete");
+        if (authors === undefined) {
+          res.setHeader("Cache-Control", "no-store");
+          res.status(503);
+        }
+        return buildCorpusReferencePageHtml(authors);
+      }
+    );
   });
 
   // The authors and their works, for `#Author` and `#Author/Work` autocomplete.

@@ -332,16 +332,90 @@ describe("runCorpusSearch", () => {
     );
     expect(engine.requests[2].query).toBe("@lemma:Caesar @lemma:Caesar");
 
-    // Exact match wins over case-insensitive collision; ambiguous non-exact keeps user spelling.
+    // Exact match wins over a case-insensitive collision.
     await runCorpusSearch(
-      { ...BASE, q: "@lemma:Magnus @lemma:magnus @lemma:MAGNUS" },
+      { ...BASE, q: "@lemma:Magnus @lemma:magnus" },
       engine,
       CORPUS_TEST_AUTHORS,
       lemmata
     );
-    expect(engine.requests[3].query).toBe(
-      "@lemma:Magnus @lemma:magnus @lemma:MAGNUS"
-    );
+    expect(engine.requests[3].query).toBe("@lemma:Magnus @lemma:magnus");
+  });
+
+  describe("unresolved @lemma values are errors that name the alternatives", () => {
+    const lemmata = [
+      "Magnus",
+      "magnus",
+      "edo#1",
+      "edo#2",
+      "edo#3",
+      "Machaera",
+      "machaera#1",
+      "volo#1",
+      "amo",
+    ];
+
+    async function run(q: string) {
+      const engine = fakeCorpusEngine();
+      const view = await runCorpusSearch(
+        { ...BASE, q },
+        engine,
+        CORPUS_TEST_AUTHORS,
+        lemmata
+      );
+      return { view, engine };
+    }
+
+    test.each([
+      [
+        "@lemma:edo",
+        "@lemma:edo - ambiguous lemma; use @lemma:edo#1, @lemma:edo#2, or @lemma:edo#3",
+      ],
+      [
+        "@l:edo",
+        "@l:edo - ambiguous lemma; use @l:edo#1, @l:edo#2, or @l:edo#3",
+      ],
+      [
+        "@lemma:MAGNUS",
+        "@lemma:MAGNUS - ambiguous lemma; use @lemma:Magnus or @lemma:magnus",
+      ],
+      [
+        "@lemma:machaera",
+        "@lemma:machaera - ambiguous lemma; use @lemma:Machaera or @lemma:machaera#1",
+      ],
+      [
+        "@lemma:edo#9",
+        "@lemma:edo#9 - ambiguous lemma; use @lemma:edo#1, @lemma:edo#2, or @lemma:edo#3",
+      ],
+      ["amo ~ @lemma:xyz", "@lemma:xyz - no lemma `xyz` in the corpus"],
+    ])("%s", async (q, message) => {
+      const { view, engine } = await run(q);
+      expect(view.outcome).toEqual({ kind: "error", message });
+      expect(engine.requests).toEqual([]);
+    });
+
+    test.each([
+      ["@lemma:edo1", "@lemma:edo#1"],
+      ["@lemma:EDO#2", "@lemma:edo#2"],
+      ["@lemma:volo", "@lemma:volo#1"],
+      ["@l:Amo", "@l:amo"],
+    ])("%s resolves to %s", async (q, engineQuery) => {
+      const { view, engine } = await run(q);
+      expect(view.outcome.kind).toBe("results");
+      expect(engine.requests[0].query).toBe(engineQuery);
+    });
+
+    test("without a lemma list, values go to the engine as typed", async () => {
+      const engine = fakeCorpusEngine();
+      const view = await runCorpusSearch(
+        { ...BASE, q: "@lemma:edo" },
+        engine,
+        CORPUS_TEST_AUTHORS,
+        () => undefined
+      );
+      expect(view.outcome.kind).toBe("results");
+      expect(engine.requests[0].query).toBe("@lemma:edo");
+    });
   });
 
   test("builds result views with reader links", async () => {
@@ -458,9 +532,7 @@ describe("readCorpusAuthorsList", () => {
     const fileName = "list.json";
     fs.writeFileSync(
       path.join(tmpDir, fileName),
-      zlib.gzipSync(
-        Buffer.from(JSON.stringify(CORPUS_TEST_AUTHORS), "utf8")
-      )
+      zlib.gzipSync(Buffer.from(JSON.stringify(CORPUS_TEST_AUTHORS), "utf8"))
     );
 
     await expect(readCorpusAuthorsList(fileName, tmpDir)).resolves.toEqual(

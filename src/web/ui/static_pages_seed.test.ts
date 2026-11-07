@@ -42,6 +42,15 @@ jest.mock("@/common/experimental_texts/catalog_loader", () => ({
     ).EXPERIMENTAL_TEXTS_TEST_CATALOG,
 }));
 
+jest.mock("@/web/ui/corpus/corpus_query.server", () => ({
+  ...jest.requireActual("@/web/ui/corpus/corpus_query.server"),
+  loadCorpusAuthors: () =>
+    Promise.resolve(
+      jest.requireActual("@/web/ui/testing/fake_corpus_engine")
+        .CORPUS_TEST_AUTHORS
+    ),
+}));
+
 /** The URL each seed answers, with the request state its key stands for. */
 const SEEDED_REQUESTS: ReadonlyArray<{ url: string; expectKey: RegExp }> = [
   { url: "/", expectKey: /^dict:.*:root$/ },
@@ -53,6 +62,7 @@ const SEEDED_REQUESTS: ReadonlyArray<{ url: string; expectKey: RegExp }> = [
   { url: "/macronizer", expectKey: /^page:\/macronizer$/ },
   { url: "/externalReader", expectKey: /^page:\/externalReader$/ },
   { url: "/corpus", expectKey: /^corpus:/ },
+  { url: "/corpus/reference", expectKey: /^page:\/corpus\/reference$/ },
 ];
 
 /** Requests on the same routes that must render dynamically. */

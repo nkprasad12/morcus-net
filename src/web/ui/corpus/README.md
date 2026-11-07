@@ -8,13 +8,13 @@ The page is a plain `GET` form. The query, including any `#Author` or `#Author/W
 
 ## URL contract
 
-| Param        | Form control                                          | Default    | Range / format                                                     | Notes                                                                                                                                                                            |
-| :----------- | :---------------------------------------------------- | :--------- | :----------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Param        | Form control                                          | Default    | Range / format                                                     | Notes                                                                                                                                                                             |
+| :----------- | :---------------------------------------------------- | :--------- | :----------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `q`          | `<input name="q">`                                    | `""`       | ≤ 100 chars after transform, not counting the `[...]` scope prefix | Empty → landing view, engine not called. May start with up to 20 `#Author` or `#Author/Work` filters (sent as one `[A, B]` prefix); an unknown author or work is a grammar error. |
-| `pageSize`   | `<input type="number" name="pageSize">`               | 50         | clamp 10–100                                                        |                                                                                                                                                         |
-| `contextLen` | `<input type="number" name="contextLen">`             | 20         | clamp 1–100                                                         | V1's UI default is 20; the engine's is 25.                                                                                                              |
-| `strictMode` | `<input type="checkbox" name="strictMode" value="1">` | off        | `1` or absent                                                       | Absent when unchecked, the native checkbox behaviour.                                                                                                   |
-| `cursor`     | none (links only)                                     | first page | `<resultId>-<resultIndex>-<candidateIndex>`                         | Only pager links set it. Submitting the form drops it, so a new search or new settings start at page 1.                                                 |
+| `pageSize`   | `<input type="number" name="pageSize">`               | 50         | clamp 10–100                                                       |                                                                                                                                                                                   |
+| `contextLen` | `<input type="number" name="contextLen">`             | 20         | clamp 1–100                                                        | V1's UI default is 20; the engine's is 25.                                                                                                                                        |
+| `strictMode` | `<input type="checkbox" name="strictMode" value="1">` | off        | `1` or absent                                                      | Absent when unchecked, the native checkbox behaviour.                                                                                                                             |
+| `cursor`     | none (links only)                                     | first page | `<resultId>-<resultIndex>-<candidateIndex>`                        | Only pager links set it. Submitting the form drops it, so a new search or new settings start at page 1.                                                                           |
 
 - The JS path serializes the form with `new FormData(form)`, like a native submit, so URLs are identical in both modes (`corpus_form_conformance.test.ts`).
 - Out-of-range numbers are clamped on the server, and the form shows the clamped value.
@@ -63,6 +63,7 @@ The server imports `reader_loader.server.ts` and `reader_highlight.common.ts` (t
 | Route                             | Response                                                                                                                                                                                                                                                                                                            |
 | :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `GET /corpus`                     | Full page (no `Cache-Control`), or slot templates (`X-Requested-With: fetch`). JS swaps carry `?v=<build version>` (`swapSlots({ versioned: true })`); a request at the server's current version gets `Cache-Control: private, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`). |
+| `GET /corpus/reference`           | Full reference manual for the corpus query syntax, inflection categories, settings, limits, and every `#Author` and `#Author/Work` code in the corpus (`corpus_reference.server.ts`). Pre-rendered into `build/pages.db` (`CORPUS_REFERENCE_PAGE_KEY`).                                                             |
 | `GET /api/corpus/authors`         | JSON map of author code → works (`[{ id, code, name }, ...]`), for `#Author` and `#Author/Work` autocomplete. URLs carry `?v=<build version>` (`withBuildVersion`); cached immutably at the current version (`setVersionedCacheControl`).                                                                           |
 | `GET /api/corpus/lemmata/:letter` | JSON array of lemmata starting with `letter` (one lowercased char). URLs carry `?v=<build version>` (`withBuildVersion`, from `<html data-version>`); a request at the server's current version gets `Cache-Control: public, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`).   |
 
@@ -108,13 +109,13 @@ Both elements ship in the `corpus.js` route chunk (`corpus_entry.client.ts`). Th
 
 ## Decisions
 
-| #   | Decision                                                                                                                                                           |
-| :-- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D2  | V1 parity on paging: Next link only, Back is the browser's. A real Previous link is in [`TODOS.md`](TODOS.md#previous-page).                                       |
-| D3  | Author and work scopes are `#Author` and `#Author/Work` filters at the start of `q` (up to 20), with no separate control or param. V1 allowed one `#Author`.       |
-| D4  | The `@`-query disclaimer is an inline `<details>` in the `results` slot; no modal, no "don't show again" storage.                                                  |
-| D6  | Corpus ships in its own `corpus.js` route chunk; the ceiling is in `client_bundle_budget.ts`.                                                                      |
-| D7  | A bad `cursor` is treated as the first page.                                                                                                                       |
+| #   | Decision                                                                                                                                                     |
+| :-- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D2  | V1 parity on paging: Next link only, Back is the browser's. A real Previous link is in [`TODOS.md`](TODOS.md#previous-page).                                 |
+| D3  | Author and work scopes are `#Author` and `#Author/Work` filters at the start of `q` (up to 20), with no separate control or param. V1 allowed one `#Author`. |
+| D4  | The `@`-query disclaimer is an inline `<details>` in the `results` slot; no modal, no "don't show again" storage.                                            |
+| D6  | Corpus ships in its own `corpus.js` route chunk; the ceiling is in `client_bundle_budget.ts`.                                                                |
+| D7  | A bad `cursor` is treated as the first page.                                                                                                                 |
 
 ---
 
@@ -127,10 +128,12 @@ corpus_params.common.ts        # URL contract: read/clamp/serialize, cursor code
 corpus_query.server.ts         # query adapter, author list, engine call, view model, reader links
 corpus_view.server.ts          # page and per-slot renderers (one source for full page and partial)
 corpus_help.server.ts          # static syntax help
+corpus_reference.server.ts     # full /corpus/reference manual and author/work index
 corpus_lemmata.server.ts       # lemma shard builder
 corpus_routes.server.ts        # createCorpusRoutes
 corpus_view.client.ts          # <morcus-corpus-view>
 corpus_autocomplete.client.ts  # <morcus-corpus-suggestions>, AuthorCache, LemmaShardCache
 corpus_entry.client.ts         # corpus.js route chunk entry
 corpus.css
+corpus_reference.css
 ```

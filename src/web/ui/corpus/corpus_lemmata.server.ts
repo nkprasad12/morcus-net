@@ -64,29 +64,72 @@ export function openCorpusLemmaStore(
   return cachedLemmaStore;
 }
 
+/** How a user-typed `@lemma:` value resolves against the corpus lemmata. */
+export type LemmaResolution =
+  | { readonly kind: "found"; readonly lemma: string }
+  | { readonly kind: "ambiguous"; readonly options: readonly string[] }
+  | { readonly kind: "unknown" };
+
 /**
- * Resolves `value` against `lemmata`: exact match wins; otherwise a unique
- * case-insensitive match is returned; if none or multiple case-insensitive
- * matches exist, returns `undefined`.
+ * Resolves a user-typed `@lemma:` value, or returns `undefined` when the lemma
+ * list isn't available (the value then goes to the engine as typed).
  */
-export function resolveCanonicalLemma(
+export type LemmaResolver = (value: string) => LemmaResolution | undefined;
+
+/** `edo#1` → `["edo", "1"]`; `edo1` → `["edo", "1"]`; `edo` → `["edo"]`. */
+function splitHomographSuffix(value: string): [string, string?] {
+  const match = /^(.*[^\d#])#?(\d+)$/.exec(value);
+  return match === null ? [value] : [match[1], match[2]];
+}
+
+/**
+ * Resolves `value` against `lemmata`.
+ *
+ * - An exact match wins (`Magnus` and `magnus` are both lemmata).
+ * - Otherwise the candidates are the case-insensitive matches plus, for a bare
+ *   value, its numbered homographs (`edo` → `edo#1`, `edo#2`, ...), or, for a
+ *   numbered value, the homograph with that number (`edo1` → `edo#1`).
+ * - One candidate resolves; several are ambiguous. A numbered value with no
+ *   candidate lists the base's homographs instead (`edo#9` → `edo#1`, ...).
+ */
+export function resolveLemma(
   value: string,
   lemmata: readonly string[]
-): string | undefined {
+): LemmaResolution {
   if (lemmata.includes(value)) {
-    return value;
+    return { kind: "found", lemma: value };
   }
   const lower = value.toLowerCase();
-  let match: string | undefined;
-  for (const lemma of lemmata) {
-    if (lemma.toLowerCase() === lower) {
-      if (match !== undefined && match !== lemma) {
-        return undefined;
-      }
-      match = lemma;
+  const [base, number] = splitHomographSuffix(lower);
+  const homographsOfBase = (lemma: string) => {
+    const [lemmaBase, lemmaNumber] = splitHomographSuffix(lemma.toLowerCase());
+    return lemmaNumber !== undefined &&
+      lemma.includes("#") &&
+      lemmaBase === base
+      ? lemmaNumber
+      : undefined;
+  };
+  const candidates = lemmata.filter((lemma) => {
+    if (lemma.toLowerCase() === lower) return true;
+    const lemmaNumber = homographsOfBase(lemma);
+    return (
+      lemmaNumber !== undefined &&
+      (number === undefined || Number(lemmaNumber) === Number(number))
+    );
+  });
+  if (candidates.length === 1) {
+    return { kind: "found", lemma: candidates[0] };
+  }
+  if (candidates.length > 1) {
+    return { kind: "ambiguous", options: [...candidates].sort() };
+  }
+  if (number !== undefined) {
+    const options = lemmata.filter((l) => homographsOfBase(l) !== undefined);
+    if (options.length > 0) {
+      return { kind: "ambiguous", options: [...options].sort() };
     }
   }
-  return match;
+  return { kind: "unknown" };
 }
 
 function isReadonlyStringArray(
@@ -96,21 +139,22 @@ function isReadonlyStringArray(
 }
 
 /**
- * Builds a lemma canonicalizer from a `PrecompressedJsonStore` of first-letter
- * shards (decoding each shard at most once) or an in-memory lemma list.
+ * Builds a {@link LemmaResolver} from a `PrecompressedJsonStore` of
+ * first-letter shards (decoding each shard at most once) or an in-memory
+ * lemma list. With no source, every value is left as typed.
  */
-export function createLemmaCanonicalizer(
+export function createLemmaResolver(
   source: PrecompressedJsonStore | readonly string[] | undefined
-): (value: string) => string | undefined {
+): LemmaResolver {
   if (source === undefined) {
     return () => undefined;
   }
   if (isReadonlyStringArray(source)) {
     return (value: string) =>
-      value.length === 0 ? undefined : resolveCanonicalLemma(value, source);
+      value.length === 0 ? undefined : resolveLemma(value, source);
   }
   const shardCache = new Map<string, readonly string[]>();
-  return (value: string): string | undefined => {
+  return (value: string): LemmaResolution | undefined => {
     if (value.length === 0) {
       return undefined;
     }
@@ -128,20 +172,19 @@ export function createLemmaCanonicalizer(
       }
       shardCache.set(key, shard);
     }
-    return resolveCanonicalLemma(value, shard);
+    return resolveLemma(value, shard);
   };
 }
 
-let cachedCanonicalLemma: ((value: string) => string | undefined) | null = null;
+let cachedCorpusLemmaResolver: LemmaResolver | null = null;
 
 /**
- * Resolves `value` against the built corpus lemma shards (exact match first,
- * then unique case-insensitive match), or returns `undefined` if the corpus
- * isn't built or `value` is unknown/ambiguous.
+ * Resolves `value` against the built corpus lemma shards (see
+ * {@link resolveLemma}), or returns `undefined` if the corpus isn't built.
  */
-export function canonicalCorpusLemma(value: string): string | undefined {
-  if (cachedCanonicalLemma === null) {
-    cachedCanonicalLemma = createLemmaCanonicalizer(openCorpusLemmaStore());
+export function resolveCorpusLemma(value: string): LemmaResolution | undefined {
+  if (cachedCorpusLemmaResolver === null) {
+    cachedCorpusLemmaResolver = createLemmaResolver(openCorpusLemmaStore());
   }
-  return cachedCanonicalLemma(value);
+  return cachedCorpusLemmaResolver(value);
 }

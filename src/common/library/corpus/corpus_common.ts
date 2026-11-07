@@ -34,6 +34,12 @@ export interface CorpusQueryRequest {
  */
 export const MAX_QUERY_BODY_LENGTH = 100;
 
+/**
+ * The most contiguous spans (term groups separated by `~`) a query may have.
+ * Matches the engine's `MAX_QUERY_SPANS` (`corpus_rust/src/corpus_query_engine.rs`).
+ */
+export const MAX_QUERY_SPANS = 10;
+
 /** The length of an engine query without its leading `[...]` scope prefix. */
 export function queryBodyLength(query: string): number {
   return query.replace(/^\s*\[[^\]]*\]\s*/, "").length;

@@ -31,7 +31,7 @@ async function collectV2AssetPaths(request: APIRequestContext): Promise<{
   cssPath: string;
 }> {
   const routeUrls: Record<V2Route, string> = {
-    about: "/about",
+    static: "/about",
     dicts: "/dicts",
     library: "/library",
     corpus: "/corpus",

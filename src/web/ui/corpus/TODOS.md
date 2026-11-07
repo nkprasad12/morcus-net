@@ -231,11 +231,6 @@ V1 showed a Back button that was always disabled ("Back doesn't work yet"); V2 h
 
 A "First page" link is a cheap first step if the others wait.
 
-### 4.3 Author discovery without JS
-
-- **Current state:** Only JS autocomplete lists the available `#Author` names.
-- **Fix:** Add an expandable `<details>` list of authors (or clickable examples) in [`corpus_help.server.ts`](corpus_help.server.ts), matching the existing "All inflection @categories" disclosure. (Considered alternative: a native `author=` checkbox list in the form, which works without JS and handles spaces, but gives the same filter two sources of truth next to `#Author`.)
-
 ### 4.4 Heading rows cannot be highlighted
 
 Non-leaf rows (e.g. a chapter heading row `1.2` above sections `1.2.1…`) are indexed by the corpus but rendered by V2 without an `id` (1,359 rows library-wide). A `matchText` range that falls in such a row resolves the right page but highlights nothing. Low priority; fixing it needs a stable per-row identifier (e.g. `data-row-id`) on every rendered section.
@@ -266,3 +261,12 @@ Non-leaf rows (e.g. a chapter heading row `1.2` above sections `1.2.1…`) are i
 **Status:** Open, low priority. The [seam review](#word-boundary-rule) covered the 125 works in the library at the time. The row-parity sweep now passes on the full library (317 works), so the corpus and the reader agree on word boundaries everywhere; what hasn't been checked for the newer works (mostly thelatinlibrary, with its own markup) is whether those shared boundaries are right, i.e. source typos like those in [4.5](#45-source-typos-missing-space-after-a-tag).
 
 Re-run the seam review on the new works only, using the method in 4.5 ("How to find more"), and add any source typos to that table.
+
+### 4.7 Lemmata the engine can't query
+
+**Status:** Open, low priority. A few corpus lemmata (from Morceus) don't fit the engine's lemma syntax (`is_valid_lemma` in [`query_parsing_v2.rs`](../../../../corpus_rust/src/query_parsing_v2.rs): ASCII letters, optionally followed by `#N`), so `@lemma:` can never match them; the query fails to parse instead:
+
+- A homograph number without `#`: `merces1`, `caro2`, `compes1`, `paco2`, `intercido1`, `intercido2`, `Areus2`, `aspergo1`.
+- Stray punctuation: `terdecies:`, `bonum#`.
+
+The fix belongs in the Morceus data (or a normalization step where the corpus collects lemmata), not the query engine: `caro2` should be `caro#2`, and so on. Some of these coexist with `#N` siblings, so check for collisions when renumbering. To list them, scan the lemma shards in `build/corpus/latin_corpus_suggestions_lemmata.db` for values not matching `^[A-Za-z]+(#[0-9]+)?$`.

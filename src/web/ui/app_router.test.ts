@@ -1638,6 +1638,11 @@ describe("app_router integration", () => {
       },
       { route: "/corpus", method: "GET", url: "/corpus?q=amo" },
       {
+        route: "/corpus/reference",
+        method: "GET",
+        url: "/corpus/reference",
+      },
+      {
         route: "/api/corpus/authors",
         method: "GET",
         url: "/api/corpus/authors",

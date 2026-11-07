@@ -19,16 +19,20 @@ import {
 } from "@/common/library/corpus/corpus_common";
 import type { CorpusQueryRequest } from "@/common/library/corpus/corpus_common";
 import {
-  canonicalCorpusLemma,
-  createLemmaCanonicalizer,
+  createLemmaResolver,
+  resolveCorpusLemma,
+  type LemmaResolution,
+  type LemmaResolver,
 } from "@/web/ui/corpus/corpus_lemmata.server";
 import {
   readCorpusParams,
   type CorpusParams,
 } from "@/web/ui/corpus/corpus_params.common";
 import {
+  LEMMA_FILTER,
   hasInflectionFilters,
   isCorpusAuthorList,
+  tokenizeInput,
   transformQuery,
   validateQuery,
   type CorpusAuthorList,
@@ -175,6 +179,55 @@ function engineErrorMessage(err: unknown): string {
   return text.length > 0 ? text : "The query could not be run.";
 }
 
+/** The most homographs an "ambiguous lemma" error lists. */
+const MAX_LEMMA_OPTIONS = 8;
+
+function memoizeLemmaResolver(resolve: LemmaResolver): LemmaResolver {
+  const cache = new Map<string, LemmaResolution | undefined>();
+  return (value) => {
+    if (!cache.has(value)) {
+      cache.set(value, resolve(value));
+    }
+    return cache.get(value);
+  };
+}
+
+/**
+ * The first `@lemma:` value in `query` that is ambiguous (`@lemma:edo`, with
+ * `edo#1` and `edo#2` in the corpus) or not in the corpus at all, as an error
+ * message that names the alternatives. `undefined` if every value resolves or
+ * the lemma list isn't available.
+ */
+function findLemmaError(
+  query: string,
+  resolveLemma: LemmaResolver
+): string | undefined {
+  for (const [token, , type] of tokenizeInput(query)) {
+    if (type !== "wordFilter") continue;
+    const match = LEMMA_FILTER.exec(token);
+    if (match === null) continue;
+    const [, key, value] = match;
+    const resolution = resolveLemma(value);
+    if (resolution?.kind === "unknown") {
+      return `${token} - no lemma \`${value}\` in the corpus`;
+    }
+    if (resolution?.kind === "ambiguous") {
+      const shown = resolution.options
+        .slice(0, MAX_LEMMA_OPTIONS)
+        .map((option) => `@${key}:${option}`);
+      const more = resolution.options.length - shown.length;
+      const list =
+        more > 0
+          ? `${shown.join(", ")}, or ${more} more`
+          : shown.length === 2
+          ? shown.join(" or ")
+          : `${shown.slice(0, -1).join(", ")}, or ${shown[shown.length - 1]}`;
+      return `${token} - ambiguous lemma; use ${list}`;
+    }
+  }
+  return undefined;
+}
+
 /**
  * Runs the search described by `params` and builds the view model.
  *
@@ -186,7 +239,7 @@ export async function runCorpusSearch(
   params: CorpusParams,
   engine: CorpusEngine,
   authors: CorpusAuthorList | undefined,
-  lemmata?: ((value: string) => string | undefined) | readonly string[]
+  lemmata?: LemmaResolver | readonly string[]
 ): Promise<CorpusSearchView> {
   const showInflectionDisclaimer = hasInflectionFilters(params.q);
   const view = (outcome: CorpusOutcome): CorpusSearchView => ({
@@ -208,12 +261,21 @@ export async function runCorpusSearch(
   if (authors === undefined && /(?:^|\s)#[^\s/]+\//.test(params.q)) {
     return view({ kind: "error", message: "the author list is unavailable" });
   }
-  const canonicalLemma =
+  const resolveLemma = memoizeLemmaResolver(
     typeof lemmata === "function"
       ? lemmata
       : lemmata !== undefined
-      ? createLemmaCanonicalizer(lemmata)
-      : canonicalCorpusLemma;
+      ? createLemmaResolver(lemmata)
+      : resolveCorpusLemma
+  );
+  const lemmaError = findLemmaError(params.q, resolveLemma);
+  if (lemmaError !== undefined) {
+    return view({ kind: "error", message: lemmaError });
+  }
+  const canonicalLemma = (value: string) => {
+    const resolution = resolveLemma(value);
+    return resolution?.kind === "found" ? resolution.lemma : undefined;
+  };
   const engineQuery = transformQuery(params.q, { authors, canonicalLemma });
   if (queryBodyLength(engineQuery) > MAX_QUERY_BODY_LENGTH) {
     return view({ kind: "error", message: "The query is too long." });

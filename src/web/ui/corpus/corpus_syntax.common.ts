@@ -393,6 +393,8 @@ export function invalidInflectionOption(
 // Per-token validation //
 // // // // // // // // //
 
+export const PROXIMITY_DISTANCE = { min: 1, max: 15, default: 5 } as const;
+
 interface ProximityInfo {
   distance: number;
   directed: boolean;
@@ -407,9 +409,12 @@ export function parseProximity(token: string): ProximityInfo | string {
   if (match === null) {
     return `invalid \`${token}\`: expected ~, ~N, or ~N>`;
   }
-  const distance = match[1] === "" ? 5 : Number.parseInt(match[1], 10);
-  if (distance < 1 || distance > 15) {
-    return "range after ~ must be 1-15";
+  const distance =
+    match[1] === ""
+      ? PROXIMITY_DISTANCE.default
+      : Number.parseInt(match[1], 10);
+  if (distance < PROXIMITY_DISTANCE.min || distance > PROXIMITY_DISTANCE.max) {
+    return `range after ~ must be ${PROXIMITY_DISTANCE.min}-${PROXIMITY_DISTANCE.max}`;
   }
   return { distance, directed: match[2] === ">" };
 }
@@ -589,6 +594,9 @@ export function hasInflectionFilters(query: string): boolean {
   return /@\w+:/.test(query);
 }
 
+/** A `@lemma:<value>` or `@l:<value>` token: groups are the key and value. */
+export const LEMMA_FILTER = /^@(lemma|l):(.+)$/i;
+
 export interface CanonicalizeContext {
   readonly authors?: CorpusAuthorList;
   /**
@@ -634,8 +642,7 @@ export function transformQuery(
     } else {
       const rawAuthor = body.slice(0, slash);
       const rawWork = body.slice(slash + 1);
-      const work =
-        ctx.authors && resolveWork(rawAuthor, rawWork, ctx.authors);
+      const work = ctx.authors && resolveWork(rawAuthor, rawWork, ctx.authors);
       scopePrefix.push(work ? work.id : body);
     }
     return false;
@@ -663,7 +670,7 @@ export function transformQuery(
       })
     )
     .map((t) =>
-      t.replace(/^@(lemma|l):(.+)$/i, (m, key: string, value: string) => {
+      t.replace(LEMMA_FILTER, (m, key: string, value: string) => {
         const canon = ctx.canonicalLemma?.(value);
         return canon === undefined ? m : `@${key}:${canon}`;
       })

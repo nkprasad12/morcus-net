@@ -98,10 +98,11 @@ export const V2_CHUNK_ENTRIES: Readonly<
 /**
  * Every kind of UI V2 page, by the client code it needs. Reader pages are
  * `library` (they're rendered with `activePage: "library"` and need the same
- * chunk); the External Reader is `external`.
+ * chunk); the External Reader is `external`. `static` pages (About, the corpus
+ * reference) have no route-specific client code and load only `common.js`.
  */
 export const V2_ROUTES = [
-  "about",
+  "static",
   "dicts",
   "library",
   "corpus",
@@ -116,7 +117,7 @@ export type V2Route = (typeof V2_ROUTES)[number];
  * by `v2RouteScripts`, so this map never lists them.
  */
 const V2_ROUTE_LEAF: Readonly<Record<V2Route, V2JsEntryName>> = {
-  about: "common",
+  static: "common",
   dicts: "dict",
   library: "reader",
   corpus: "corpus",

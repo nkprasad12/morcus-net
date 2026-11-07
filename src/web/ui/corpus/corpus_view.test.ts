@@ -12,7 +12,6 @@ import {
   type CorpusSearchView,
 } from "@/web/ui/corpus/corpus_query.server";
 import { CORPUS_SLOTS } from "@/web/ui/corpus/corpus_slots.common";
-import { INFLECTION_CATEGORIES } from "@/web/ui/corpus/corpus_syntax.common";
 import {
   renderCorpusPageHtml,
   renderCorpusPartialHtml,
@@ -220,24 +219,20 @@ describe("corpus page", () => {
     expect(alert?.textContent).toContain("#Nobody x");
   });
 
-  test("the syntax guide lists every inflection category and its values from the grammar", async () => {
+  test("the syntax guide links to /corpus/reference instead of embedding the category list", async () => {
     const doc = parse(renderCorpusPageHtml(await search({ q: "" })));
-    const desktopCategories = text(
-      doc,
-      ".desktop-guide-view details.guide-categories"
+    expect(doc.querySelector("details.guide-categories")).toBeNull();
+    const hrefs = Array.from(
+      doc.querySelectorAll<HTMLAnchorElement>("a.guide-ref-link")
+    ).map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual(
+      expect.arrayContaining([
+        "/corpus/reference",
+        "/corpus/reference#inflections",
+        "/corpus/reference#proximity",
+        "/corpus/reference#authors",
+      ])
     );
-    const mobileCategories = text(
-      doc,
-      ".mobile-guide-container details.guide-categories"
-    );
-    for (const [category, values] of INFLECTION_CATEGORIES) {
-      expect(desktopCategories).toContain(`@${category}`);
-      expect(mobileCategories).toContain(`@${category}`);
-      for (const value of values.keys()) {
-        expect(desktopCategories).toContain(value);
-        expect(mobileCategories).toContain(value);
-      }
-    }
   });
 
   test("the inflection disclaimer only shows for inflection filters", async () => {

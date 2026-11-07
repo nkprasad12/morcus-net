@@ -95,6 +95,10 @@ pub struct CorpusQueryEngine {
 /// has, so this is only a sanity limit.
 const MAX_SCOPE_ITEMS: usize = 20;
 
+/// The most contiguous spans (term groups separated by `~`) a query may have.
+/// Matches `MAX_QUERY_SPANS` in `src/common/library/corpus/corpus_common.ts`.
+const MAX_QUERY_SPANS: usize = 10;
+
 impl CorpusQueryEngine {
     /// Creates a new query engine from the given corpus index.
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
@@ -183,10 +187,10 @@ impl CorpusQueryEngine {
             .map(|term| self.convert_query_term(term))
             .collect::<Result<Vec<_>, _>>()?;
         let query_spans = corpus_index_calculation::split_into_spans(&terms)?;
-        if query_spans.len() > 10 {
-            return Err(QueryExecError::new(
-                "Queries with more than 10 term groups are not supported",
-            ));
+        if query_spans.len() > MAX_QUERY_SPANS {
+            return Err(QueryExecError::new(&format!(
+                "Queries with more than {MAX_QUERY_SPANS} term groups are not supported"
+            )));
         }
         profiler.phase("Parse query");
 

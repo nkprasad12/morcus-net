@@ -101,6 +101,12 @@ test.describe("UI V2 Visual Regression Suite", () => {
     mask: ["[data-volatile]"],
   });
 
+  // 11b. Corpus Search Reference Page
+  v2VisualScenario("corpus-reference", {
+    path: "/corpus/reference",
+    waitFor: ".corpus-ref-article",
+  });
+
   // 12. Dictionary Settings Dialog (modal dialog in JS, full-screen :target overlay in No-JS)
   v2VisualScenario("dicts-settings-dialog", {
     path: "/dicts?q=gladius",

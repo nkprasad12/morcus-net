@@ -74,7 +74,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     "macronizer.js": { maxBrotliBytes: 4 * 1024 },
   },
   routes: {
-    about: { maxBrotliBytes: 19.75 * 1024 },
+    static: { maxBrotliBytes: 19.75 * 1024 },
     dicts: { maxBrotliBytes: 27.75 * 1024 },
     corpus: { maxBrotliBytes: 25.5 * 1024 },
     library: { maxBrotliBytes: 32.5 * 1024 },

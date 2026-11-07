@@ -113,7 +113,7 @@ describe("UI V2 Bundle Budget", () => {
 
     const report = checkV2BundleBudget(tmpDir, manifest);
 
-    expect(report.routes.about?.rawBytes).toBe(100);
+    expect(report.routes.static?.rawBytes).toBe(100);
     expect(report.routes.dicts?.rawBytes).toBe(200);
     expect(report.routes.library?.rawBytes).toBe(400);
     // external = common + reader + external.
