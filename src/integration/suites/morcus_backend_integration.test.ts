@@ -22,6 +22,16 @@ async function getText(path: string): Promise<string> {
   return res.text();
 }
 
+/** Undoes the HTML escaping of an attribute value (`~&gt;` → `~>`). */
+function decodeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&#x27;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
 /** The `Location` of a redirect, without following it. */
 async function redirectTarget(path: string): Promise<string | null> {
   const res = await get(path, { redirect: "manual" });
@@ -153,6 +163,38 @@ test.describe("morcus.net backend integration", { tag: "@backend" }, () => {
     test("serves lemma shards for autocomplete", async () => {
       const lemmata = await (await get("/api/corpus/lemmata/h")).json();
       expect(lemmata).toContain("habena");
+    });
+
+    // The reference page's examples name real authors, works and lemmata,
+    // which only the built corpus can confirm.
+    test("every example on /corpus/reference returns results", async () => {
+      const page = await getText("/corpus/reference");
+      const examples = [
+        ...new Set(
+          [...page.matchAll(/data-example="([^"]*)"/g)].map((m) =>
+            decodeHtmlAttribute(m[1])
+          )
+        ),
+      ];
+      expect(examples.length).toBeGreaterThanOrEqual(15);
+      const outcomes = await Promise.all(
+        examples.map(async (q) => {
+          const html = await getText(
+            `/corpus?pageSize=10&q=${encodeURIComponent(q)}`
+          );
+          const error = /class="corpus-error"[\s\S]*?<\/div>/.exec(html);
+          const outcome = error
+            ? error[0]
+                .replace(/<[^>]+>/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+            : html.includes('class="corpus-result-list"')
+            ? "results"
+            : "no results";
+          return { q, outcome };
+        })
+      );
+      expect(outcomes.filter((o) => o.outcome !== "results")).toEqual([]);
     });
   });
 

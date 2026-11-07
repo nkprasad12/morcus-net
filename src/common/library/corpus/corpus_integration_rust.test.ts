@@ -10,6 +10,7 @@ import {
 import { RustCorpusQueryEngine } from "@/common/library/corpus/corpus_rust";
 import { openCorpusLemmaStore } from "@/web/ui/corpus/corpus_lemmata.server";
 import { readCorpusAuthorsList } from "@/web/ui/corpus/corpus_query.server";
+import { INFLECTION_CATEGORIES } from "@/web/ui/corpus/corpus_syntax.common";
 import fs from "fs";
 import zlib from "zlib";
 
@@ -126,6 +127,25 @@ describe("Corpus Integration Test", () => {
   it("should gracefully handle query errors", () => {
     const query = "[word:servum]";
     expect(() => queryCorpus(query)).toThrow();
+  });
+
+  // The engine also runs standalone (the corpus CLI), so it must accept every
+  // inflection keyword and value the web UI offers, long and short.
+  it("should accept every inflection category and value the web UI offers", () => {
+    const rejected: string[] = [];
+    for (const [category, values] of INFLECTION_CATEGORIES) {
+      for (const key of [category, category[0]]) {
+        for (const value of new Set([...values.keys(), ...values.values()])) {
+          const query = `@${key}:${value}`;
+          try {
+            queryCorpus(query);
+          } catch {
+            rejected.push(query);
+          }
+        }
+      }
+    }
+    expect(rejected).toEqual([]);
   });
 
   it("should find a single word", () => {
