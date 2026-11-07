@@ -261,3 +261,14 @@ Non-leaf rows (e.g. a chapter heading row `1.2` above sections `1.2.1…`) are i
 **Status:** Open, low priority. The [seam review](#word-boundary-rule) covered the 125 works in the library at the time. The row-parity sweep now passes on the full library (317 works), so the corpus and the reader agree on word boundaries everywhere; what hasn't been checked for the newer works (mostly thelatinlibrary, with its own markup) is whether those shared boundaries are right, i.e. source typos like those in [4.5](#45-source-typos-missing-space-after-a-tag).
 
 Re-run the seam review on the new works only, using the method in 4.5 ("How to find more"), and add any source typos to that table.
+
+### 4.7 Clearer query errors
+
+**Status:** Open. With the errors table gone from `/corpus/reference`, the error messages have to explain themselves. Two still don't:
+
+- **`` `X` not allowed after `Y` ``** (`feedStateMachine` in [`corpus_syntax.common.ts`](corpus_syntax.common.ts)) says what's wrong but not what would fit. The state machine already knows the allowed next tokens (`findNextOptions`), so the message can say what's expected, e.g. "expected a word, `(`, or `~` after `amo`". Open question: list every allowed token, or a shorter "expected a word" phrase.
+- **"Queries with more than 10 term groups are not supported"** comes raw from the engine. Check `MAX_QUERY_SPANS` in `runCorpusSearch` before calling the engine, and say it in the UI's terms ("at most 10 spans separated by `~`").
+
+### 4.8 No vocative for nouns on the `es_eLdis` ending table
+
+**Status:** Open, low priority (Morceus data). `morceus-data/latin/ends/target/es_eLdis.end` lists only the nominative singular (`e_s nom sg masc fem`), so nouns declined with it (e.g. `merces#1`, _mercēs, mercēdis_) get no vocative reading, and `@case:voc` misses them. Add `voc` there, and check other ending tables for the same gap.
