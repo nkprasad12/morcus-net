@@ -2,6 +2,7 @@ import {
   chmodSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -65,6 +66,93 @@ describe("helper images", () => {
           expected
         )
       ).toContain("files: - Dockerfile");
+    });
+  });
+
+  describe("Node version pins", () => {
+    function parseDockerfileNodeRefs(path: string): string[] {
+      const refs = Array.from(
+        readFileSync(path, "utf8").matchAll(/^FROM\s+(node:\S+)/gm),
+        (m) => m[1]
+      );
+      expect(refs.length).toBeGreaterThan(0);
+      return refs;
+    }
+
+    function getRecordField(obj: unknown, key: string): unknown {
+      return typeof obj === "object" && obj !== null && key in obj
+        ? Reflect.get(obj, key)
+        : undefined;
+    }
+
+    test("Dockerfile, pruner Dockerfile, .nvmrc, workflows, and package.json agree on Node versions", () => {
+      const serverRefs = parseDockerfileNodeRefs("Dockerfile");
+      const prunerRefs = parseDockerfileNodeRefs(
+        "src/devops/pruner/Dockerfile"
+      );
+      // Every stage in /Dockerfile and /src/devops/pruner/Dockerfile must pin
+      // the exact same `node:<major>-...@sha256:...` base image.
+      const uniqueRefs = new Set([...serverRefs, ...prunerRefs]);
+      if (uniqueRefs.size !== 1) {
+        throw new Error(
+          `Dockerfile and src/devops/pruner/Dockerfile must pin the exact same Node base image, found: ${[
+            ...uniqueRefs,
+          ].join(", ")}`
+        );
+      }
+      const [nodeRef] = uniqueRefs;
+      const majorMatch = /^node:(\d+)-[^@]+@sha256:[0-9a-f]{64}$/.exec(nodeRef);
+      if (!majorMatch) {
+        throw new Error(
+          `Expected Node base image pinned as node:<major>-<variant>@sha256:<digest>, got: ${nodeRef}`
+        );
+      }
+      const dockerMajor = Number(majorMatch[1]);
+      const nvmrc = readFileSync(".nvmrc", "utf8").trim();
+
+      if (nvmrc !== String(dockerMajor)) {
+        throw new Error(
+          [
+            `Node major version mismatch between Dockerfiles and .nvmrc:`,
+            `  Dockerfile / pruner Dockerfile: ${nodeRef}`,
+            `  .nvmrc:                         ${JSON.stringify(
+              nvmrc
+            )} (expected "${dockerMajor}")`,
+            `When Dependabot bumps the Node major version, verify the new major is Active LTS and update .nvmrc to match.`,
+          ].join("\n")
+        );
+      }
+
+      // CI workflows must read `.nvmrc` so GitHub Actions runs the same Node
+      // major as the production and helper Docker images.
+      for (const workflow of [
+        ".github/workflows/ci-workflow.yaml",
+        ".github/workflows/promote-image.yaml",
+      ]) {
+        const content = readFileSync(workflow, "utf8");
+        expect(content).toContain("node-version-file: .nvmrc");
+        expect(content).not.toContain("node-version-file: package.json");
+      }
+
+      // `package.json` (`engines.node` + `@types/node`) sets the minimum local
+      // dev version (e.g. Cloudtop `/usr/bin/node`) and must not exceed the
+      // production Docker major.
+      const pkg: unknown = JSON.parse(readFileSync("package.json", "utf8"));
+      const engineNode = getRecordField(getRecordField(pkg, "engines"), "node");
+      const typesNode = getRecordField(
+        getRecordField(pkg, "devDependencies"),
+        "@types/node"
+      );
+      const engineMatch =
+        typeof engineNode === "string"
+          ? /^(?:>=|\^)?(\d+)(?:\.x)?$/.exec(engineNode)
+          : null;
+      const typesMatch =
+        typeof typesNode === "string" ? /^\^?(\d+)\./.exec(typesNode) : null;
+      expect(engineMatch).not.toBeNull();
+      expect(typesMatch).not.toBeNull();
+      expect(Number(engineMatch![1])).toBeLessThanOrEqual(dockerMajor);
+      expect(Number(typesMatch![1])).toBeLessThanOrEqual(dockerMajor);
     });
   });
 
