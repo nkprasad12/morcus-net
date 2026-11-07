@@ -38,7 +38,7 @@
 :vs:disject	pp4
 :vs:diject	pp4
 
-:le:aspergo1
+:le:aspergo#1
 :vs:asperg	conj3
 :vs:assperg	conj3 orth
 :vs:adsperg	conj3 orth
@@ -669,7 +669,7 @@
 :vs:ov		conj1
 :vs:ova_t	pp4
 
-:le:paco2
+:le:paco
 :de:pa_c	are_vb
 
 :le:paeniteo

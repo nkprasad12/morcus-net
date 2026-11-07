@@ -79,9 +79,32 @@ function writeAuthorsFile(corpus: InProgressLatinCorpus, corpusDir: string) {
   fs.writeFileSync(authorsDest, compressed);
 }
 
+/**
+ * The lemma syntax the query engine accepts (`is_valid_lemma` in
+ * `corpus_rust/src/query_parsing_v2.rs`): ASCII letters, optionally followed
+ * by a homograph number (`edo#1`).
+ */
+const QUERYABLE_LEMMA = /^[A-Za-z]+(#\d+)?$/;
+
+/**
+ * Throws if any lemma can't be written in a query, since `@lemma:` could
+ * never match it (e.g. `caro2` for `caro#2`; fix those in `morceus-data`).
+ */
+export function checkLemmataQueryable(lemmata: Iterable<string>): void {
+  const invalid = [...lemmata].filter((l) => !QUERYABLE_LEMMA.test(l));
+  if (invalid.length > 0) {
+    throw new Error(
+      `Corpus lemmata the query engine can't parse: ${invalid
+        .map((l) => JSON.stringify(l))
+        .join(", ")}`
+    );
+  }
+}
+
 function writeLemmataFile(corpus: InProgressLatinCorpus, corpusDir: string) {
   const lemmataDest = path.join(corpusDir, CORPUS_LEMMATA_DB);
   const lemmata = Array.from(new Set(corpus.idTable.lemma.keys()));
+  checkLemmataQueryable(lemmata);
   savePrecompressedJsonDb(lemmataDest, buildLemmaShards(lemmata));
 }
 

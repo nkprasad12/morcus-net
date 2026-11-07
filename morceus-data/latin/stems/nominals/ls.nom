@@ -15312,10 +15312,10 @@ A_re_ti^um
 
 
 A^re_us		
-:le:Areus
+:le:Areus#1
 :aj:A^re_	us_a_um
 
-:le:Areus2
+:le:Areus#2
 :no:Are	us_us masc
 
 
@@ -25156,11 +25156,6 @@ bo^nae
 me^li^o_res		
 :le:meliores
 :no:me^li^o_r	0_is masc pl
-
-
-bo^num#B		
-:le:bonum#
-:no:bo^n	us_i neut
 
 
 me^li^us		<itype>o_ris</itype>	<gen>n.</gen>
@@ -124191,6 +124186,7 @@ merce_na_ri^us
 merces#1		
 :le:merces#1
 :no:merc	es_eLdis fem
+:no:merc	es_is fem acc sg
 
 
 merci^mo_ni^um		

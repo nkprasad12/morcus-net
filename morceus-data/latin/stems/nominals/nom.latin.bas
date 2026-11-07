@@ -186,7 +186,7 @@
 :le:index
 :no:ind ex_icis masc fem
 
-:le:compes1
+:le:compes#1
 :no:compe s_dis fem
 
 :le:congeries
@@ -907,11 +907,6 @@
 :le:mens
 :no:m	ens_entis fem
 :no:ment	is_is fem nom sg
-
-:le:merces1
-:no:merc	es_idis fem
-:no:merc	es_is fem acc sg
-:no:merc	es_is fem abl dat pl
 
 :le:mercenarius
 :aj:merce_na_ri^	us_a_um
