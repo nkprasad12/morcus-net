@@ -205,6 +205,30 @@ Rules, checked in the engine (`query_validation.rs`) and mirrored in `errorsForT
 - **No new lifetime.** `IndexSlice<'a>` already borrows from the engine for `'a` (its `Ref` variant points into the memory-mapped buffers), and the pool lives in the same engine. So `IndexDataOwned::BitMask(Vec<u64>)` becomes `BitMask(PooledBitmask<'a>)` under the existing `'a`. Two buffers in use are just two separate owned `Vec`s, with no overlapping borrows. To avoid even the extra field, an `Arc<BitmaskPool>` handle in the guard removes the lifetime, at the cost of one refcount bump per loan.
 - **Details.** Hand out any buffer with enough capacity (`truncate` / `resize` it), since scoped queries need smaller bitmasks. Offer zeroed loans, for merges and shifts that set only some bits, and unzeroed loans, for AND / OR outputs that overwrite every word. Cap the pool at 4–8 buffers, so one heavy query doesn't hold memory forever.
 
+### 3.6 Off-thread query execution (single `mpsc` worker)
+
+**Status:** Investigated and measured; low priority. `runQuery` (and the ~220–280 ms `QueryEngineWrapper::new` load) currently runs synchronously on the Node main thread. The goal is not parallel query execution, but keeping long queries (2–45 ms) and startup init from stalling the event loop for other requests.
+
+- **Chosen approach (`std::thread` + `mpsc::channel` in [`lib.rs`](../../../../lib.rs), ~45 lines):**
+  - Spawn one dedicated Rust worker thread that constructs and owns `CorpusQueryEngine`, loops on `rx.recv()` (FIFO queue, concurrency = 1), and resolves JS Promises through a single reusable `napi_threadsafe_function`.
+  - Keep `CorpusEngine.runQuery` typed as `string | Promise<string>` and `await` it in `runCorpusSearch`, so `fakeCorpusEngine` and all synchronous UI tests stay unchanged.
+  - **Why not `#[node_bindgen] async fn` or `libuv` (`napi_create_async_work`):** `nj-derive` unwraps `&self` via `unwrap_mut` (`&'static mut Self`), which is UB if two futures ever overlap; `node-bindgen` also spins up `async-std`'s multi-threaded pool and creates a `ThreadSafeFunction` per call. `libuv` round-robins across 4 worker threads, losing L1/L2/dTLB locality (+749 µs vs. +183 µs on 3-bitmask queries). A single `mpsc` thread keeps cache locality, needs no `Sync` or `Mutex` on the engine, and keeps `BitmaskPool` (§3.5) single-threaded.
+- **Measured overhead (6.47M tokens, Node 22, 24-vCPU & `taskset -c 0` 1-vCPU):**
+
+| Query (payload)                         | Sync p50 | `mpsc` warm p50 | `mpsc` parked (3 ms idle) p50 | Main-thread CPU (Sync → `mpsc`) |
+| :-------------------------------------- | -------: | --------------: | ----------------------------: | ------------------------------: |
+| `noop` (2 B)                            |   0.9 µs |     37 µs (+36) |                 156 µs (+155) |               16 µs → **47 µs** |
+| `arma virumque` (4.9 KB)                |    26 µs |     73 µs (+46) |                 215 µs (+189) |               50 µs → **66 µs** |
+| `@lemma:do oscula @case:dat` (10 KB)    |    61 µs |    124 µs (+63) |                 405 µs (+344) |               97 µs → **79 µs** |
+| `@case:nom @case:dat @case:acc` (29 KB) |   546 µs |   729 µs (+183) |               1,255 µs (+709) |             600 µs → **140 µs** |
+| `in @case:abl ~ @case:gen ~ @case:dat`  | 3,173 µs | 3,334 µs (+161) |               3,448 µs (+274) |           3,080 µs → **259 µs** |
+| `@case:dat` ×3 `--strict` (7.9 KB)      |  13.3 ms |  14.3 ms (+1.0) |                14.9 ms (+1.6) |           13.2 ms → **0.34 ms** |
+
+- **Scaling characteristics:**
+  - **Fixed thread-hop cost:** ~25–45 µs when warm, or ~130–200 µs when waking a parked worker thread (`futex_wake` + `eventfd` / `epoll_wait`). On 1 vCPU (`taskset -c 0`), idle overhead is slightly lower (+22–60 µs warm) because both threads share L1/L2 cache; under heavy JS load, corpus wall time stretches by interleaved JS turns while the event loop stays responsive.
+  - **Output size (`pageSize` × `contextLen`):** Cross-thread return moves the 24-byte Rust `String` header (`O(1)`, zero-copy), while `napi_create_string_utf8` and `JSON.parse` run on the main thread in both sync and async. As output text grows (>8 KB), async uses _less_ main-thread CPU than sync because snippet extraction and `serde_json::to_string` move to the worker thread.
+  - **Gotcha:** Do not call `napi_unref_threadsafe_function` while a query is in flight (or without ref/unref pairing around active jobs), or standalone scripts/tests with no other active libuv handles will exit while waiting on the Promise.
+
 ---
 
 ## Phase 4: Concordance Mode, Pagination, UI & Indexer Polish
