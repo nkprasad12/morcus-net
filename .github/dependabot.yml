@@ -7,30 +7,30 @@ updates:
     directory: /
     target-branch: dev
     schedule:
-      interval: quarterly
+      interval: semiannually
     groups:
       actions:
         patterns:
           - "*"
 
-  - package-ecosystem: docker
-    directory: /src/devops/reverse_proxy
-    target-branch: dev
-    schedule:
-      interval: quarterly
-
-  # The server and pruner images pin the same `node` base by digest (see the
-  # comment at the top of /Dockerfile); bump them together. A pruner base bump
-  # also changes its tag in src/scripts/helper_images/expected_tags.ts.
-  # src/py/latincy/image is left out on purpose: it pins our own archived image.
+  # Group all tracked Docker base bumps into a single semiannual PR:
+  # - / and /src/devops/pruner pin the same `node` base by digest (see the
+  #   comment at the top of /Dockerfile and `images.test.ts`).
+  # - /src/devops/reverse_proxy pins `nginx` by digest.
+  # Helper image base bumps change `src/scripts/helper_images/expected_tags.ts`,
+  # and Node major bumps also require updating `.nvmrc` (`images.test.ts` prints
+  # what needs updating).
+  # `src/py/latincy/image` (frozen archived image) and `src/devops/watchtower`
+  # (manual upstream attestation check) are left out on purpose.
   - package-ecosystem: docker
     directories:
       - /
       - /src/devops/pruner
+      - /src/devops/reverse_proxy
     target-branch: dev
     schedule:
-      interval: quarterly
+      interval: semiannually
     groups:
-      node-base:
+      docker-bases:
         patterns:
-          - "node"
+          - "*"
