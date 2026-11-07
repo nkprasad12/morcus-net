@@ -262,12 +262,13 @@ The following should be done at regular intervals:
 - Update the Docker image OS version (current: `debian-trixie`). Due _before_ it goes EOL in `2030/06`
   - Check the `Dockerfile`
   - Update the version.
-- Update the `node` version, (currently: `22`). Due _before_ it goes EOL in `2027/04`.
-  - Check the `package.json`
-  - Update the version used in the CI workflows
-  - Update the version used in the `Dockerfile`
-- Update the `nginx` version, (currently `1.30.4-alpine-slim`). Due _before_ it goes EOL in `2027/04`ish.
-  - Update the `nginx` version in `src/devops/reverse_proxy/Dockerfile` (Dependabot also opens a quarterly PR for this; CI builds and promotes `morcus-proxy` automatically).
+- Update the `node` version (currently: `26`). Due _before_ it goes EOL in `2029/04`.
+  - Move to the newest Active LTS major. Dependabot bumps the base images, but check that the new major is Active LTS before merging.
+  - Update `.nvmrc` (CI and `set_up_or_update.sh` read it) and the digest-pinned `node` base in `Dockerfile` and `src/devops/pruner/Dockerfile`, then the `morcus-pruner` tag in `src/scripts/helper_images/expected_tags.ts`.
+  - `src/scripts/helper_images/images.test.ts` checks that these agree and prints what to change.
+- Update the `nginx` version (currently: `1.30.x`, nginx Stable). Due _before_ it goes EOL in `2027/04`ish, when `1.32` (the next Stable) is out.
+  - Update the `nginx` version in `src/devops/reverse_proxy/Dockerfile`, and the `morcus-proxy` tag in `src/scripts/helper_images/expected_tags.ts`. CI builds and promotes `morcus-proxy` automatically.
+  - Dependabot opens a semiannual PR for this, grouped with the other Docker base images. It doesn't know that odd minor versions are nginx Mainline, so `.github/dependabot.yml` ignores them (add the next one when a new Stable branches), and `images.test.ts` fails on an odd minor.
 
 ### Following a reboot
 
