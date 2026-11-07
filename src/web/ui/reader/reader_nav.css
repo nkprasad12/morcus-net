@@ -19,7 +19,10 @@
   border-radius: 0;
   margin-bottom: var(--space-3);
   font-size: 0.875rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  /* The -1px upward shadow seals Firefox WebRender's subpixel gap above
+     sticky top:0 headers when scrolled to fractional pixel offsets, while
+     matching the adjacent app-bar bottom border when unscrolled. */
+  box-shadow: 0 -1px 0 0 var(--border), 0 2px 8px rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(8px);
   overflow: hidden;
 }
