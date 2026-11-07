@@ -124,19 +124,25 @@ describe("helper images", () => {
       }
 
       // CI workflows must read `.nvmrc` so GitHub Actions runs the same Node
-      // major as the production and helper Docker images.
+      // major as the production and helper Docker images: every
+      // `actions/setup-node` step, with no hardcoded `node-version`.
       for (const workflow of [
         ".github/workflows/ci-workflow.yaml",
         ".github/workflows/promote-image.yaml",
       ]) {
         const content = readFileSync(workflow, "utf8");
-        expect(content).toContain("node-version-file: .nvmrc");
-        expect(content).not.toContain("node-version-file: package.json");
+        const setupNodeSteps = content.match(/uses: actions\/setup-node@/g);
+        const nvmrcReads = content.match(/node-version-file: \.nvmrc\b/g);
+        expect(setupNodeSteps).not.toBeNull();
+        expect(nvmrcReads?.length).toBe(setupNodeSteps?.length);
+        expect(content).not.toMatch(/node-version:/);
       }
 
       // `package.json` (`engines.node` + `@types/node`) sets the minimum local
       // dev version (e.g. Cloudtop `/usr/bin/node`) and must not exceed the
-      // production Docker major.
+      // production Docker major. `engines.node` must also accept the Docker
+      // major: `^N` and `N.x` only allow major N, so below the Docker major
+      // it has to be `>=N`.
       const pkg: unknown = JSON.parse(readFileSync("package.json", "utf8"));
       const engineNode = getRecordField(getRecordField(pkg, "engines"), "node");
       const typesNode = getRecordField(
@@ -145,13 +151,22 @@ describe("helper images", () => {
       );
       const engineMatch =
         typeof engineNode === "string"
-          ? /^(?:>=|\^)?(\d+)(?:\.x)?$/.exec(engineNode)
+          ? /^(>=|\^)?(\d+)(\.x)?$/.exec(engineNode)
           : null;
       const typesMatch =
         typeof typesNode === "string" ? /^\^?(\d+)\./.exec(typesNode) : null;
       expect(engineMatch).not.toBeNull();
       expect(typesMatch).not.toBeNull();
-      expect(Number(engineMatch![1])).toBeLessThanOrEqual(dockerMajor);
+      const engineMajor = Number(engineMatch![2]);
+      const engineIsMinimum = engineMatch![1] === ">=";
+      expect(engineMajor).toBeLessThanOrEqual(dockerMajor);
+      if (!engineIsMinimum && engineMajor !== dockerMajor) {
+        throw new Error(
+          `package.json engines.node is ${JSON.stringify(
+            engineNode
+          )}, which rejects Node ${dockerMajor} (the Docker major); use ">=${engineMajor}".`
+        );
+      }
       expect(Number(typesMatch![1])).toBeLessThanOrEqual(dockerMajor);
     });
   });
