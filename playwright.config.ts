@@ -42,9 +42,9 @@ export default defineConfig({
     trace: "on-first-retry",
   },
 
-  globalSetup: require.resolve(
-    "@/integration/utils/playwright_global.setup.ts"
-  ),
+  // A path relative to this file: Playwright 1.65 no longer applies the
+  // tsconfig `@/` alias to `require.resolve` calls in the config.
+  globalSetup: "./src/integration/utils/playwright_global.setup.ts",
 
   /* Configure projects for major browsers */
   projects: [
