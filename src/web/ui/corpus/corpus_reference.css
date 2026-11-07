@@ -1,0 +1,213 @@
+/* Corpus Search Reference (/corpus/reference) */
+
+.corpus-ref-article {
+  width: 100%;
+  font-family: var(--font-text);
+  font-size: calc(1rem * var(--text-scale, 1));
+  color: var(--reading-text);
+  line-height: calc(1.6 * var(--text-leading, 1));
+}
+
+.corpus-ref-header {
+  margin-bottom: var(--space-6);
+}
+
+.corpus-ref-back {
+  display: inline-block;
+  margin-bottom: var(--space-3);
+  font-size: 0.85em;
+  color: var(--link);
+  text-decoration: none;
+}
+
+.corpus-ref-back:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.corpus-ref-header h1 {
+  font-size: 1.6em;
+  color: var(--text);
+  margin: 0 0 var(--space-3);
+}
+
+.corpus-ref-unavailable,
+.corpus-ref-author-count,
+.corpus-ref-work-title {
+  color: var(--text-muted);
+}
+
+.corpus-ref-toc,
+.corpus-ref-author-jump,
+.corpus-ref-author-card {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.corpus-ref-toc {
+  margin-bottom: var(--space-8);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  font-size: 0.9em;
+}
+
+.corpus-ref-toc-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-2);
+}
+
+.corpus-ref-toc-list {
+  margin: 0;
+  padding-left: var(--space-6);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1) var(--space-6);
+}
+
+.corpus-ref-section {
+  margin-bottom: var(--space-8);
+}
+
+.corpus-ref-section h2 {
+  font-size: 1.3em;
+  color: var(--text);
+  margin: 0 0 var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.corpus-ref-section h3 {
+  font-size: 1.05em;
+  color: var(--text);
+  margin: var(--space-5) 0 var(--space-2);
+}
+
+.corpus-ref-section p {
+  margin: 0 0 var(--space-4);
+}
+
+.corpus-ref-section ul:not(.corpus-ref-work-list) {
+  margin: 0 0 var(--space-4);
+  padding-left: var(--space-6);
+}
+
+.corpus-ref-section li:not(.corpus-ref-work-item) {
+  margin-bottom: var(--space-2);
+}
+
+.corpus-ref-code,
+.corpus-ref-section code {
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-xs);
+  background-color: var(--tag-bg);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85em;
+  color: var(--text);
+}
+
+.corpus-ref-table-scroll {
+  overflow-x: auto;
+  margin-bottom: var(--space-4);
+}
+
+.corpus-ref-table {
+  width: 100%;
+  font-size: 0.9em;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.corpus-ref-table th,
+.corpus-ref-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  vertical-align: baseline;
+}
+
+.corpus-ref-table th {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.corpus-ref-val-pair {
+  white-space: nowrap;
+}
+
+.corpus-ref-values-cell {
+  line-height: 1.7;
+}
+
+.corpus-ref-unavailable {
+  font-style: italic;
+}
+
+.corpus-ref-author-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+}
+
+.corpus-ref-author-chip {
+  font-size: 0.85em;
+  text-decoration: none;
+}
+
+.corpus-ref-author-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.corpus-ref-author-card {
+  padding: var(--space-3) var(--space-4);
+}
+
+.corpus-ref-author-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.corpus-ref-author-code,
+.corpus-ref-author-name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.corpus-ref-author-count {
+  font-size: 0.85em;
+}
+
+.corpus-ref-work-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-5);
+}
+
+.corpus-ref-work-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 0.9em;
+}
+
+@media (width <= 640px) {
+  .corpus-ref-toc-list,
+  .corpus-ref-work-list {
+    grid-template-columns: 1fr;
+  }
+}

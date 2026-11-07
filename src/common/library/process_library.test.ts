@@ -7,8 +7,14 @@ import {
   SHORT_TITLE_BY_WORK_ID,
   stripXmlProlog,
   URL_NAME_BY_WORK_ID,
-  urlify,
 } from "@/common/library/process_library";
+import { buildCorpusAuthorsList } from "@/common/library/corpus/corpus_serialization";
+import {
+  authorCodeFromSlug,
+  toWorkCorpusCode,
+  urlify,
+  urlifyAuthor,
+} from "@/common/library/library_slugs";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { replaceEnvVar } from "@/common/test_helpers";
 import {
@@ -257,19 +263,21 @@ describe("urlify", () => {
 
 /**
  * The reader URL (`urlAuthor/urlName`) of every onboarded work, from the
- * author and title its source gives. Existing URLs must never move: if one of
+ * author and title its source gives. URLs shouldn't move by accident: if one of
  * these fails, pin the old slug in `URL_NAME_BY_WORK_ID` or
- * `AUTHOR_TO_URL_LOOKUP` rather than editing this table. The only intended
- * move so far is Seneca the Younger's Perseus works, from
- * `seneca,_lucius_annaeus` to `seneca_minor` in Phase 2B (the old URLs
- * redirect).
+ * `AUTHOR_TO_URL_LOOKUP` (`library_slugs.ts`) rather than editing this table.
+ * When an author slug is moved on purpose, add the old one to
+ * `RETIRED_AUTHOR_SLUGS` so its URLs redirect. Moves so far: Seneca the
+ * Younger's Perseus works (`seneca,_lucius_annaeus` -> `seneca_minor` in
+ * Phase 2B), then shortening author slugs to the name each author is known by
+ * (`cornelius_nepos` -> `nepos`, `seneca_minor` -> `seneca_younger`, ...).
  */
 const ONBOARDED_SLUGS: [string, string, string, string][] = [
   [
     "phi0978.phi001.perseus-lat2",
     "Pliny the Elder",
     "Naturalis Historia",
-    "pliny_the_elder/naturalis_historia",
+    "pliny_elder/naturalis_historia",
   ],
   [
     "phi1212.phi002.perseus-lat1",
@@ -619,127 +627,112 @@ const ONBOARDED_SLUGS: [string, string, string, string][] = [
     "phi0588.abo001.perseus-lat2",
     "Cornelius Nepos",
     "Miltiades",
-    "cornelius_nepos/miltiades",
+    "nepos/miltiades",
   ],
   [
     "phi0588.abo002.perseus-lat2",
     "Cornelius Nepos",
     "Themistocles",
-    "cornelius_nepos/themistocles",
+    "nepos/themistocles",
   ],
   [
     "phi0588.abo003.perseus-lat2",
     "Cornelius Nepos",
     "Aristides",
-    "cornelius_nepos/aristides",
+    "nepos/aristides",
   ],
   [
     "phi0588.abo004.perseus-lat2",
     "Cornelius Nepos",
     "Pausanias",
-    "cornelius_nepos/pausanias",
+    "nepos/pausanias",
   ],
-  [
-    "phi0588.abo005.perseus-lat2",
-    "Cornelius Nepos",
-    "Cimon",
-    "cornelius_nepos/cimon",
-  ],
+  ["phi0588.abo005.perseus-lat2", "Cornelius Nepos", "Cimon", "nepos/cimon"],
   [
     "phi0588.abo006.perseus-lat2",
     "Cornelius Nepos",
     "Lysander",
-    "cornelius_nepos/lysander",
+    "nepos/lysander",
   ],
   [
     "phi0588.abo007.perseus-lat2",
     "Cornelius Nepos",
     "Alcibiades",
-    "cornelius_nepos/alcibiades",
+    "nepos/alcibiades",
   ],
   [
     "phi0588.abo008.perseus-lat2",
     "Cornelius Nepos",
     "Thrasybulus",
-    "cornelius_nepos/thrasybulus",
+    "nepos/thrasybulus",
   ],
-  [
-    "phi0588.abo009.perseus-lat2",
-    "Cornelius Nepos",
-    "Conon",
-    "cornelius_nepos/conon",
-  ],
-  [
-    "phi0588.abo010.perseus-lat2",
-    "Cornelius Nepos",
-    "Dion",
-    "cornelius_nepos/dion",
-  ],
+  ["phi0588.abo009.perseus-lat2", "Cornelius Nepos", "Conon", "nepos/conon"],
+  ["phi0588.abo010.perseus-lat2", "Cornelius Nepos", "Dion", "nepos/dion"],
   [
     "phi0588.abo011.perseus-lat2",
     "Cornelius Nepos",
     "Iphicrates",
-    "cornelius_nepos/iphicrates",
+    "nepos/iphicrates",
   ],
   [
     "phi0588.abo012.perseus-lat2",
     "Cornelius Nepos",
     "Chabrias",
-    "cornelius_nepos/chabrias",
+    "nepos/chabrias",
   ],
   [
     "phi0588.abo013.perseus-lat2",
     "Cornelius Nepos",
     "Timotheus",
-    "cornelius_nepos/timotheus",
+    "nepos/timotheus",
   ],
   [
     "phi0588.abo014.perseus-lat2",
     "Cornelius Nepos",
     "Datames",
-    "cornelius_nepos/datames",
+    "nepos/datames",
   ],
   [
     "phi0588.abo015.perseus-lat2",
     "Cornelius Nepos",
     "Epaminondas",
-    "cornelius_nepos/epaminondas",
+    "nepos/epaminondas",
   ],
   [
     "phi0588.abo016.perseus-lat2",
     "Cornelius Nepos",
     "Pelopidas",
-    "cornelius_nepos/pelopidas",
+    "nepos/pelopidas",
   ],
   [
     "phi0588.abo017.perseus-lat2",
     "Cornelius Nepos",
     "Agesilaus",
-    "cornelius_nepos/agesilaus",
+    "nepos/agesilaus",
   ],
   [
     "phi0588.abo018.perseus-lat2",
     "Cornelius Nepos",
     "Eumenes",
-    "cornelius_nepos/eumenes",
+    "nepos/eumenes",
   ],
   [
     "phi0588.abo019.perseus-lat2",
     "Cornelius Nepos",
     "Phocion",
-    "cornelius_nepos/phocion",
+    "nepos/phocion",
   ],
   [
     "phi0588.abo020.perseus-lat2",
     "Cornelius Nepos",
     "Timoleon",
-    "cornelius_nepos/timoleon",
+    "nepos/timoleon",
   ],
   [
     "phi0588.abo021.perseus-lat2",
     "Cornelius Nepos",
     "De Regibus",
-    "cornelius_nepos/de_regibus",
+    "nepos/de_regibus",
   ],
   [
     "phi0972.phi001.perseus-lat2",
@@ -751,7 +744,7 @@ const ONBOARDED_SLUGS: [string, string, string, string][] = [
     "stoa0023.stoa001.perseus-lat2",
     "Ammianus Marcellinus",
     "Res Gestae",
-    "ammianus_marcellinus/res_gestae",
+    "ammianus/res_gestae",
   ],
   ["phi0660.phi001.perseus-lat2", "Tibullus", "Elegiae", "tibullus/elegiae"],
   [
@@ -776,31 +769,31 @@ const ONBOARDED_SLUGS: [string, string, string, string][] = [
     "phi0860.phi001.perseus-lat2",
     "Curtius Rufus, Quintus",
     "Historiae Alexandri Magni",
-    "curtius_rufus,_quintus/historiae_alexandri_magni",
+    "curtius/historiae_alexandri_magni",
   ],
   [
     "phi1014.phi001.perseus-lat1",
     "Seneca the Elder",
     "Controversiae",
-    "seneca_the_elder/controversiae",
+    "seneca_elder/controversiae",
   ],
   [
     "phi1014.phi004.perseus-lat1",
     "Seneca the Elder",
     "Fragmenta",
-    "seneca_the_elder/fragmenta",
+    "seneca_elder/fragmenta",
   ],
   [
     "phi1017.phi011.perseus-lat2",
     "Seneca, Lucius Annaeus",
     "Apocolocyntosis",
-    "seneca_minor/apocolocyntosis",
+    "seneca_younger/apocolocyntosis",
   ],
   [
     "phi1017.phi014.perseus-lat2",
     "Seneca, Lucius Annaeus",
     "De Clementia",
-    "seneca_minor/de_clementia",
+    "seneca_younger/de_clementia",
   ],
   [
     "phi1038.phi001.perseus-lat1",
@@ -812,13 +805,13 @@ const ONBOARDED_SLUGS: [string, string, string, string][] = [
     "phi1242.phi001.perseus-lat1",
     "Florus, Lucius Annaeus",
     "Epitome Rerum Romanorum",
-    "florus,_lucius_annaeus/epitome_rerum_romanorum",
+    "florus/epitome_rerum_romanorum",
   ],
   [
     "phi1318.phi001.perseus-lat1",
     "Pliny the Younger",
     "Letters",
-    "pliny_the_younger/letters",
+    "pliny_younger/letters",
   ],
   [
     "phi1351.phi004.perseus-lat2",
@@ -830,7 +823,7 @@ const ONBOARDED_SLUGS: [string, string, string, string][] = [
     "stoa0255.stoa004.perseus-lat2",
     "Seneca, Lucius Annaeus",
     "De Brevitate Vitae",
-    "seneca_minor/de_brevitate_vitae",
+    "seneca_younger/de_brevitate_vitae",
   ],
   [
     "stoa0275.stoa027.perseus-lat2",
@@ -946,7 +939,7 @@ const ONBOARDED_SLUGS: [string, string, string, string][] = [
     "phi-json-lat1017.016",
     "L. Annaeus Seneca iunior",
     "Naturales Quaestiones",
-    "seneca_minor/naturales_quaestiones",
+    "seneca_younger/naturales_quaestiones",
   ],
   [
     "phi-json-lat1348.001",
@@ -1037,6 +1030,81 @@ describe("onboarded work slugs", () => {
     const slugs = ONBOARDED_SLUGS.map((row) => row[3]);
     expect(new Set(slugs).size).toBe(slugs.length);
   });
+
+  it("produce valid, distinct CamelCase #Author and #Author/Work corpus codes", () => {
+    const byAuthor = new Map<string, string[]>();
+    for (const [id, author, title, slug] of ONBOARDED_SLUGS) {
+      const [expectedUrlAuthor] = slug.split("/");
+      const authorCode = authorCodeFromSlug(urlifyAuthor(author));
+      const workCode = toWorkCorpusCode(id, title);
+      expect(authorCode).toBe(authorCodeFromSlug(expectedUrlAuthor));
+      expect(authorCode).toMatch(/^[A-Z][A-Za-z0-9]*$/);
+      expect(workCode).toMatch(/^[A-Z][A-Za-z0-9]*$/);
+      byAuthor.set(authorCode, [...(byAuthor.get(authorCode) ?? []), workCode]);
+    }
+    for (const codes of byAuthor.values()) {
+      expect(new Set(codes.map((c) => c.toLowerCase())).size).toBe(
+        codes.length
+      );
+    }
+  });
+});
+
+describe("toWorkCorpusCode and buildCorpusAuthorsList", () => {
+  it("converts underscored, dotted, and hyphenated work slugs to CamelCase", () => {
+    expect(
+      toWorkCorpusCode("phi0448.phi001.perseus-lat2", "De bello Gallico")
+    ).toBe("DeBelloGallico");
+    // Pinned slug with a period (`pro_a._caecina`).
+    expect(
+      toWorkCorpusCode("phi0474.phi008.perseus-lat2", "Pro A. Caecina")
+    ).toBe("ProACaecina");
+    expect(toWorkCorpusCode("unpinned", "Res Rustica, Books I-IX")).toBe(
+      "ResRusticaBooksIIx"
+    );
+  });
+
+  it("builds a CorpusAuthorList with short display titles and rejects duplicate work codes", () => {
+    const list = buildCorpusAuthorsList({
+      authorLookup: { Cicero: [0, 1] },
+      workLookup: [
+        [
+          "phi0474.phi008.perseus-lat2",
+          [],
+          { author: "M. Tullius Cicero", name: "Pro A. Caecina" },
+        ],
+        [
+          "phi0474.phi020.perseus-lat2",
+          [],
+          { author: "M. Tullius Cicero", name: "De domo sua ad pontifices" },
+        ],
+      ],
+    });
+    expect(list).toEqual({
+      Cicero: [
+        {
+          id: "phi0474.phi008.perseus-lat2",
+          code: "ProACaecina",
+          name: "Pro A. Caecina",
+        },
+        {
+          id: "phi0474.phi020.perseus-lat2",
+          code: "DeDomoSua",
+          name: "de Domo Sua",
+        },
+      ],
+    });
+
+    expect(() =>
+      buildCorpusAuthorsList({
+        authorLookup: { Caesar: [0, 1] },
+        workLookup: [
+          ["w1", [], { author: "Julius Caesar", name: "De Bello Gallico" }],
+          ["w2", [], { author: "Julius Caesar", name: "de bello gallico" }],
+        ],
+      })
+    ).toThrow(/Duplicate work code #Caesar\/DeBelloGallico/);
+  });
 });
 
 describe("Phase 2B work metadata", () => {
@@ -1074,14 +1142,14 @@ describe("Phase 2B work metadata", () => {
       "Seneca, Lucius Annaeus",
       "De Ira",
       "De Ira",
-      "seneca_minor/de_ira",
+      "seneca_younger/de_ira",
     ],
     [
       "phi1017.phi001.perseus-lat2",
       "Seneca, Lucius Annaeus",
       "Hercules",
       "Hercules Furens",
-      "seneca_minor/hercules_furens",
+      "seneca_younger/hercules_furens",
     ],
     [
       "phi2331.phi029.perseus-lat2",

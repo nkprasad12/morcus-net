@@ -24,6 +24,9 @@
  * - `extras.ui`: always `"v2"`; distinguishes V2 rows from V1's.
  * - `extras.<mark>`: ms since request start, for `sent`, `end`,
  *   `lookupComplete`, `error`, `closed` and the dictionary phases.
+ * - `extras.<name>Ms`: durations a handler measured itself and passed to
+ *   `requestTimer(res).record`, e.g. `corpusEngineMs` (the corpus engine's own
+ *   query time).
  * - `extras.flushMs`: `end - sent`, i.e. compression and socket flush; absent
  *   when aborted.
  * - `extras.mode`: `"api"` for `/api/*`, else `"partial"` (`?format=partial`
@@ -92,6 +95,8 @@ import { getBuildVersion } from "@/web/ui/core/server/build_version.server";
 interface RequestTimer {
   /** Records `tag` as milliseconds since the request started. */
   mark(tag: string): void;
+  /** Records a duration the handler measured itself, as `tag`. */
+  record(tag: string, ms: number): void;
   /** Adapts `mark` to the `ServerExtras` the dictionary code accepts. */
   serverExtras(): ServerExtras;
 }
@@ -118,6 +123,10 @@ class ActiveRequestTimer implements RequestTimer {
     this.#timer.event(tag);
   }
 
+  record(tag: string, ms: number): void {
+    this.#timer.record(tag, ms);
+  }
+
   serverExtras(): ServerExtras {
     return { log: (tag) => this.#timer.event(tag) };
   }
@@ -125,6 +134,7 @@ class ActiveRequestTimer implements RequestTimer {
 
 const NO_OP_TIMER: RequestTimer = {
   mark: () => {},
+  record: () => {},
   serverExtras: () => ({ log: () => {} }),
 };
 

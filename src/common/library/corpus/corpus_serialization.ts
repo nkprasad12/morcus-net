@@ -1,3 +1,4 @@
+import { assert } from "@/common/assert";
 import { toBitMask } from "@/common/library/corpus/corpus_byte_utils";
 import {
   CORPUS_FILE,
@@ -9,8 +10,16 @@ import {
   CORPUS_LEMMATA_DB,
   type CorpusIndexKeyTypes,
 } from "@/common/library/corpus/corpus_common";
+import {
+  displayWorkTitle,
+  toWorkCorpusCode,
+} from "@/common/library/library_slugs";
 import { savePrecompressedJsonDb } from "@/web/ui/core/server/precompressed_json.server";
 import { buildLemmaShards } from "@/web/ui/corpus/corpus_lemmata.server";
+import type {
+  CorpusAuthorList,
+  CorpusWorkInfo,
+} from "@/web/ui/corpus/corpus_syntax.common";
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";
@@ -27,18 +36,75 @@ interface StoredBitmask {
 
 type StoredMapValue = StoredArray | StoredBitmask;
 
+const VALID_WORK_CODE = /^[A-Za-z0-9]+$/;
+
+export function buildCorpusAuthorsList(
+  corpus: Pick<InProgressLatinCorpus, "authorLookup" | "workLookup">
+): CorpusAuthorList {
+  const authors: Record<string, CorpusWorkInfo[]> = {};
+  for (const [author, [startIdx, endIdx]] of Object.entries(
+    corpus.authorLookup
+  )) {
+    const seenCodes = new Set<string>();
+    const works: CorpusWorkInfo[] = [];
+    for (let i = startIdx; i <= endIdx; i++) {
+      const [id, , workData] = corpus.workLookup[i];
+      const code = toWorkCorpusCode(id, workData.name);
+      assert(
+        VALID_WORK_CODE.test(code),
+        `Work code "${code}" (for "${id}") can't be written as #${author}/${code} in a corpus query`
+      );
+      assert(
+        !seenCodes.has(code.toLowerCase()),
+        `Duplicate work code #${author}/${code} for "${id}"`
+      );
+      seenCodes.add(code.toLowerCase());
+      works.push({
+        id,
+        code,
+        name: displayWorkTitle(id, workData.name),
+      });
+    }
+    authors[author] = works;
+  }
+  return authors;
+}
+
 function writeAuthorsFile(corpus: InProgressLatinCorpus, corpusDir: string) {
   const authorsDest = path.join(corpusDir, CORPUS_AUTHORS_LIST);
-  const encoded = JSON.stringify(Object.keys(corpus.authorLookup));
+  const encoded = JSON.stringify(buildCorpusAuthorsList(corpus));
   const compressed = zlib.gzipSync(Buffer.from(encoded, "utf8"), {
     level: 9,
   });
   fs.writeFileSync(authorsDest, compressed);
 }
 
+/**
+ * The lemma syntax the query engine accepts (`is_valid_lemma` in
+ * `corpus_rust/src/query_parsing_v2.rs`): ASCII letters, optionally followed
+ * by a homograph number (`edo#1`).
+ */
+const QUERYABLE_LEMMA = /^[A-Za-z]+(#\d+)?$/;
+
+/**
+ * Throws if any lemma can't be written in a query, since `@lemma:` could
+ * never match it (e.g. `caro2` for `caro#2`; fix those in `morceus-data`).
+ */
+export function checkLemmataQueryable(lemmata: Iterable<string>): void {
+  const invalid = [...lemmata].filter((l) => !QUERYABLE_LEMMA.test(l));
+  if (invalid.length > 0) {
+    throw new Error(
+      `Corpus lemmata the query engine can't parse: ${invalid
+        .map((l) => JSON.stringify(l))
+        .join(", ")}`
+    );
+  }
+}
+
 function writeLemmataFile(corpus: InProgressLatinCorpus, corpusDir: string) {
   const lemmataDest = path.join(corpusDir, CORPUS_LEMMATA_DB);
   const lemmata = Array.from(new Set(corpus.idTable.lemma.keys()));
+  checkLemmataQueryable(lemmata);
   savePrecompressedJsonDb(lemmataDest, buildLemmaShards(lemmata));
 }
 

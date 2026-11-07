@@ -21,6 +21,10 @@ import {
   runCorpusSearch,
   type CorpusEngine,
 } from "@/web/ui/corpus/corpus_query.server";
+import {
+  renderCorpusReferenceContentHtml,
+  resolveAuthorDisplayNames,
+} from "@/web/ui/corpus/corpus_reference.server";
 import { renderCorpusContentHtml } from "@/web/ui/corpus/corpus_view.server";
 import { renderDictPageHtml } from "@/web/ui/dict/dict_page.server";
 import { renderAboutContentHtml } from "@/web/ui/about/about.server";
@@ -258,13 +262,14 @@ export async function buildCorpusFixtures(): Promise<SsrFixture[]> {
     strictMode: false,
   };
   const corpusEngine = ssrFixtureCorpusEngine();
-  const [corpusLanding, corpusResults] = await Promise.all([
+  const [corpusLanding, corpusResults, authorDisplayNames] = await Promise.all([
     runCorpusSearch(corpusParams, corpusEngine, CORPUS_TEST_AUTHORS),
     runCorpusSearch(
       { ...corpusParams, q: "@case:dat" },
       corpusEngine,
       CORPUS_TEST_AUTHORS
     ),
+    resolveAuthorDisplayNames(CORPUS_TEST_AUTHORS),
   ]);
   return [
     {
@@ -274,6 +279,13 @@ export async function buildCorpusFixtures(): Promise<SsrFixture[]> {
     {
       name: "corpus-results",
       html: renderCorpusContentHtml(corpusResults),
+    },
+    {
+      name: "corpus-reference",
+      html: renderCorpusReferenceContentHtml(
+        CORPUS_TEST_AUTHORS,
+        authorDisplayNames
+      ),
     },
     {
       // Clicked into the search box before the bundle ran (DESIGN §7.3

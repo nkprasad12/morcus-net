@@ -2,6 +2,7 @@
 
 use std::cmp::{max, min};
 use std::env::set_current_dir;
+use std::path::Path;
 
 use crate::api::{PageData, QueryGlobalInfo, QueryOptions};
 use crate::corpus_index::deserialize_corpus;
@@ -18,22 +19,33 @@ use crate::{
 
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
+/// Loads the query engine for the built corpus.
+///
+/// Returns `None` (with a warning) only if the corpus hasn't been built, e.g. in
+/// a fresh checkout. Panics if the corpus exists but fails to load, so tests
+/// can't silently pass when something is wrong.
 pub(super) fn get_engine_unsafe() -> Option<CorpusQueryEngine> {
-    set_current_dir("..").unwrap();
-    let index = match deserialize_corpus(CORPUS_ROOT) {
-        Ok(index) => index,
-        Err(e) => {
-            eprintln!("Failed to load corpus: {e}");
-            return None;
-        }
-    };
-    match CorpusQueryEngine::new(index) {
-        Ok(e) => Some(e),
-        Err(e) => {
-            eprintln!("Failed to create query engine: {e}");
-            None
-        }
+    // The corpus JSON stores its data paths relative to the repo root, so the
+    // working directory has to be the repo root. It's shared by every test
+    // thread in the process, so set it to an absolute path (idempotent) rather
+    // than stepping up with a relative `..` on every call.
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("corpus_rust should be inside the repo root");
+    set_current_dir(repo_root).unwrap();
+    if !Path::new(CORPUS_ROOT).exists() {
+        eprintln!(
+            "WARNING: skipping corpus test: {CORPUS_ROOT} not found under {}",
+            repo_root.display()
+        );
+        return None;
     }
+    let index = deserialize_corpus(CORPUS_ROOT)
+        .unwrap_or_else(|e| panic!("Failed to load corpus from {CORPUS_ROOT}: {e}"));
+    Some(
+        CorpusQueryEngine::new(index)
+            .unwrap_or_else(|e| panic!("Failed to create query engine: {e}")),
+    )
 }
 
 fn arr_has_any_in_range(arr: &[u32], range: &(u32, u32)) -> bool {
@@ -221,14 +233,35 @@ impl CorpusQueryEngine {
         Ok(CorpusQueryMatch { metadata, text })
     }
 
-    /// Returns the author's token range as `[start, end)`.
-    fn resolve_author_data(&self, name: Option<&String>) -> Option<(u32, u32)> {
-        let name = name?;
-        // `author_lookup` holds an inclusive range of work indices.
-        let (start, end) = self.corpus.author_lookup.get(name)?;
-        let start_token = self.corpus.work_lookup[*start].rows.first()?.1;
-        let end_token = self.corpus.work_lookup[*end].rows.last()?.2;
-        Some((start_token, end_token))
+    /// The `[start, end)` token range of each scope item (an author's works, or
+    /// one work by ID), or `None` for an unrestricted query. Resolved
+    /// independently of the production engine's `compute_range`.
+    pub(super) fn resolve_scope_ref_impl(&self, scope: &[String]) -> Option<Vec<(u32, u32)>> {
+        if scope.is_empty() {
+            return None;
+        }
+        let work_range = |first: usize, last: usize| {
+            let start = self.corpus.work_lookup[first].rows.first().unwrap().1;
+            let end = self.corpus.work_lookup[last].rows.last().unwrap().2;
+            (start, end)
+        };
+        let ranges = scope
+            .iter()
+            .map(|item| match self.corpus.author_lookup.get(item) {
+                // `author_lookup` holds an inclusive range of work indices.
+                Some(&(first, last)) => work_range(first, last),
+                None => {
+                    let work = self
+                        .corpus
+                        .work_lookup
+                        .iter()
+                        .position(|w| &w.work_id == item)
+                        .unwrap_or_else(|| panic!("Unknown scope item {item}"));
+                    work_range(work, work)
+                }
+            })
+            .collect();
+        Some(ranges)
     }
 
     fn query_corpus_ref_impl(
@@ -281,9 +314,7 @@ impl CorpusQueryEngine {
         }
 
         let hard_breaks = self.hard_breaks_ref_impl()?;
-        // Just for now.
-        assert!(query.authors.len() <= 1);
-        let author_data = self.resolve_author_data(query.authors.first());
+        let scope = self.resolve_scope_ref_impl(&query.scope);
         let match_ids: Vec<SpanCandidate> = candidates
             .iter()
             .map(|SpanCandidate { ids, span_length }| {
@@ -291,10 +322,15 @@ impl CorpusQueryEngine {
                     .iter()
                     // -2 because we only care about breaks between tokens, not after the last token.
                     .filter(|x| !arr_has_any_in_range(&hard_breaks, &(**x, **x + span_length - 2)));
-                let ids: Vec<u32> = if let Some(author_data) = author_data {
-                    ids.filter(|x| **x >= author_data.0 && **x + span_length - 1 < author_data.1)
-                        .copied()
-                        .collect()
+                // A match must lie entirely within one of the scope's ranges.
+                let ids: Vec<u32> = if let Some(ranges) = &scope {
+                    ids.filter(|x| {
+                        ranges
+                            .iter()
+                            .any(|&(start, end)| **x >= start && **x + span_length - 1 < end)
+                    })
+                    .copied()
+                    .collect()
                 } else {
                     ids.copied().collect()
                 };

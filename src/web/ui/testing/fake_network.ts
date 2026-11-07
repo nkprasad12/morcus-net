@@ -149,6 +149,9 @@ async function route(
         });
     return { status: 200, body: JSON.stringify(body) };
   }
+  if (url.pathname === "/api/corpus/authors") {
+    return { status: 200, body: JSON.stringify(CORPUS_TEST_AUTHORS) };
+  }
   const lemmata = /^\/api\/corpus\/lemmata\/([^/])$/.exec(url.pathname);
   if (lemmata) {
     const letter = decodeURIComponent(lemmata[1]).toLowerCase();

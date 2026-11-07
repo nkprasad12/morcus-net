@@ -28,23 +28,11 @@ import {
   renderStaticPages,
   staticPageSeeds,
 } from "@/web/ui/static_pages_seed.server";
-import { CORPUS_TEST_AUTHORS } from "@/web/ui/testing/fake_corpus_engine";
 import { fakeCorpusEngine } from "@/web/ui/testing/fake_corpus_engine";
 
 jest.mock("@/web/ui/reader/reader_loader.server", () =>
   jest.requireActual("@/web/ui/testing/mock_reader_loader")
 );
-
-// The author list comes from the corpus build; the seed and the route must
-// see the same one, as they do in production.
-jest.mock("@/web/ui/corpus/corpus_query.server", () => ({
-  ...jest.requireActual("@/web/ui/corpus/corpus_query.server"),
-  loadCorpusAuthors: () =>
-    Promise.resolve(
-      jest.requireActual("@/web/ui/testing/fake_corpus_engine")
-        .CORPUS_TEST_AUTHORS
-    ),
-}));
 
 jest.mock("@/common/experimental_texts/catalog_loader", () => ({
   ...jest.requireActual("@/common/experimental_texts/catalog_loader"),
@@ -52,6 +40,15 @@ jest.mock("@/common/experimental_texts/catalog_loader", () => ({
     jest.requireActual(
       "@/web/ui/experimental_texts/experimental_texts_test_catalog"
     ).EXPERIMENTAL_TEXTS_TEST_CATALOG,
+}));
+
+jest.mock("@/web/ui/corpus/corpus_query.server", () => ({
+  ...jest.requireActual("@/web/ui/corpus/corpus_query.server"),
+  loadCorpusAuthors: () =>
+    Promise.resolve(
+      jest.requireActual("@/web/ui/testing/fake_corpus_engine")
+        .CORPUS_TEST_AUTHORS
+    ),
 }));
 
 /** The URL each seed answers, with the request state its key stands for. */
@@ -65,6 +62,7 @@ const SEEDED_REQUESTS: ReadonlyArray<{ url: string; expectKey: RegExp }> = [
   { url: "/macronizer", expectKey: /^page:\/macronizer$/ },
   { url: "/externalReader", expectKey: /^page:\/externalReader$/ },
   { url: "/corpus", expectKey: /^corpus:/ },
+  { url: "/corpus/reference", expectKey: /^page:\/corpus\/reference$/ },
 ];
 
 /** Requests on the same routes that must render dynamically. */
@@ -153,17 +151,6 @@ describe("static page seeds", () => {
     expect(keys.length).toBe(SEEDED_REQUESTS.length);
     for (const { expectKey } of SEEDED_REQUESTS) {
       expect(keys.filter((k) => expectKey.test(k))).toHaveLength(1);
-    }
-  });
-
-  test("the corpus seed carries the author list the route would", async () => {
-    // `identity` is served from the store too, gunzipped on the way out.
-    const res = await request(seeded)
-      .get("/corpus")
-      .set("Accept-Encoding", "identity");
-    expect(res.status).toBe(200);
-    for (const author of CORPUS_TEST_AUTHORS) {
-      expect(res.text).toContain(author);
     }
   });
 

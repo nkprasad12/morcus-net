@@ -12,3 +12,4 @@ pub mod corpus_index;
 pub mod corpus_query_engine;
 mod profiler;
 mod query_parsing_v2;
+pub mod sorted_vocab;

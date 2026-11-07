@@ -9,7 +9,8 @@ import {
 } from "@/common/library/corpus/corpus_common";
 import { RustCorpusQueryEngine } from "@/common/library/corpus/corpus_rust";
 import { openCorpusLemmaStore } from "@/web/ui/corpus/corpus_lemmata.server";
-import { readCorpusSuggestionList } from "@/web/ui/corpus/corpus_query.server";
+import { readCorpusAuthorsList } from "@/web/ui/corpus/corpus_query.server";
+import { INFLECTION_CATEGORIES } from "@/web/ui/corpus/corpus_syntax.common";
 import fs from "fs";
 import zlib from "zlib";
 
@@ -99,9 +100,52 @@ describe("Corpus Integration Test", () => {
     expect(() => queryCorpus(query)).toThrow(/.*too long.*/);
   });
 
+  it("should restrict a query to several authors", () => {
+    const results = queryCorpus("[Author1, Author4] @word:servum");
+    expect(results.matches.map((m) => m.metadata.workId)).toEqual([
+      "test_work_1",
+      "test_work_4",
+    ]);
+  });
+
+  it("should restrict a query to a work by ID", () => {
+    const results = queryCorpus("[test_work_4] @word:servum");
+    expect(results.matches.map((m) => m.metadata.workId)).toEqual([
+      "test_work_4",
+    ]);
+  });
+
+  it("should not count the scope prefix toward the length limit", () => {
+    const query = `[${Array(20).fill("Author1").join(", ")}] @word:servum`;
+    expect(query.length).toBeGreaterThan(100);
+    const results = queryCorpus(query);
+    expect(results.matches.map((m) => m.metadata.workId)).toEqual([
+      "test_work_1",
+    ]);
+  });
+
   it("should gracefully handle query errors", () => {
     const query = "[word:servum]";
     expect(() => queryCorpus(query)).toThrow();
+  });
+
+  // The engine also runs standalone (the corpus CLI), so it must accept every
+  // inflection keyword and value the web UI offers, long and short.
+  it("should accept every inflection category and value the web UI offers", () => {
+    const rejected: string[] = [];
+    for (const [category, values] of INFLECTION_CATEGORIES) {
+      for (const key of [category, category[0]]) {
+        for (const value of new Set([...values.keys(), ...values.values()])) {
+          const query = `@${key}:${value}`;
+          try {
+            queryCorpus(query);
+          } catch {
+            rejected.push(query);
+          }
+        }
+      }
+    }
+    expect(rejected).toEqual([]);
   });
 
   it("should find a single word", () => {
@@ -505,11 +549,18 @@ describe("Corpus Integration Test", () => {
   });
 
   it("writes author suggestion list and pre-compressed lemma shards readable by V2", async () => {
-    const authors = await readCorpusSuggestionList(
+    const authors = await readCorpusAuthorsList(
       CORPUS_AUTHORS_LIST,
       TEST_CORPUS_DIR
     );
-    expect(authors).toEqual(["Author1", "Author2", "Author4"]);
+    expect(authors).toEqual({
+      Author1: [{ id: "test_work_1", code: "Work1", name: "Work 1" }],
+      Author2: [
+        { id: "test_work_2", code: "Work2", name: "Work 2" },
+        { id: "test_work_3", code: "Work3", name: "Work 3" },
+      ],
+      Author4: [{ id: "test_work_4", code: "Work4", name: "Work 4" }],
+    });
 
     const lemmaStore = openCorpusLemmaStore(TEST_CORPUS_DIR);
     expect(lemmaStore).toBeDefined();

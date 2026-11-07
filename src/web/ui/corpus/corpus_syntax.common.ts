@@ -116,6 +116,12 @@ export function tokenizeInput(input: string): QueryToken[] {
 // State machine     //
 // // // // // // // //
 
+/**
+ * The most `#Author` filters a query may start with. Matches the engine's
+ * `MAX_SCOPE_ITEMS` (`corpus_rust/src/corpus_query_engine.rs`).
+ */
+export const MAX_AUTHOR_FILTERS = 20;
+
 type QueryProcessState =
   | "ComplexTerm"
   | "ComplexTerm;LastWasTerm"
@@ -202,8 +208,11 @@ function feedStateMachine(
       const context = i === 0 ? "at start" : `after \`${sequence[j][0]}\``;
       return `\`${token}\` not allowed ${context}`;
     }
-    if (matchingOption[0] === "workFilter" && workFilters > 1) {
-      return "only one #author filter allowed";
+    if (
+      matchingOption[0] === "workFilter" &&
+      workFilters > MAX_AUTHOR_FILTERS
+    ) {
+      return `at most ${MAX_AUTHOR_FILTERS} #author filters allowed`;
     }
     if (matchingOption[1] === "InSpan") {
       // Completing a term in a span resets the logical operator.
@@ -219,8 +228,7 @@ function feedStateMachine(
     groups[groups.length - 1].push([token, startIdx, tokenType]);
   }
   const nextOptions = getOptions()
-    // Only one work filter per query.
-    .filter((o) => workFilters === 0 || o[0] !== "workFilter")
+    .filter((o) => workFilters < MAX_AUTHOR_FILTERS || o[0] !== "workFilter")
     .map((o) => o[0]);
   return { nextOptions, termGroups: groups };
 }
@@ -385,6 +393,8 @@ export function invalidInflectionOption(
 // Per-token validation //
 // // // // // // // // //
 
+export const PROXIMITY_DISTANCE = { min: 1, max: 15, default: 5 } as const;
+
 interface ProximityInfo {
   distance: number;
   directed: boolean;
@@ -399,11 +409,52 @@ export function parseProximity(token: string): ProximityInfo | string {
   if (match === null) {
     return `invalid \`${token}\`: expected ~, ~N, or ~N>`;
   }
-  const distance = match[1] === "" ? 5 : Number.parseInt(match[1], 10);
-  if (distance < 1 || distance > 15) {
-    return "range after ~ must be 1-15";
+  const distance =
+    match[1] === ""
+      ? PROXIMITY_DISTANCE.default
+      : Number.parseInt(match[1], 10);
+  if (distance < PROXIMITY_DISTANCE.min || distance > PROXIMITY_DISTANCE.max) {
+    return `range after ~ must be ${PROXIMITY_DISTANCE.min}-${PROXIMITY_DISTANCE.max}`;
   }
   return { distance, directed: match[2] === ">" };
+}
+
+/** A work in the corpus, under its author (`#Author/Work`). */
+export interface CorpusWorkInfo {
+  /** Work ID in the corpus index (`phi0448.phi001.perseus-lat2`). */
+  readonly id: string;
+  /** CamelCase code written after `#Author/` (`DeBelloGallico`). */
+  readonly code: string;
+  /** Display title (`Bellum Gallicum`), shown as help in the autocomplete. */
+  readonly name: string;
+}
+
+/** Canonical author code (`Caesar`) → that author's works in the corpus. */
+export type CorpusAuthorList = Readonly<
+  Record<string, readonly CorpusWorkInfo[]>
+>;
+
+function isCorpusWorkInfo(value: unknown): value is CorpusWorkInfo {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "code" in value &&
+    typeof value.code === "string" &&
+    "name" in value &&
+    typeof value.name === "string"
+  );
+}
+
+/** Whether `value` has the shape of a serialized {@link CorpusAuthorList}. */
+export function isCorpusAuthorList(value: unknown): value is CorpusAuthorList {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  return Object.values(value).every(
+    (works) => Array.isArray(works) && works.every(isCorpusWorkInfo)
+  );
 }
 
 /**
@@ -412,27 +463,68 @@ export function parseProximity(token: string): ProximityInfo | string {
  */
 export function canonicalAuthor(
   name: string,
-  authors: readonly string[]
+  authors: CorpusAuthorList
 ): string | undefined {
-  if (authors.includes(name)) return name;
+  if (Object.hasOwn(authors, name)) return name;
   const lower = name.toLowerCase();
-  return authors.find((a) => a.toLowerCase() === lower);
+  return Object.keys(authors).find((a) => a.toLowerCase() === lower);
 }
 
 /**
- * The errors in a single complete token, given the known authors (`undefined`
- * if the list isn't available, which skips the author check).
+ * The work matching `workCode` under `author` in `authors` (exact match wins,
+ * else case-insensitive), or `undefined`.
+ */
+export function resolveWork(
+  author: string,
+  workCode: string,
+  authors: CorpusAuthorList
+): CorpusWorkInfo | undefined {
+  if (workCode.length === 0) return undefined;
+  const canonAuthor = canonicalAuthor(author, authors);
+  if (canonAuthor === undefined) return undefined;
+  const works = authors[canonAuthor];
+  const lower = workCode.toLowerCase();
+  return (
+    works.find((w) => w.code === workCode) ??
+    works.find((w) => w.code.toLowerCase() === lower)
+  );
+}
+
+/**
+ * The errors in a single complete token, given the known authors and their
+ * works (`undefined` if the list isn't available, which skips the lookup).
  */
 export function errorsForToken(
   token: string,
-  authors: readonly string[] | undefined
+  authors: CorpusAuthorList | undefined
 ): string[] {
   if (token.startsWith("#")) {
-    if (
-      authors !== undefined &&
-      canonicalAuthor(token.slice(1), authors) === undefined
-    ) {
-      return [`invalid author #${token.slice(1)}`];
+    const body = token.slice(1);
+    const slash = body.indexOf("/");
+    if (slash === -1) {
+      if (
+        authors !== undefined &&
+        canonicalAuthor(body, authors) === undefined
+      ) {
+        return [`invalid author #${body}`];
+      }
+      return [];
+    }
+    const rawAuthor = body.slice(0, slash);
+    const rawWork = body.slice(slash + 1);
+    if (rawAuthor.length === 0) {
+      return [`invalid author #`];
+    }
+    if (authors !== undefined) {
+      const author = canonicalAuthor(rawAuthor, authors);
+      if (author === undefined) {
+        return [`invalid author #${rawAuthor}`];
+      }
+      if (resolveWork(author, rawWork, authors) === undefined) {
+        return [`invalid work #${body}`];
+      }
+    } else if (rawWork.length === 0 || rawWork.includes("/")) {
+      return [`invalid work #${body}`];
     }
     return [];
   }
@@ -480,7 +572,7 @@ export function errorsForToken(
 /** Returns the first problem with a complete query, or `null` if none. */
 export function validateQuery(
   query: string,
-  authors: readonly string[] | undefined
+  authors: CorpusAuthorList | undefined
 ): string | null {
   const tokens = tokenizeInput(query);
   const structure = findNextOptions(tokens);
@@ -502,8 +594,11 @@ export function hasInflectionFilters(query: string): boolean {
   return /@\w+:/.test(query);
 }
 
+/** A `@lemma:<value>` or `@l:<value>` token: groups are the key and value. */
+export const LEMMA_FILTER = /^@(lemma|l):(.+)$/i;
+
 export interface CanonicalizeContext {
-  readonly authors?: readonly string[];
+  readonly authors?: CorpusAuthorList;
   /**
    * Canonical lemma for a user-typed value (exact first, then
    * case-insensitive), or `undefined`.
@@ -515,7 +610,9 @@ export interface CanonicalizeContext {
  * Translates the user-facing syntax into the Rust engine's syntax
  * (`corpus_rust/src/query_parsing_v2.rs`):
  *
- * - `#Author` → `[Author]`
+ * - `#Author1 #Author2/Work` → `[Author1, workId]` (the leading filters become
+ *   one scope prefix; when `ctx.authors` is absent, filters pass through as
+ *   written, and `runCorpusSearch` rejects work filters beforehand)
  * - `~N` → `N~`, `~N>` → `N~>`
  * - Terms joined by `and` / `or` are wrapped in parentheses (closing any
  *   the user left open).
@@ -531,7 +628,26 @@ export function transformQuery(
   if (typeof grouped === "string") {
     return query;
   }
-  return grouped
+  const scopePrefix: string[] = [];
+  const terms = grouped.filter((group) => {
+    if (group[0][2] !== "workFilter") {
+      return true;
+    }
+    const body = group[0][0].slice(1);
+    const slash = body.indexOf("/");
+    if (slash === -1) {
+      scopePrefix.push(
+        (ctx.authors && canonicalAuthor(body, ctx.authors)) ?? body
+      );
+    } else {
+      const rawAuthor = body.slice(0, slash);
+      const rawWork = body.slice(slash + 1);
+      const work = ctx.authors && resolveWork(rawAuthor, rawWork, ctx.authors);
+      scopePrefix.push(work ? work.id : body);
+    }
+    return false;
+  });
+  const body = terms
     .map((group) => {
       const hasLogicalOp = group.some((t) => t[2].startsWith("logic:"));
       if (!hasLogicalOp) {
@@ -554,17 +670,13 @@ export function transformQuery(
       })
     )
     .map((t) =>
-      t.replace(
-        /^#(.+)$/,
-        (_m, name: string) =>
-          `[${(ctx.authors && canonicalAuthor(name, ctx.authors)) ?? name}]`
-      )
-    )
-    .map((t) =>
-      t.replace(/^@(lemma|l):(.+)$/i, (m, key: string, value: string) => {
+      t.replace(LEMMA_FILTER, (m, key: string, value: string) => {
         const canon = ctx.canonicalLemma?.(value);
         return canon === undefined ? m : `@${key}:${canon}`;
       })
     )
     .join(" ");
+  return scopePrefix.length === 0
+    ? body
+    : `[${scopePrefix.join(", ")}] ${body}`.trimEnd();
 }

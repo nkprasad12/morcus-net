@@ -10,11 +10,15 @@ import {
   errorsForToken,
   findNextOptions,
   hasInflectionFilters,
+  isCorpusAuthorList,
+  MAX_AUTHOR_FILTERS,
   parseProximity,
+  resolveWork,
   termGroups,
   tokenizeInput,
   transformQuery,
   validateQuery,
+  type CorpusAuthorList,
   type QueryToken,
 } from "@/web/ui/corpus/corpus_syntax.common";
 
@@ -229,6 +233,18 @@ describe("findNextOptions", () => {
   describe("after workFilter", () => {
     it("should allow another workFilter or start a span", () => {
       const tokens: QueryToken[] = [["#caesar", 0, "workFilter"]];
+      const result = findNextOptions(tokens);
+      expect(result).toEqual(
+        expect.arrayContaining(["workFilter", "wordFilter", "("])
+      );
+      expect(result).toHaveLength(3);
+    });
+
+    it("should stop offering workFilter at the limit", () => {
+      const tokens: QueryToken[] = Array.from(
+        { length: MAX_AUTHOR_FILTERS },
+        (_, i): QueryToken => [`#a${i}`, i * 5, "workFilter"]
+      );
       const result = findNextOptions(tokens);
       expect(result).toEqual(expect.arrayContaining(["wordFilter", "("]));
       expect(result).toHaveLength(2);
@@ -733,14 +749,27 @@ describe("termGroups", () => {
       expect(result).toContain("Cannot mix");
     });
 
-    it("should return error for multiple work filters", () => {
+    it("should allow several work filters, each its own group", () => {
       const tokens: QueryToken[] = [
         ["#caesar", 0, "workFilter"],
-        ["#cicero", 12, "workFilter"],
+        ["#cicero", 8, "workFilter"],
+        ["amor", 16, "wordFilter"],
       ];
+      expect(termGroups(tokens)).toEqual([
+        [["#caesar", 0, "workFilter"]],
+        [["#cicero", 8, "workFilter"]],
+        [["amor", 16, "wordFilter"]],
+      ]);
+    });
+
+    it("should return error for too many work filters", () => {
+      const tokens: QueryToken[] = Array.from(
+        { length: MAX_AUTHOR_FILTERS + 1 },
+        (_, i): QueryToken => [`#a${i}`, i * 5, "workFilter"]
+      );
       const result = termGroups(tokens);
       expect(typeof result).toBe("string");
-      expect(result).toContain("only one");
+      expect(result).toContain(`at most ${MAX_AUTHOR_FILTERS}`);
     });
 
     it("should return error for work filter not at start", () => {
@@ -767,6 +796,13 @@ describe("transformQuery", () => {
 
     it("should handle work filters", () => {
       expect(transformQuery("#caesar puella")).toBe("[caesar] puella");
+    });
+
+    it("should combine several author filters into one scope prefix", () => {
+      expect(transformQuery("#caesar #cicero puella")).toBe(
+        "[caesar, cicero] puella"
+      );
+      expect(transformQuery("#caesar #cicero")).toBe("[caesar, cicero]");
     });
 
     it("should transform proximity operators", () => {
@@ -868,7 +904,22 @@ describe("transformQuery", () => {
   });
 
   describe("canonicalization context", () => {
-    const authors = ["Caesar", "Cicero"];
+    const authors: CorpusAuthorList = {
+      Caesar: [
+        {
+          id: "phi0448.phi001.perseus-lat2",
+          code: "DeBelloGallico",
+          name: "De Bello Gallico",
+        },
+      ],
+      Cicero: [
+        {
+          id: "phi0474.phi037.perseus-lat1",
+          code: "DeOratore",
+          name: "De Oratore",
+        },
+      ],
+    };
     const lemmaMap = new Map([
       ["fero", "fero"],
       ["Fero", "fero"],
@@ -879,6 +930,21 @@ describe("transformQuery", () => {
 
     it("canonicalizes #author when authors are provided", () => {
       expect(transformQuery("#caesar amor", { authors })).toBe("[Caesar] amor");
+    });
+
+    it("canonicalizes each of several #author filters", () => {
+      expect(transformQuery("#caesar #CICERO amor", { authors })).toBe(
+        "[Caesar, Cicero] amor"
+      );
+    });
+
+    it("translates #Author/Work to the work ID when authors are provided", () => {
+      expect(transformQuery("#caesar/debellogallico amor", { authors })).toBe(
+        "[phi0448.phi001.perseus-lat2] amor"
+      );
+      expect(
+        transformQuery("#Caesar/DeBelloGallico #Cicero amor", { authors })
+      ).toBe("[phi0448.phi001.perseus-lat2, Cicero] amor");
     });
 
     it("leaves #author raw when no context is provided", () => {
@@ -918,8 +984,17 @@ describe("transformQuery", () => {
   });
 });
 
-describe("canonicalAuthor", () => {
-  const authors = ["Caesar", "Cicero"];
+describe("canonicalAuthor and resolveWork", () => {
+  const authors: CorpusAuthorList = {
+    Caesar: [
+      {
+        id: "phi0448.phi001.perseus-lat2",
+        code: "DeBelloGallico",
+        name: "De Bello Gallico",
+      },
+    ],
+    Cicero: [],
+  };
 
   it("matches case-insensitively and prefers exact match", () => {
     expect(canonicalAuthor("caesar", authors)).toBe("Caesar");
@@ -929,6 +1004,25 @@ describe("canonicalAuthor", () => {
 
   it("returns undefined for unknown authors", () => {
     expect(canonicalAuthor("Homer", authors)).toBeUndefined();
+  });
+
+  it("resolves work slugs case-insensitively", () => {
+    expect(resolveWork("Caesar", "DeBelloGallico", authors)?.id).toBe(
+      "phi0448.phi001.perseus-lat2"
+    );
+    expect(resolveWork("Caesar", "debellogallico", authors)?.id).toBe(
+      "phi0448.phi001.perseus-lat2"
+    );
+    expect(resolveWork("Caesar", "unknown", authors)).toBeUndefined();
+    expect(resolveWork("Homer", "iliad", authors)).toBeUndefined();
+  });
+
+  it("validates CorpusAuthorList shape", () => {
+    expect(isCorpusAuthorList(authors)).toBe(true);
+    expect(isCorpusAuthorList(null)).toBe(false);
+    expect(isCorpusAuthorList(["Caesar"])).toBe(false);
+    expect(isCorpusAuthorList({ Caesar: "nope" })).toBe(false);
+    expect(isCorpusAuthorList({ Caesar: [{ id: 1 }] })).toBe(false);
   });
 });
 
@@ -953,24 +1047,45 @@ describe("parseProximity", () => {
 });
 
 describe("errorsForToken", () => {
-  const authors = ["Caesar", "Cicero"];
+  const authors: CorpusAuthorList = {
+    Caesar: [
+      {
+        id: "phi0448.phi001.perseus-lat2",
+        code: "DeBelloGallico",
+        name: "De Bello Gallico",
+      },
+    ],
+    Cicero: [],
+  };
 
-  it("accepts known authors case-insensitively", () => {
+  it("accepts known authors and works case-insensitively", () => {
     expect(errorsForToken("#caesar", authors)).toEqual([]);
     expect(errorsForToken("#CAESAR", authors)).toEqual([]);
+    expect(errorsForToken("#caesar/debellogallico", authors)).toEqual([]);
+    expect(errorsForToken("#Caesar/DeBelloGallico", authors)).toEqual([]);
   });
 
-  it("rejects unknown authors", () => {
+  it("rejects unknown authors and works", () => {
     expect(errorsForToken("#Homer", authors)).toEqual([
       "invalid author #Homer",
     ]);
-    expect(errorsForToken("#nobody", ["Caesar"])).toEqual([
+    expect(errorsForToken("#nobody", { Caesar: [] })).toEqual([
       "invalid author #nobody",
+    ]);
+    expect(errorsForToken("#Homer/iliad", authors)).toEqual([
+      "invalid author #Homer",
+    ]);
+    expect(errorsForToken("#Caesar/", authors)).toEqual([
+      "invalid work #Caesar/",
+    ]);
+    expect(errorsForToken("#Caesar/aeneid", authors)).toEqual([
+      "invalid work #Caesar/aeneid",
     ]);
   });
 
   it("skips the author check without a list", () => {
     expect(errorsForToken("#Homer", undefined)).toEqual([]);
+    expect(errorsForToken("#Homer/iliad", undefined)).toEqual([]);
   });
 
   it("accepts long and short inflection forms and keywords", () => {
@@ -1001,13 +1116,22 @@ describe("errorsForToken", () => {
 });
 
 describe("validateQuery", () => {
-  const authors = ["Caesar"];
+  const authors: CorpusAuthorList = {
+    Caesar: [
+      {
+        id: "phi0448.phi001.perseus-lat2",
+        code: "DeBelloGallico",
+        name: "De Bello Gallico",
+      },
+    ],
+  };
 
   it("accepts valid queries", () => {
     expect(validateQuery("amor", authors)).toBeNull();
     expect(
       validateQuery("#Caesar @lemma:do and @case:dat ~3> hostis", authors)
     ).toBeNull();
+    expect(validateQuery("#Caesar/DeBelloGallico bellum", authors)).toBeNull();
   });
 
   it("reports structural errors first", () => {
@@ -1017,6 +1141,9 @@ describe("validateQuery", () => {
 
   it("reports token errors", () => {
     expect(validateQuery("#Homer amor", authors)).toBe("invalid author #Homer");
+    expect(validateQuery("#Caesar/aeneid amor", authors)).toBe(
+      "invalid work #Caesar/aeneid"
+    );
     expect(validateQuery("amor ~99 amo", authors)).toContain("1-15");
   });
 });

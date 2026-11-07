@@ -12,22 +12,30 @@ import {
   CORPUS_AUTHORS_LIST,
   CORPUS_DIR,
   CorpusQueryResult,
+  MAX_QUERY_BODY_LENGTH,
+  queryBodyLength,
   type CorpusQueryMatch,
   type PageData,
 } from "@/common/library/corpus/corpus_common";
 import type { CorpusQueryRequest } from "@/common/library/corpus/corpus_common";
 import {
-  canonicalCorpusLemma,
-  createLemmaCanonicalizer,
+  createLemmaResolver,
+  resolveCorpusLemma,
+  type LemmaResolution,
+  type LemmaResolver,
 } from "@/web/ui/corpus/corpus_lemmata.server";
 import {
   readCorpusParams,
   type CorpusParams,
 } from "@/web/ui/corpus/corpus_params.common";
 import {
+  LEMMA_FILTER,
   hasInflectionFilters,
+  isCorpusAuthorList,
+  tokenizeInput,
   transformQuery,
   validateQuery,
+  type CorpusAuthorList,
 } from "@/web/ui/corpus/corpus_syntax.common";
 import { textHighlightParams } from "@/web/ui/reader/reader_highlight.common";
 import { getV2LibrarySummaries } from "@/web/ui/reader/reader_loader.server";
@@ -35,9 +43,6 @@ import { getV2LibrarySummaries } from "@/web/ui/reader/reader_loader.server";
 // // // // // // //
 // URL contract   //
 // // // // // // //
-
-/** The Rust engine rejects longer (transformed) queries. */
-const MAX_ENGINE_QUERY_LENGTH = 100;
 
 function firstString(value: unknown): string | undefined {
   if (typeof value === "string") return value;
@@ -63,37 +68,33 @@ export class CorpusUnavailableError extends Error {
   override name = "CorpusUnavailableError";
 }
 
-let cachedAuthors: Promise<readonly string[] | undefined> | null = null;
+let cachedAuthors: Promise<CorpusAuthorList | undefined> | null = null;
 
 /**
- * The corpus author list (`#Author` values), or `undefined` if the corpus
- * isn't built.
+ * The corpus author and work map (`#Author` and `#Author/Work` values), or
+ * `undefined` if the corpus isn't built.
  */
-export function loadCorpusAuthors(): Promise<readonly string[] | undefined> {
+export function loadCorpusAuthors(): Promise<CorpusAuthorList | undefined> {
   if (cachedAuthors === null) {
-    cachedAuthors = readCorpusSuggestionList(CORPUS_AUTHORS_LIST);
+    cachedAuthors = readCorpusAuthorsList(CORPUS_AUTHORS_LIST);
   }
   return cachedAuthors;
 }
 
 /**
- * Reads one of the corpus suggestion lists in `CORPUS_DIR` (the authors or
- * the lemmata). Each is a gzipped JSON `string[]`.
+ * Reads the gzipped JSON `CorpusAuthorList` in `CORPUS_DIR`.
  * Resolves `undefined`, with a warning, if the file is missing or malformed.
  */
-export async function readCorpusSuggestionList(
-  fileName: string,
+export async function readCorpusAuthorsList(
+  fileName: string = CORPUS_AUTHORS_LIST,
   corpusDir: string = CORPUS_DIR
-): Promise<string[] | undefined> {
+): Promise<CorpusAuthorList | undefined> {
   try {
     const buffer = await fs.promises.readFile(`${corpusDir}/${fileName}`);
     const parsed: unknown = JSON.parse(
       zlib.gunzipSync(buffer).toString("utf8")
     );
-    if (
-      Array.isArray(parsed) &&
-      parsed.every((a): a is string => typeof a === "string")
-    ) {
+    if (isCorpusAuthorList(parsed)) {
       return parsed;
     }
     console.warn(`Corpus list ${fileName} has an unexpected shape.`);
@@ -127,6 +128,10 @@ type CorpusOutcome =
       readonly isExact: boolean;
       /** 0-based index of the first result on this page. */
       readonly pageStart: number;
+      /**
+       * The engine's own query time, for telemetry (`corpusEngineMs`). Not
+       * shown on the page.
+       */
       readonly timingMs?: number;
       readonly next?: PageData;
     };
@@ -136,11 +141,6 @@ export interface CorpusSearchView {
   readonly outcome: CorpusOutcome;
   /** Show the inflection-tagging disclaimer. */
   readonly showInflectionDisclaimer: boolean;
-  /**
-   * The authors `q` was validated against, rendered once for the
-   * autocomplete (`data-authors`). `undefined` if the corpus isn't built.
-   */
-  readonly authors?: readonly string[];
 }
 
 async function readerHrefs(): Promise<Map<string, string>> {
@@ -179,6 +179,55 @@ function engineErrorMessage(err: unknown): string {
   return text.length > 0 ? text : "The query could not be run.";
 }
 
+/** The most homographs an "ambiguous lemma" error lists. */
+const MAX_LEMMA_OPTIONS = 8;
+
+function memoizeLemmaResolver(resolve: LemmaResolver): LemmaResolver {
+  const cache = new Map<string, LemmaResolution | undefined>();
+  return (value) => {
+    if (!cache.has(value)) {
+      cache.set(value, resolve(value));
+    }
+    return cache.get(value);
+  };
+}
+
+/**
+ * The first `@lemma:` value in `query` that is ambiguous (`@lemma:edo`, with
+ * `edo#1` and `edo#2` in the corpus) or not in the corpus at all, as an error
+ * message that names the alternatives. `undefined` if every value resolves or
+ * the lemma list isn't available.
+ */
+function findLemmaError(
+  query: string,
+  resolveLemma: LemmaResolver
+): string | undefined {
+  for (const [token, , type] of tokenizeInput(query)) {
+    if (type !== "wordFilter") continue;
+    const match = LEMMA_FILTER.exec(token);
+    if (match === null) continue;
+    const [, key, value] = match;
+    const resolution = resolveLemma(value);
+    if (resolution?.kind === "unknown") {
+      return `${token} - no lemma \`${value}\` in the corpus`;
+    }
+    if (resolution?.kind === "ambiguous") {
+      const shown = resolution.options
+        .slice(0, MAX_LEMMA_OPTIONS)
+        .map((option) => `@${key}:${option}`);
+      const more = resolution.options.length - shown.length;
+      const list =
+        more > 0
+          ? `${shown.join(", ")}, or ${more} more`
+          : shown.length === 2
+          ? shown.join(" or ")
+          : `${shown.slice(0, -1).join(", ")}, or ${shown[shown.length - 1]}`;
+      return `${token} - ambiguous lemma; use ${list}`;
+    }
+  }
+  return undefined;
+}
+
 /**
  * Runs the search described by `params` and builds the view model.
  *
@@ -189,15 +238,14 @@ function engineErrorMessage(err: unknown): string {
 export async function runCorpusSearch(
   params: CorpusParams,
   engine: CorpusEngine,
-  authors: readonly string[] | undefined,
-  lemmata?: ((value: string) => string | undefined) | readonly string[]
+  authors: CorpusAuthorList | undefined,
+  lemmata?: LemmaResolver | readonly string[]
 ): Promise<CorpusSearchView> {
   const showInflectionDisclaimer = hasInflectionFilters(params.q);
   const view = (outcome: CorpusOutcome): CorpusSearchView => ({
     params,
     outcome,
     showInflectionDisclaimer,
-    authors,
   });
 
   if (params.q.length === 0) {
@@ -207,14 +255,29 @@ export async function runCorpusSearch(
   if (syntaxError !== null) {
     return view({ kind: "error", message: syntaxError });
   }
-  const canonicalLemma =
+  // Bare `#Author` codes can be resolved by the Rust engine even if the
+  // suggestions file is missing, but `#Author/Work` codes map to work IDs only
+  // through `authors`.
+  if (authors === undefined && /(?:^|\s)#[^\s/]+\//.test(params.q)) {
+    return view({ kind: "error", message: "the author list is unavailable" });
+  }
+  const resolveLemma = memoizeLemmaResolver(
     typeof lemmata === "function"
       ? lemmata
       : lemmata !== undefined
-      ? createLemmaCanonicalizer(lemmata)
-      : canonicalCorpusLemma;
+      ? createLemmaResolver(lemmata)
+      : resolveCorpusLemma
+  );
+  const lemmaError = findLemmaError(params.q, resolveLemma);
+  if (lemmaError !== undefined) {
+    return view({ kind: "error", message: lemmaError });
+  }
+  const canonicalLemma = (value: string) => {
+    const resolution = resolveLemma(value);
+    return resolution?.kind === "found" ? resolution.lemma : undefined;
+  };
   const engineQuery = transformQuery(params.q, { authors, canonicalLemma });
-  if (engineQuery.length > MAX_ENGINE_QUERY_LENGTH) {
+  if (queryBodyLength(engineQuery) > MAX_QUERY_BODY_LENGTH) {
     return view({ kind: "error", message: "The query is too long." });
   }
 

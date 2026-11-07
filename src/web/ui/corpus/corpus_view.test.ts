@@ -12,7 +12,6 @@ import {
   type CorpusSearchView,
 } from "@/web/ui/corpus/corpus_query.server";
 import { CORPUS_SLOTS } from "@/web/ui/corpus/corpus_slots.common";
-import { INFLECTION_CATEGORIES } from "@/web/ui/corpus/corpus_syntax.common";
 import {
   renderCorpusPageHtml,
   renderCorpusPartialHtml,
@@ -115,8 +114,11 @@ describe("corpus page", () => {
         ?.getAttribute("href")
     ).toBe("/corpus?q=omnis&contextLen=20&pageSize=50");
     expect(text(doc, ".corpus-summary-detail")).toContain(
-      "~3M words / ½ classical corpus indexed"
+      "Showing results 1 to 1"
     );
+    // The engine's query time goes to telemetry, not the page.
+    expect(doc.querySelector(".corpus-timing")).toBeNull();
+    expect(text(doc, ".corpus-summary-detail")).not.toMatch(/\d ms\]/);
     expect(doc.querySelector(".corpus-syntax-link")?.textContent).toContain(
       "Syntax guide"
     );
@@ -217,24 +219,20 @@ describe("corpus page", () => {
     expect(alert?.textContent).toContain("#Nobody x");
   });
 
-  test("the syntax guide lists every inflection category and its values from the grammar", async () => {
+  test("the syntax guide links to /corpus/reference instead of embedding the category list", async () => {
     const doc = parse(renderCorpusPageHtml(await search({ q: "" })));
-    const desktopCategories = text(
-      doc,
-      ".desktop-guide-view details.guide-categories"
+    expect(doc.querySelector("details.guide-categories")).toBeNull();
+    const hrefs = Array.from(
+      doc.querySelectorAll<HTMLAnchorElement>("a.guide-ref-link")
+    ).map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual(
+      expect.arrayContaining([
+        "/corpus/reference",
+        "/corpus/reference#inflections",
+        "/corpus/reference#proximity",
+        "/corpus/reference#authors",
+      ])
     );
-    const mobileCategories = text(
-      doc,
-      ".mobile-guide-container details.guide-categories"
-    );
-    for (const [category, values] of INFLECTION_CATEGORIES) {
-      expect(desktopCategories).toContain(`@${category}`);
-      expect(mobileCategories).toContain(`@${category}`);
-      for (const value of values.keys()) {
-        expect(desktopCategories).toContain(value);
-        expect(mobileCategories).toContain(value);
-      }
-    }
   });
 
   test("the inflection disclaimer only shows for inflection filters", async () => {
@@ -263,31 +261,21 @@ describe("corpus page", () => {
     expect(text(doc, ".inflect-chip.is-on")).toBe("Strict");
   });
 
-  test("the autocomplete host: JS-only, pointing at the input, with the authors", async () => {
+  test("the autocomplete host: JS-only, pointing at the input", async () => {
     const doc = parse(renderCorpusPageHtml(await search()));
     const host = doc.querySelector<HTMLElement>("morcus-corpus-suggestions");
     const input = doc.querySelector("input[name=q]");
 
     expect(host?.hasAttribute("data-js-only")).toBe(true);
+    expect(host?.hasAttribute("data-authors")).toBe(false);
     expect(host?.closest("form")).toBe(input?.closest("form"));
     expect(doc.getElementById(host?.dataset.input ?? "")).toBe(input);
-    expect(JSON.parse(host?.dataset.authors ?? "")).toEqual(
-      CORPUS_TEST_AUTHORS
-    );
     // The element only fills in options; the listbox is the server's.
     const listbox = host?.firstElementChild;
     expect(listbox?.getAttribute("role")).toBe("listbox");
     expect(listbox?.id).toBe("corpus-suggestions");
     expect(listbox?.hasAttribute("hidden")).toBe(true);
     expect(listbox?.children).toHaveLength(0);
-  });
-
-  test("the autocomplete host omits what the server doesn't know", async () => {
-    const view = await runCorpusSearch(BASE, fakeCorpusEngine(), undefined);
-    const host = parse(renderCorpusPageHtml(view)).querySelector(
-      "morcus-corpus-suggestions"
-    );
-    expect(host?.hasAttribute("data-authors")).toBe(false);
   });
 
   test("unavailable page", () => {

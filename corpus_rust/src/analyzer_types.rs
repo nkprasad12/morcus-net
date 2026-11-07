@@ -60,8 +60,8 @@ fn case_from_str(s: &str) -> Result<LatinCase, String> {
 
 fn number_from_str(s: &str) -> Result<LatinNumber, String> {
     match s.trim().to_lowercase().as_str() {
-        "singular" | "sg" | "s" | "1" => Ok(LatinNumber::Singular),
-        "plural" | "pl" | "p" | "2" => Ok(LatinNumber::Plural),
+        "singular" | "sing" | "sg" | "s" | "1" => Ok(LatinNumber::Singular),
+        "plural" | "plur" | "pl" | "p" | "2" => Ok(LatinNumber::Plural),
         other => Err(format!("Unknown LatinNumber: {other}")),
     }
 }
@@ -88,7 +88,7 @@ fn person_from_str(s: &str) -> Result<LatinPerson, String> {
 fn mood_from_str(s: &str) -> Result<LatinMood, String> {
     match s.trim().to_lowercase().as_str() {
         "indicative" | "ind" | "1" => Ok(LatinMood::Indicative),
-        "imperative" | "imp" | "2" => Ok(LatinMood::Imperative),
+        "imperative" | "imper" | "imp" | "2" => Ok(LatinMood::Imperative),
         "subjunctive" | "subj" | "sub" | "3" => Ok(LatinMood::Subjunctive),
         "participle" | "part" | "4" => Ok(LatinMood::Participle),
         "gerundive" | "ger" | "5" => Ok(LatinMood::Gerundive),
@@ -111,7 +111,7 @@ fn tense_from_str(s: &str) -> Result<LatinTense, String> {
         "present" | "pres" | "pr" | "1" => Ok(LatinTense::Present),
         "imperfect" | "impf" | "i" | "2" => Ok(LatinTense::Imperfect),
         "perfect" | "perf" | "pf" | "3" => Ok(LatinTense::Perfect),
-        "futureperfect" | "future_perfect" | "future-perfect" | "ftpf" | "fp" | "4" => {
+        "futureperfect" | "future_perfect" | "future-perfect" | "futp" | "ftpf" | "fp" | "4" => {
             Ok(LatinTense::FuturePerfect)
         }
         "future" | "fut" | "f" | "5" => Ok(LatinTense::Future),
@@ -194,6 +194,28 @@ mod tests {
         assert_eq!(
             "degree:superlative".parse::<LatinInflection>().unwrap(),
             LatinInflection::Degree(LatinDegree::Superlative)
+        );
+    }
+
+    /// The short forms the web UI offers (`INFLECTION_CATEGORIES` in
+    /// `src/web/ui/corpus/corpus_syntax.common.ts`) must parse here too.
+    #[test]
+    fn parse_web_ui_short_forms() {
+        assert_eq!(
+            "number:sing".parse::<LatinInflection>().unwrap(),
+            LatinInflection::Number(LatinNumber::Singular)
+        );
+        assert_eq!(
+            "n:plur".parse::<LatinInflection>().unwrap(),
+            LatinInflection::Number(LatinNumber::Plural)
+        );
+        assert_eq!(
+            "tense:futp".parse::<LatinInflection>().unwrap(),
+            LatinInflection::Tense(LatinTense::FuturePerfect)
+        );
+        assert_eq!(
+            "mood:imper".parse::<LatinInflection>().unwrap(),
+            LatinInflection::Mood(LatinMood::Imperative)
         );
     }
 }

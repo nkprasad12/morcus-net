@@ -4854,11 +4854,15 @@ describe("staleSectionJumpUrl", () => {
   test("works without a page in the path", () => {
     expect(
       staleSectionJumpUrl(
-        { pathname: "/work/seneca_minor/medea", search: "", hash: "#sec-130" },
+        {
+          pathname: "/work/seneca_younger/medea",
+          search: "",
+          hash: "#sec-130",
+        },
         missing,
         memoryStorage()
       )
-    ).toBe("/work/seneca_minor/medea?jump=130");
+    ).toBe("/work/seneca_younger/medea?jump=130");
   });
 
   test("stays when the section is on the page", () => {

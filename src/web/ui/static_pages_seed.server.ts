@@ -13,16 +13,17 @@ import {
 } from "@/common/experimental_texts/catalog_loader";
 import { ABOUT_PAGE_KEY, LIBRARY_PAGE_KEY } from "@/web/ui/app_router.server";
 import { renderAboutPageHtml } from "@/web/ui/about/about.server";
-import {
-  corpusLandingPageKey,
-  type CorpusRoutesOptions,
-} from "@/web/ui/corpus/corpus_routes.server";
+import { corpusLandingPageKey } from "@/web/ui/corpus/corpus_routes.server";
 import {
   loadCorpusAuthors,
   parseCorpusParams,
   runCorpusSearch,
   type CorpusEngine,
 } from "@/web/ui/corpus/corpus_query.server";
+import {
+  CORPUS_REFERENCE_PAGE_KEY,
+  buildCorpusReferencePageHtml,
+} from "@/web/ui/corpus/corpus_reference.server";
 import { renderCorpusPageHtml } from "@/web/ui/corpus/corpus_view.server";
 import {
   saveStaticPagesDb,
@@ -55,14 +56,8 @@ const NO_CORPUS_ENGINE: CorpusEngine = {
   },
 };
 
-interface SeedOptions {
-  /** Overrides the corpus author list source (tests). */
-  readonly loadAuthors?: CorpusRoutesOptions["loadAuthors"];
-}
-
 /** Every seeded page, in no particular order. */
-export function staticPageSeeds(options: SeedOptions = {}): StaticPageSeed[] {
-  const loadAuthors = options.loadAuthors ?? loadCorpusAuthors;
+export function staticPageSeeds(): StaticPageSeed[] {
   const corpusParams = parseCorpusParams({});
   const dictViews = [
     { isEmbedded: false, servedAtRoot: true },
@@ -89,12 +84,13 @@ export function staticPageSeeds(options: SeedOptions = {}): StaticPageSeed[] {
       key: corpusKey,
       render: async () =>
         renderCorpusPageHtml(
-          await runCorpusSearch(
-            corpusParams,
-            NO_CORPUS_ENGINE,
-            await loadAuthors()
-          )
+          await runCorpusSearch(corpusParams, NO_CORPUS_ENGINE, undefined)
         ),
+    },
+    {
+      key: CORPUS_REFERENCE_PAGE_KEY,
+      render: async () =>
+        buildCorpusReferencePageHtml(await loadCorpusAuthors()),
     },
     ...dictViews.map((view) => {
       const state = defaultDictLandingState(view);
@@ -107,11 +103,9 @@ export function staticPageSeeds(options: SeedOptions = {}): StaticPageSeed[] {
 }
 
 /** Renders every seed: key -> HTML. */
-export async function renderStaticPages(
-  options: SeedOptions = {}
-): Promise<Map<string, string>> {
+export async function renderStaticPages(): Promise<Map<string, string>> {
   const pages = new Map<string, string>();
-  for (const seed of staticPageSeeds(options)) {
+  for (const seed of staticPageSeeds()) {
     if (pages.has(seed.key)) {
       throw new Error(`Duplicate static page key: ${seed.key}`);
     }
@@ -122,19 +116,14 @@ export async function renderStaticPages(
 
 /**
  * Fails the build if an input a seeded page depends on is missing. The
- * renderers degrade quietly (an empty library, a corpus page with no author
- * list), which is right for a running server and wrong for a build artifact.
+ * renderers degrade quietly (an empty library), which is right for a running
+ * server and wrong for a build artifact.
  */
 async function checkSeedInputs(): Promise<void> {
   const summaries = await getV2LibrarySummaries();
   if (summaries.length === 0) {
     throw new Error(
       "Static pages: the library is empty; build the library DB first."
-    );
-  }
-  if ((await loadCorpusAuthors()) === undefined) {
-    throw new Error(
-      "Static pages: the corpus author list is missing; build the corpus first."
     );
   }
   if (
@@ -145,13 +134,18 @@ async function checkSeedInputs(): Promise<void> {
       "Static pages: the Experimental Texts catalog is missing; build it first."
     );
   }
+  if ((await loadCorpusAuthors()) === undefined) {
+    throw new Error(
+      "Static pages: the corpus author list is missing; build the corpus first."
+    );
+  }
 }
 
 /**
  * Pre-renders and pre-compresses the static pages into `destination`. Runs
- * last in the production build: it needs the library DB, the corpus author
- * list, the client bundle's manifest and the commit id, and the epoch it
- * records must be the one the server computes at startup.
+ * last in the production build: it needs the library DB, the client bundle's
+ * manifest and the commit id, and the epoch it records must be the one the
+ * server computes at startup.
  */
 export async function buildStaticPagesDb(
   destination: string = staticPagesDbPath()

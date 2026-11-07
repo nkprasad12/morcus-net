@@ -2,6 +2,8 @@
 
 Open corpus work across the Rust query engine (`corpus_rust/`), corpus builder (`src/common/library/corpus/`), and V2 web UI (`src/web/ui/corpus/`). See [`README.md`](README.md) for how the UI slice is built.
 
+**Sizing examples.** Cost estimates below assume a theoretical corpus of **8M tokens and ~350k unique words**, a stand-in for a reasonably large library, not the size of the current build (which changes as works are added). At that size a full-corpus bitmask is 8M / 8 = 1 MB.
+
 ---
 
 ## Word-boundary rule
@@ -15,15 +17,17 @@ Editorial tags (`<add>`, `<corr>`, `<hi>`, …) wrap whatever stretch of text th
 3. **Exception to 2:** if the first tag ends in `-`, it's a word hyphenated across a line break, so join: Pliny `<hi>lon-</hi><hi>gitudo</hi>`.
 4. **Structure always breaks:** lines, blocks, headings, `br`, and note, gap and space markers.
 
-**Review.** Every seam in the library where the rule changes the tokens (a tag meeting text or another tag, with word characters on both sides; 9,661 seams in 125 works) was checked against Morceus: is the joined form a word, the split pieces, or both? Everything ambiguous or contradicting the rule was then read by hand (checking the raw TEI where needed), and a sample of the rest.
+**Review.** Every seam in the library at the time of the review (125 works) where the rule changes the tokens (a tag meeting text or another tag, with word characters on both sides; 9,661 seams) was checked against Morceus: is the joined form a word, the split pieces, or both? Everything ambiguous or contradicting the rule was then read by hand (checking the raw TEI where needed), and a sample of the rest. Works added since haven't been reviewed ([4.6](#46-review-tag-seams-in-works-added-since-the-word-boundary-review)).
 
 | Seam                          | Count | Result                                                                                                                                                                                                            |
 | :---------------------------- | :---- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Tag meets tag (rule 2: split) | 143   | 125 correct, 17 are manuscript sigla (`R²E²v`) in Pliny's main text where it doesn't matter, 1 hyphenation miss (now rule 3)                                                                                      |
 | Tag meets text (rule 1: join) | 9,518 | All correct except ≈10, which are missing spaces in the source TEI ([below](#45-source-typos-missing-space-after-a-tag)). Includes 90 numeral + `vir` forms (`<num>x</num>viros`, _decemviros_), correctly joined |
 
-**Where the rule is implemented.** Library-wide, no row's corpus word offsets disagree with the
-V2 reader's word count (0 of 146,951 rows). Keep these three in step:
+**Where the rule is implemented.** No row's corpus word offsets disagree with the V2 reader's
+word count: 0 of 335,585 rows across all 317 works (run the opt-in sweep in
+`row_text_parity.test.ts` with `LIBRARY_PARITY_SWEEP=1` after building the library and corpus).
+Keep these three in step:
 
 - **Indexer:** [`extractRowText`](../../../common/library/corpus/corpus_library_utils.ts)
   concatenates siblings directly, relying on the source's own whitespace, and adds breaks only at
@@ -45,77 +49,6 @@ V1 is frozen.
 
 ---
 
-## Phase 1: Correctness & Range/Paging Bugs (High Priority)
-
-These are bugs in existing functionality and prerequisites for work-level or multi-range filtering. None of them require giving up 64-token word alignment in bitmask operations.
-
-### 1.1 Bitmask paging cursor uses absolute `result_id` instead of slice-relative offset
-
-- **Symptom:** Any author-filtered query whose candidates resolve to a `BitMask` (e.g. `#Ovid @case:dat @case:acc`, `#Caesar @case:dat @case:acc`) returns normal results on page 1, then an empty page 2 (`Showing results 51-50 of about 50 matches`).
-- **Root cause:** [`MatchIterator::new`](../../../../corpus_rust/src/corpus_query_engine/corpus_candidate_filtering.rs) initializes the bit index `i` to `page_data.result_id as usize`. `result_id` is an absolute corpus token ID, whereas the bitmask slice starts at `all_candidates.range.start` (`candidate_start`). Unfiltered queries only worked because `candidate_start == 0`.
-- **Fix:** Seed `i` with `page_data.result_id.saturating_sub(all_candidates.range.start) as usize` on the `BitMask` branch.
-- **Perf impact:** Zero.
-
-### 1.2 Author/range 64-token rounding leaks neighbouring tokens
-
-- **Symptom:** [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) rounds the `[start, end)` token range outward to 64-token word boundaries (`(start / 64) * 64` to `end.div_ceil(64) * 64`) so bitmasks can be sliced zero-copy (`&bitmask[start_word..end_word]`), and never clips back. Up to 63 tokens from the preceding and following works can be counted in `total_candidates` and returned as matches.
-- **Why it matters more soon:** Across all of Cicero, ≤126 leaked boundary tokens are rare; on a single short work (e.g. one Catullus poem), 64 tokens of a neighbouring poem is a large fraction of the range.
-- **Fix:** Keep the 64-token aligned `IndexRange` for zero-copy bitmask slicing and kernel operations, and carry the exact `[exact_start, exact_end)` token bounds alongside it:
-  1. In [`MatchIterator`](../../../../corpus_rust/src/corpus_query_engine/corpus_candidate_filtering.rs), skip candidates `< exact_start` and stop at `>= exact_end` (or mask off the leading/trailing edge bits in the first and last `u64` words of the final candidate bitmask / binary-search trim the final `List`).
-  2. Adjust `total_candidates` for any masked edge bits so result estimates stay accurate.
-  3. Un-ignore `validate_author_bitmask_queries` in [`corpus_query_engine.rs`](../../../../corpus_rust/src/corpus_query_engine.rs) to verify parity against [`reference_impl.rs`](../../../../corpus_rust/src/corpus_query_engine/reference_impl.rs).
-- **Perf impact:** Zero (O(1) edge mask or two boundary comparisons).
-
-### 1.3 Off-by-one on `IndexData::List` slice upper bound
-
-- **Symptom:** In [`IndexSlice::from`](../../../../corpus_rust/src/corpus_query_engine/index_data.rs):
-  ```rust
-  let end_idx = list.binary_search(&range.end).unwrap_or_else(|x| x + 1) - 1;
-  ```
-  When `range.end` is not present (`Err(x)`), `end_idx` is `x` (correct). When `range.end` **is** present in `list` (`Ok(k)`), `end_idx` evaluates to `k - 1`, turns into `&list[start_idx..k - 1]`, and silently drops `list[k - 1]` — a valid token strictly less than `range.end` (and panics by underflow if `k == 0`).
-- **Fix:** Both `Ok(k)` and `Err(k)` want `end_idx = k` (i.e. `list.partition_point(|&v| v < range.end)` or `.unwrap_or_else(|x| x)`). Add a unit test hitting the exact-match boundary.
-- **Perf impact:** Zero.
-
----
-
-## Phase 2: Author & Work Scope Filtering
-
-### Author filter beyond V1
-
-V1 (and V2) accept one `#Author` at the start of the query. Extensions:
-
-### 2.1 Space-free author names in the corpus build
-
-- **Gap:** `Seneca Major` and `Seneca Minor` in [`corpus_library_utils.ts`](../../../common/library/corpus/corpus_library_utils.ts) contain spaces, so the space-splitting tokenizer in [`corpus_syntax.common.ts`](corpus_syntax.common.ts) cannot express `#Seneca Minor`. (Other multi-word authors already use `PlinyElder`, `PlinyYounger`, `ValeriusMaximus`, `ValeriusFlaccus`.)
-- **Fix:** Normalize to `SenecaMajor` and `SenecaMinor` in `AUTHOR_MAP` in [`corpus_library_utils.ts`](../../../common/library/corpus/corpus_library_utils.ts) and rebuild the corpus.
-
-### 2.2 Single-work filter (`#Author/Work`)
-
-- **Context:** Each entry in `work_lookup` ([`WorkLookupEntry`](../../../../corpus_rust/src/corpus_index.rs)) already stores `work_id`, `info` (`WorkData`), and `rows` with exact token ranges, and [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) already resolves an author to `[start_work_idx, end_work_idx]`. A single work is just `start_work_idx == end_work_idx`.
-- **Chosen syntax:** **`#Author/Work`** (e.g. `#Cicero/de_oratore`, `#Vergil/aeneid`).
-  - Matches the V2 reader URL structure (`/work/:urlAuthor/:urlName`).
-  - Avoids colliding with `@keyword:value` colon error checks in [`errorsForToken`](corpus_syntax.common.ts).
-  - Typing `#Cicero/` in autocomplete switches suggestions from authors to Cicero's works (using the space-free `urlName` slugs from `getV2LibrarySummaries()`, with full work titles shown as secondary labels in the dropdown).
-- **Engine wire format:** Translate `#Author/Work` in `transformQuery` to `[Author/Work]` (or `[work_id]`) so the engine resolves it directly to `[work_idx, work_idx]`.
-
-### 2.3 Multi-author and multi-work filters (Multiple `IndexRange`s)
-
-- **Context:** [`query_parsing_v2.rs`](../../../../corpus_rust/src/query_parsing_v2.rs) already parses `[Author1, Author2]`, but [`compute_range`](../../../../corpus_rust/src/corpus_query_engine.rs) rejects `query.authors.len() > 1`, and [`corpus_syntax.common.ts`](corpus_syntax.common.ts) allows only one `#` filter.
-- **Performance analysis (why $K$ ranges is NOT $K\times$ the cost of a query):**
-  1. **Parse & metadata lookup (`convert_query_term`):** Looking up `StoredMapValue` (`offset`, `len`) for each word, lemma, or inflection tag depends only on the query terms and runs **once** per query, regardless of $K$.
-  2. **Slicing indices (`IndexSlice::from`):** Slicing a `BitMask` to a range `[start, end)` is an $O(1)$ zero-copy pointer slice (`&bitmask[start_word..end_word]`). Slicing a `List` is two binary searches ($O(\log N)$, ~20 comparisons, ~100 ns).
-  3. **Computing span candidates (`AND` / `OR` / break-mask / proximity):** Every operation is linear in the **length of the slice**, not the full corpus. Filtering to `#Cicero #Quintilian` (~18% + ~5% of the corpus) processes 23% of the words/elements that an unfiltered query processes. Adjacent works (e.g., all works of an author, or adjacent work ranges) also sort and merge into fewer contiguous ranges before any index work runs.
-  4. **Paging & text resolution (`get_match_page` + `resolve_match_tokens`):** Stops as soon as `page_size` (50) matches are collected across ranges, so text resolution is capped at 50 matches total.
-- **Implementation options in the Rust engine:**
-
-| Approach                                                                       | Mechanism                                                                                                                                                                                                                                               | Trade-offs & Best Fit                                                                                                                                                                                                                              |
-| :----------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Option A: Per-range slice loop** (sorted, merged disjoint `Vec<IndexRange>`) | Parse query terms once; for each disjoint range $r_i$, slice indices ($O(1)$ bitmask / $O(\log N)$ list) and run `candidates_for_spans` on $r_i$. Chain the per-range `MatchIterator`s.                                                                 | **Best for 1–10 authors/works (the 99% case).** Only touches memory inside the selected authors/works, skipping 70–95% of the corpus. Runs _faster_ than an unfiltered query. Fixed per-range overhead is just ~2 binary searches per `List` term. |
-| **Option B: Bounding-box range + post-filter**                                 | Set a single `IndexRange = [min(start_i), max(end_i)]` (zero changes to `candidates_for_spans`), and in `MatchIterator` skip candidate token IDs falling in the gaps between allowed `[start_i, end_i)` intervals (or AND with a cached scope bitmask). | **Best for many scattered works or sparse `List` queries.** When the final candidate set is a `List` of a few hundred token IDs, skipping out-of-range IDs in `MatchIterator` takes nanoseconds with a single pass over `candidates_for_spans`.    |
-| **Option C: Hybrid**                                                           | Use Option A when `ranges.len()` is small (e.g. $\le 8$), or Option B when `ranges.len()` is large / candidate set is a `List`.                                                                                                                         | Avoids worst-case behavior in both regimes if we ever add broad category/period filters that expand to dozens of non-contiguous works.                                                                                                             |
-
----
-
 ## Phase 3: Query Language Enhancements & Architectural Notes
 
 ### Architectural context: Two-stage evaluation (`token_id` indices vs. per-analysis validation)
@@ -127,7 +60,7 @@ Our engine indexes `@feature → token_id` (Stage 1: set operations on `IndexSli
 
 ### 3.1 Token negation (`!`) — Anchored only
 
-- **Why unanchored `!atom` is rejected:** A standalone `!et` or `!@case:gen` matches ~99% of the 8M-token corpus, materializing a ~1 MB dense `BitMask` and forcing all span operations onto the slow full-corpus bitmask path. Every inverted-index engine requires a positive anchor.
+- **Why unanchored `!atom` is rejected:** A standalone `!et` or `!@case:gen` matches ~99% of the corpus, materializing a dense full-corpus `BitMask` (1 MB at the theoretical 8M tokens) and forcing all span operations onto the slow full-corpus bitmask path. Every inverted-index engine requires a positive anchor.
 - **Why `A and !B` is subtle on `@lemma`/`@inflection`:**
   - For `!word` inside a conjunction (e.g. `(@lemma:amo and !amor)`), `@word` is a token property, so Stage 1 set-difference (`apply_and_not`) is exact and $O(|A|)$.
   - For `!@inflection` or `!@lemma` (e.g. `(@lemma:amo and !@case:gen)`), Stage 1 **cannot** subtract `Index(@case:gen)` at the token level without dropping multi-analysis tokens like _amoris_ that have both a genitive analysis and a non-genitive analysis. Instead, Stage 1 must keep the positive anchor (`@lemma:amo`) as a conservative superset and let Stage 2 (`does_inflection_match`) check the negation per analysis.
@@ -154,26 +87,123 @@ Our engine indexes `@feature → token_id` (Stage 1: set operations on `IndexSli
     2. Each branch runs through the existing span/bitmask engine **completely unchanged** (preserving exact per-branch span lengths for `filter_breaks` and highlight resolution).
     3. Merge the $k$ resulting match streams in `(start_token_id, end_token_id)` order when collecting the page.
 
-### 3.4 Prefix / suffix matching (`am*`, `*or`, `am*or`)
+### 3.4 Prefix / suffix matching (`con*`, `*que`, `in*bilis`)
 
-- **Context:** PHI searches raw character strings with `#` for word boundaries; our engine indexes whole tokens and lemmata (`204,674` unique words across `2,989,605` tokens in the current 125-work build; ~300k–350k unique words at 300 works).
-- **Syntax & guardrails:**
-  - Allow `*` on bare word atoms: prefix (`bell*`), suffix (`*tio`), or prefix+suffix (`in*bilis`).
-  - Require at least 2–3 literal ASCII letters alongside `*` in `errorsForToken` (`"wildcard terms must have at least 2 letters"`).
-- **Step 1 — Vocabulary lookup (matching unique word IDs in `id_table["word"]`):**
-  - Neither option requires changing the serialized corpus format on disk:
-    - **Option A (Zero-index linear scan):** Scan `id_table["word"]` keys with `starts_with` / `ends_with`. Takes **~1–1.5 ms** in Rust for 205k words, **0 extra RAM**, and trivially supports `am*`, `*or`, `am*or`, and even `*mor*`.
-    - **Option B (Two sorted arrays built at `CorpusQueryEngine::new` init):** Build `forward_vocab` (sorted lexicographically) and `reverse_vocab` (sorted by reversed chars) once at engine startup (~50 ms, ~4 MB RAM). Prefix and suffix lookups become $O(\log V + M)$ binary-search `partition_point` slices (**~200 ns**).
-- **Step 2 — Single-pass union of the $M$ matched word indices (avoiding pairwise AST `OR`):**
-  - Do **not** rewrite `bell*` into a syntactic `(w1 or w2 or ... or wM)` `TokenConstraint::Composed` node, which would fold `apply_or_to_indices` $M$ times and reallocate/copy `Vec<u32>` $O(M^2)$ times.
-  - Instead, add `TokenConstraintAtom::Affix` (or `Wildcard`) and merge the $M$ `IndexSlice`s in a **single pass** inside `index_for_atom(range)`:
-    1. Slice each of the $M$ word indices to `range` (`IndexSlice::from`) and sum their lengths into `total_hits`.
-    2. **Fast Path 1 — `BitMask` accumulator (when `total_hits > 4096` or any matched word is a `BitMask`):**
-       Allocate **one** zeroed `Vec<u64>` of length `(range.end - range.start) / 64` (only 373 KB even for the entire 3M-token corpus; smaller for author/work ranges). Set the bits for each `List` slice (`mask[(id - range.start) / 64] |= 1 << (bit % 64)`) and bitwise-OR any `BitMask` slice in place. Runs in **< 0.5 ms** with a single allocation even if a pattern matches 400k tokens.
-    3. **Fast Path 2 — Merging $M$ pre-sorted `List` slices (when `total_hits <= 4096` and all slices are `List`s):**
-       Each of the $M$ slices is already sorted and disjoint, so we can merge them in $O(N \log M)$ rather than $O(N \log N)$ — either via a $k$-way merge / balanced pairwise merge of the slices, or by appending the $M$ ascending runs into `Vec::with_capacity(total_hits)` and calling Rust's run-aware `vec.sort()` (`driftsort`, which detects existing sorted runs and merges them in $O(N \log M)$) or `sort_unstable()` (~10–20 µs for $\le 4096$ `u32`s). Keeping the result as a `List` when `total_hits <= 4096` keeps downstream intersections on the fast `List` path.
-- **Step 3 — Stage 2 (`has_matching_inflections`) needs zero changes:**
-  - Because each token has only one surface word string, `Affix` is exact at Stage 1 (just like `TokenConstraintAtom::Word`) and needs no per-analysis validation in `does_inflection_match` — even when combined with an inflection filter like `(bell* and @case:abl)`.
+**Status:** Designed and prototyped; not wired in. Choose option B (sorted word IDs) below. The prototype is [`sorted_vocab.rs`](../../../../corpus_rust/src/sorted_vocab.rs), and [`examples/vocab_proto.rs`](../../../../corpus_rust/examples/vocab_proto.rs) produced every number in this section (`cargo run --release -p corpus --example vocab_proto -- [--cold]`, from the repo root after building the corpus).
+
+> [!NOTE]
+> Both files are unreviewed prototypes, kept so the numbers can be reproduced. When this work concludes, review them properly (folding `SortedVocab` into the real implementation) or delete them.
+
+**Measured on the current build, not the 8M-token sizing example:** 6.47M tokens and 297k unique words (2.76 MB of text, 9.3 bytes on average), on a 24-vCPU EPYC 7B12 cloudtop. Costs scale roughly linearly with vocabulary size and with hits.
+
+#### What a wildcard costs: find the words, then merge their lists
+
+A wildcard term runs in two steps:
+
+1. **Find the words.** List every word in the vocabulary that matches the pattern. `in*` matches 15.7k words.
+2. **Merge their lists.** Each word has a sorted list of the token positions where it occurs (`servum` → `[1, 19, 3480, …]`, in `latin_corpus_buffers.bin`). The rest of the engine (span matching, proximity, scope filtering) expects one set of positions per term, so the matched words' lists are unioned into one bitmask: one bit per token in the query's range, so ~790 KB for the whole corpus (1 MB at the 8M-token example). The bitmask goes into the existing pipeline the way a dense index like `@case:abl` does today.
+
+The merge costs time in proportion to **hits** (positions set), not to the number of matched words. A dense term is nothing new for the engine (`@case:abl` is far denser than any allowed wildcard). The new costs are finding the words and the merge itself.
+
+#### Options for finding the words
+
+- **Option A (rejected): scan `id_table["word"]`.** Test every key with `starts_with` / `ends_with`. No new data, and it handles `*mor*`. But the word table is a `HashMap<String, u32>` whose keys are separate heap strings, so the scan jumps around memory. It measured **3.4–6.6 ms warm and 10–13 ms with cold caches**, all of it blocking Node's event loop, since `runQuery` is synchronous. (An earlier estimate of "~1–1.5 ms for 205k words" was never measured, and doesn't hold.) Scanning a contiguous copy of the words halves the warm cost (1.7–3.0 ms), at ~5 MB of extra RAM.
+- **Option B (chosen): number words in sorted order.** The word ID is used for one thing only: indexing `indices["word"]` (`get_str_keyed_metadata("word", …)` in `corpus_index_calculation.rs`). No per-token data stores word IDs, and the packed inflection data holds lemma IDs, not word IDs. So if the build assigns word IDs in sorted byte order, a sorted array of the words _is_ the ID table: a word's position in it is its ID.
+  - **Exact lookup** becomes a binary search (about 18 comparisons for 297k words).
+  - **`prefix*`** becomes a contiguous ID range, found with two binary searches.
+  - **`*suffix`** uses one more array, `by_suffix`: the word IDs sorted by reversed spelling, so words ending in the same letters are adjacent. Comparisons are on UTF-8 bytes, so a byte suffix match is also a character suffix match.
+  - **`prefix*suffix`** takes the prefix range and filters it with `ends_with`.
+  - Because the build writes word lists in ID order, **the lists for a prefix match sit back to back in the buffer file**, so the merge reads one contiguous stretch rather than jumping around.
+
+#### Option B: memory and startup (measured)
+
+|                     | Today (`HashMap<String, u32>` in the JSON)                                | Option B (sorted vocabulary file, memory-mapped)                                              |
+| :------------------ | :------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------- |
+| Word table in RAM   | **26.8 MB** malloc-reserved (20.1 MB requested), per Node process         | **5.14 MB**: 2.76 MB of packed text + 1.19 MB of offsets + 1.19 MB `by_suffix`                |
+| Kind of memory      | Ordinary heap memory. Can't be evicted, and `prod` and `dev` each pay it. | Page cache. Evictable, and shared between containers whose images have the same corpus layer. |
+| `latin_corpus.json` | 24.6 MB; parse ~228 ms; live heap 63.7 MB; RSS +58.6 MB                   | 19.0 MB without the word table; parse ~119 ms; live heap 36.9 MB; RSS +31.7 MB                |
+
+So option B **saves ~22 MB of heap per process and ~110 ms of parsing at startup**, before counting the ~5 MB file it maps. The prototype builds the sorted array at load time (~155 ms); the real version writes it at corpus build time, so startup pays nothing for it.
+
+#### Option B: query time (measured)
+
+"Cold" means that before each timed run, the benchmark reads a 64 MB buffer (4× the core's 16 MB L3) to evict L1/L2/L3 and the TLB, with the process pinned to one core. That is the pessimistic case of a one-off query arriving between unrelated Node work. Page cache stays warm: the engine maps its files with `MAP_POPULATE`, and prod has 8 GB of RAM against ~215 MB of corpus files, so they stay resident. Whatever a real query already has in hand (its own text, the IDs the previous step produced) is touched after evicting. Medians are shown; p90 is within ~10% throughout.
+
+**Exact lookup** (one word, 2000 samples; uniform and frequency-weighted query words gave the same results):
+
+|                                                    | `HashMap` (today) |        Binary search (B) |
+| :------------------------------------------------- | ----------------: | -----------------------: |
+| Warm-ish (random words, no eviction): median / p99 |     0.47 / 1.1 µs |            0.71 / 2.3 µs |
+| Cold: median / p99                                 |      2.8 / 4.0 µs |            6.5 / 11.5 µs |
+| Comparisons                                        |                 — | 18.2 average, 19 at most |
+
+Cold, binary search is ~2.3× slower, about +4 µs per word in the query, likely from TLB misses (each probe touches a different 4 KB page). Against queries that take milliseconds this doesn't matter. If it ever does, a small table keyed on the first two letters would roughly halve the probes.
+
+**Wildcards, cold** (40 one-shot runs, ms, median):
+
+| Pattern    | Words | Hits | A: find (scan) | A: merge (scattered) | **A total** | B: find (sorted) | B: merge (contiguous) | **B total** |
+| :--------- | ----: | ---: | -------------: | -------------------: | ----------: | ---------------: | --------------------: | ----------: |
+| `bell*`    |   209 |  10k |           11.2 |                 0.18 |    **11.4** |            0.016 |                  0.09 |    **0.10** |
+| `am*`      |  1.9k |  25k |           11.3 |                 0.60 |    **11.9** |            0.033 |                  0.15 |    **0.19** |
+| `con*`     | 10.6k | 107k |           10.9 |                 2.32 |    **13.1** |             0.11 |                  0.40 |    **0.51** |
+| `in*`      | 15.7k | 275k |           11.4 |                 3.28 |    **14.6** |             0.15 |                  0.77 |    **0.92** |
+| `*tio`     |  1.3k |  25k |           13.5 |                 0.47 |    **13.9** |            0.018 |                  0.34 |    **0.36** |
+| `*que`     | 27.8k | 171k |           13.2 |                 3.56 |    **16.9** |            0.035 |                  2.83 |    **2.87** |
+| `in*bilis` |    78 |  446 |           10.0 |                 0.10 |    **10.1** |             0.13 |                  0.07 |    **0.20** |
+
+- **Finding the words** drops from 10–13 ms to at most 0.15 ms. The prefix cases take that long only because the prototype copies the matched IDs into a list; the range itself costs two binary searches.
+- **Contiguous lists make prefix merges 3–6× faster cold** (`con*` 2.32 → 0.40 ms) and ~2× warm. Warm, I checked this with the buffers copied into the heap, to rule out mmap effects. Suffix matches aren't contiguous in sorted order, so they gain only ~1.1–1.3×.
+- **Counting hits** (summing the matched words' list lengths) takes ≤ 0.04 ms, cheap enough to check the budget below before allocating anything.
+- **B's worst case today is ~3 ms** (`*que`), against 10–17 ms for A.
+
+#### Which patterns to allow
+
+Hits for every 2–4 letter prefix and suffix in the current build:
+
+| Fixed letters | Patterns over 100k hits  | Worst cases                                                                                                |
+| :------------ | :----------------------- | :--------------------------------------------------------------------------------------------------------- |
+| 2             | 15 prefixes, 17 suffixes | `*um` 516k (8% of the corpus), `*us` 402k, `qu*` 362k, `in*` 275k (123k of which are the word _in_ itself) |
+| 3             | 3 prefixes, 3 suffixes   | `*que` 171k, `qui*` 126k, `qua*` 124k, `*tur` 111k                                                         |
+| 4             | none                     | `*ibus` 86k, `quae*` 48k                                                                                   |
+
+Rules, checked in the engine (`query_validation.rs`) and mirrored in `errorsForToken` so the autocomplete reports them while typing:
+
+1. **At least 3 fixed letters** in the pattern (`con*`, `*que`, `in*bilis`). Easy to explain; rejects `in*`, `*um` and `qu*`, which return nothing useful; caps today's worst case at ~171k hits.
+2. **A hit budget per query, checked before merging:** reject when the wildcard terms' hits add up to more than ~200k (~3% of the corpus), with a message like "`*xyz` matches too many words; add letters". Nothing with 3+ letters reaches it today. It holds the line as the corpus grows, and covers queries with several wildcard terms.
+3. **One `*` per term**: at the start, at the end, or once in the middle (`in*bilis`). No `*mor*`: matching inside words needs a scan, which option B doesn't speed up. Revisit if anyone asks; a scan over the packed vocabulary costs ~2–3 ms.
+4. **At most 2–3 wildcard terms per query**, sharing the hit budget, including inside `or` groups (`(am* or bell*)`).
+5. **Words only for now.** `@lemma:am*` needs lemma IDs renumbered too, and lemma IDs are stored in the packed inflection data, so that's a bigger build change. Inflection values (`@case:…`) don't need wildcards.
+6. **Normalize, then check:** lowercase the pattern (word keys are stored lowercase), and reject `*` on its own and non-letters around the `*`. A pattern that matches no words is an error ("no word matches `xyz*`"), not an empty search.
+
+#### Implementation plan
+
+1. **Build (TS, `build_corpus.ts` / `corpus_serialization.ts`).**
+   - After collecting the corpus, renumber word IDs in sorted order, and permute `indices["word"]` to match before writing the buffers. Lists are written in ID order, so this alone makes prefix matches contiguous.
+   - Sort by UTF-8 bytes (`Buffer.compare`), not JavaScript's default UTF-16 order, so the order matches Rust's `[u8]` comparisons.
+   - Write `latin_corpus_vocab.bin`: a word count, then `offsets: u32[V + 1]`, then `by_suffix: u32[V]`, then the packed text. Drop `idTable.word` from `latin_corpus.json`; keep `lemma` and `breaks`.
+   - `stats.uniqueWords` (`indices.word.length`) is unchanged. Nothing else in TS reads `idTable.word`.
+   - The Rust builder (`build_corpus_v2`) must make the same change when it stops being a stub.
+2. **Engine load.** Map the vocabulary file with the existing `byte_reader` (populated mmap). Make `SortedVocab` borrow its three arrays from the mapping, not own `Vec`s as the prototype does. Replace the `id_table["word"]` lookup in `get_metadata_for` with `vocab.lookup(&word.to_lowercase())`.
+3. **Query language.** Add `TokenConstraintAtom::Affix { prefix, suffix }`, parsed in `query_parsing_v2.rs`, and the rules above in `query_validation.rs`.
+4. **Index calculation.** In `index_for_atom`, resolve the matched IDs, check the hit budget, then union the lists in one pass, never by folding `apply_or_to_indices` M times (that reallocates and copies O(M²)):
+   - **Over 4096 hits:** allocate one zeroed bitmask over the query's range, set bits from each list, and OR in any list stored as a bitmask (none in the current build: no word reaches the bitmask threshold).
+   - **4096 hits or fewer:** append the M sorted lists into one `Vec` and sort it (Rust's run-aware sort merges sorted runs in O(N log M)), and return a `List`, so later intersections stay on the fast list path.
+   - **With a scope** (`[Caesar] con*`): slice each list to the range (`IndexSlice::from`) before merging. Prefix lists are still contiguous.
+5. **Stage 2 (`has_matching_inflections`) needs no changes.** A token has one spelling, so `Affix` is exact at Stage 1, like `Word`, even inside `(bell* and @case:abl)`.
+6. **UI.** Add the syntax to `corpus_help.server.ts`. In the autocomplete, explain a wildcard as "words starting with `con`" and surface rule violations as errors. A later option: a prefix endpoint over the sorted vocabulary for bare-word completions and match counts ("`bell*`: 209 forms").
+
+### 3.5 Pool bitmask buffers (measure first)
+
+**Status:** Idea, not measured. Every dense intermediate (a merge, an AND of two bitmasks, a proximity shift) allocates a fresh `Vec<u64>` of up to ~790 KB (1 MB at the 8M-token example). A small pool of reusable buffers would skip the allocation.
+
+**Expected gain is modest; profile first.** glibc already behaves like a pool once warm. The first allocation of that size is served by `mmap`, but freeing it raises glibc's mmap threshold, so later allocations of that size come from the heap's free lists. A pool would mainly save the ~190 first-touch page faults per fresh buffer, plus the zeroing (`memset`, ~20–40 µs) on buffers an operation overwrites completely anyway. Probably tens to low hundreds of µs per bitmask-heavy query. Profile a dense query (for example `@case:abl @case:abl ~ @case:acc`) for time spent allocating before building this. Switching the allocator to mimalloc, which caches freed pages, is a one-line alternative to compare against.
+
+**How to do it without fighting lifetimes:**
+
+- **The problem with handing out references.** Lending `&'p mut [u64]` from a pool needs `&mut pool` for each loan, so two bitmasks in use at once are two mutable borrows of the pool, which the borrow checker rejects. And `query_corpus` takes `&self`, so a pool inside the engine can't be borrowed mutably at all.
+- **Hand out ownership instead.** `BitmaskPool { free: Mutex<Vec<Vec<u64>>> }` lives in `CorpusQueryEngine`. An uncontended `Mutex` costs ~20 ns; `RefCell` works if the engine never crosses threads. `take(len)` pops a `Vec` (or allocates one) and returns it by value inside a guard, `PooledBitmask<'a> { buf: Vec<u64>, pool: &'a BitmaskPool }`. The guard's `Drop` pushes the `Vec` back, and it derefs to `&[u64]` / `&mut [u64]`.
+- **No new lifetime.** `IndexSlice<'a>` already borrows from the engine for `'a` (its `Ref` variant points into the memory-mapped buffers), and the pool lives in the same engine. So `IndexDataOwned::BitMask(Vec<u64>)` becomes `BitMask(PooledBitmask<'a>)` under the existing `'a`. Two buffers in use are just two separate owned `Vec`s, with no overlapping borrows. To avoid even the extra field, an `Arc<BitmaskPool>` handle in the guard removes the lifetime, at the cost of one refcount bump per loan.
+- **Details.** Hand out any buffer with enough capacity (`truncate` / `resize` it), since scoped queries need smaller bitmasks. Offer zeroed loans, for merges and shifts that set only some bits, and unzeroed loans, for AND / OR outputs that overwrite every word. Cap the pool at 4–8 buffers, so one heavy query doesn't hold memory forever.
 
 ---
 
@@ -201,11 +231,6 @@ V1 showed a Back button that was always disabled ("Back doesn't work yet"); V2 h
 
 A "First page" link is a cheap first step if the others wait.
 
-### 4.3 Author discovery without JS
-
-- **Current state:** Only JS autocomplete lists the available `#Author` names.
-- **Fix:** Add an expandable `<details>` list of authors (or clickable examples) in [`corpus_help.server.ts`](corpus_help.server.ts), matching the existing "All inflection @categories" disclosure. (Considered alternative: a native `author=` checkbox list in the form, which works without JS and handles spaces, but gives the same filter two sources of truth next to `#Author`.)
-
 ### 4.4 Heading rows cannot be highlighted
 
 Non-leaf rows (e.g. a chapter heading row `1.2` above sections `1.2.1…`) are indexed by the corpus but rendered by V2 without an `id` (1,359 rows library-wide). A `matchText` range that falls in such a row resolves the right page but highlights nothing. Low priority; fixing it needs a stable per-row identifier (e.g. `data-row-id`) on every rendered section.
@@ -230,3 +255,20 @@ Non-leaf rows (e.g. a chapter heading row `1.2` above sections `1.2.1…`) are i
 ¹ Seam taken from the processed work; the raw TEI wasn't checked.
 
 **How to find more.** List every seam where a tag meets text and the characters on both sides are word characters (not `isTextBreakChar`, not whitespace). Keep the ones where Morceus (`MorceusCruncher`) recognizes both split pieces but not the joined form. Drop numeral + `vir` forms and Pliny's Greek names and plant names (the analyzer doesn't know them). This gave 189 candidates, and the rows above are what survived reading them.
+
+### 4.6 Review tag seams in works added since the word-boundary review
+
+**Status:** Open, low priority. The [seam review](#word-boundary-rule) covered the 125 works in the library at the time. The row-parity sweep now passes on the full library (317 works), so the corpus and the reader agree on word boundaries everywhere; what hasn't been checked for the newer works (mostly thelatinlibrary, with its own markup) is whether those shared boundaries are right, i.e. source typos like those in [4.5](#45-source-typos-missing-space-after-a-tag).
+
+Re-run the seam review on the new works only, using the method in 4.5 ("How to find more"), and add any source typos to that table.
+
+### 4.7 Clearer query errors
+
+**Status:** Open. With the errors table gone from `/corpus/reference`, the error messages have to explain themselves. Two still don't:
+
+- **`` `X` not allowed after `Y` ``** (`feedStateMachine` in [`corpus_syntax.common.ts`](corpus_syntax.common.ts)) says what's wrong but not what would fit. The state machine already knows the allowed next tokens (`findNextOptions`), so the message can say what's expected, e.g. "expected a word, `(`, or `~` after `amo`". Open question: list every allowed token, or a shorter "expected a word" phrase.
+- **"Queries with more than 10 term groups are not supported"** comes raw from the engine. Check `MAX_QUERY_SPANS` in `runCorpusSearch` before calling the engine, and say it in the UI's terms ("at most 10 spans separated by `~`").
+
+### 4.8 No vocative for nouns on the `es_eLdis` ending table
+
+**Status:** Open, low priority (Morceus data). `morceus-data/latin/ends/target/es_eLdis.end` lists only the nominative singular (`e_s nom sg masc fem`), so nouns declined with it (e.g. `merces#1`, _mercēs, mercēdis_) get no vocative reading, and `@case:voc` misses them. Add `voc` there, and check other ending tables for the same gap.

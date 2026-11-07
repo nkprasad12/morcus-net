@@ -71,7 +71,7 @@ function renderSummary(view: CorpusSearchView): SafeHtml {
   if (outcome.kind !== "results") {
     return html`<div class="corpus-summary" ${raw(slotAttr("summary"))}></div>`;
   }
-  const { estimatedTotal, isExact, pageStart, results, timingMs } = outcome;
+  const { estimatedTotal, isExact, pageStart, results } = outcome;
   const headline =
     estimatedTotal === 0
       ? html`No results found for`
@@ -86,19 +86,6 @@ function renderSummary(view: CorpusSearchView): SafeHtml {
     items.push(
       html`<span
         >Showing results ${pageStart + 1} to ${pageStart + results.length}</span
-      >`
-    );
-  }
-  items.push(
-    html`<span class="corpus-scope-text"
-      >~3M words / ½ classical corpus indexed (<a href="/library">view works</a
-      >)</span
-    >`
-  );
-  if (timingMs !== undefined) {
-    items.push(
-      html`<span class="corpus-timing" data-volatile
-        >[${timingMs.toFixed(3)} ms]</span
       >`
     );
   }
@@ -180,8 +167,7 @@ function renderResultsBody(view: CorpusSearchView): SafeHtml {
             About the classical corpus search engine
           </div>
           <p class="corpus-welcome-detail">
-            This tool allows you to search over 3 million words indexed across
-            classical Latin literature. You can search for exact words (e.g.
+            Search across classical Latin literature for exact words (e.g.
             <code>amoris</code>), inflected grammatical forms
             (<code>@case:genitive</code>), proximity constraints
             (<code>~3</code>), or author scopes (<code>#Caesar</code>). Explore
@@ -321,16 +307,10 @@ function renderSettings(view: CorpusSearchView): SafeHtml {
  * finds the input through `data-input`, so it doesn't depend on where it
  * sits in the form.
  */
-function renderSuggestions(view: CorpusSearchView): SafeHtml {
-  // Omitted rather than empty: the element reads absence as "unknown".
-  const authors =
-    view.authors === undefined
-      ? html``
-      : html`data-authors="${JSON.stringify(view.authors)}"`;
+function renderSuggestions(): SafeHtml {
   return html`<morcus-corpus-suggestions
     data-js-only
     data-input="${QUERY_INPUT_ID}"
-    ${raw(authors)}
     ><ul
       id="corpus-suggestions"
       class="suggestions corpus-suggestions"
@@ -360,7 +340,7 @@ function renderForm(view: CorpusSearchView): SafeHtml {
         autocapitalize="off"
         spellcheck="false"
         enterkeyhint="search" />
-      ${raw(renderSuggestions(view))}
+      ${raw(renderSuggestions())}
       <button
         type="submit"
         class="search-btn"

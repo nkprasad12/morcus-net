@@ -13,7 +13,7 @@ import {
 import {
   CorpusUnavailableError,
   parseCorpusParams,
-  readCorpusSuggestionList,
+  readCorpusAuthorsList,
   runCorpusSearch,
 } from "@/web/ui/corpus/corpus_query.server";
 import { renderCorpusPageHtml } from "@/web/ui/corpus/corpus_view.server";
@@ -208,6 +208,59 @@ describe("runCorpusSearch", () => {
     expect(engine.requests).toHaveLength(0);
   });
 
+  test("resolves #Author/Work to its work ID and rejects unknown works or missing author lists", async () => {
+    const engine = fakeCorpusEngine();
+    const okView = await runCorpusSearch(
+      { ...BASE, q: "#Caesar/DeBelloGallico amor" },
+      engine,
+      CORPUS_TEST_AUTHORS
+    );
+    expect(okView.outcome.kind).toBe("results");
+    expect(engine.requests).toEqual([
+      expect.objectContaining({
+        query: "[phi0448.phi001.perseus-lat2] amor",
+      }),
+    ]);
+
+    const badWork = await runCorpusSearch(
+      { ...BASE, q: "#Caesar/Nope amor" },
+      engine,
+      CORPUS_TEST_AUTHORS
+    );
+    expect(badWork.outcome).toEqual({
+      kind: "error",
+      message: "invalid work #Caesar/Nope",
+    });
+    expect(engine.requests).toHaveLength(1);
+
+    const noAuthors = await runCorpusSearch(
+      { ...BASE, q: "#Caesar/DeBelloGallico amor" },
+      engine,
+      undefined
+    );
+    expect(noAuthors.outcome).toEqual({
+      kind: "error",
+      message: "the author list is unavailable",
+    });
+    expect(engine.requests).toHaveLength(1);
+  });
+
+  test("the author prefix doesn't count toward the length limit", async () => {
+    const engine = fakeCorpusEngine();
+    // 95 characters of search terms, after a long author prefix.
+    const terms = "amoris ".repeat(13) + "amor";
+    expect(terms.length).toBeLessThanOrEqual(100);
+    const view = await runCorpusSearch(
+      { ...BASE, q: `#Caesar #Cicero #SenecaMajor ${terms}` },
+      engine,
+      CORPUS_TEST_AUTHORS
+    );
+    expect(view.outcome.kind).not.toBe("error");
+    expect(engine.requests[0].query).toBe(
+      `[Caesar, Cicero, SenecaMajor] ${terms}`
+    );
+  });
+
   test("an over-long query is an error", async () => {
     const engine = fakeCorpusEngine();
     const view = await runCorpusSearch(
@@ -279,16 +332,90 @@ describe("runCorpusSearch", () => {
     );
     expect(engine.requests[2].query).toBe("@lemma:Caesar @lemma:Caesar");
 
-    // Exact match wins over case-insensitive collision; ambiguous non-exact keeps user spelling.
+    // Exact match wins over a case-insensitive collision.
     await runCorpusSearch(
-      { ...BASE, q: "@lemma:Magnus @lemma:magnus @lemma:MAGNUS" },
+      { ...BASE, q: "@lemma:Magnus @lemma:magnus" },
       engine,
       CORPUS_TEST_AUTHORS,
       lemmata
     );
-    expect(engine.requests[3].query).toBe(
-      "@lemma:Magnus @lemma:magnus @lemma:MAGNUS"
-    );
+    expect(engine.requests[3].query).toBe("@lemma:Magnus @lemma:magnus");
+  });
+
+  describe("unresolved @lemma values are errors that name the alternatives", () => {
+    const lemmata = [
+      "Magnus",
+      "magnus",
+      "edo#1",
+      "edo#2",
+      "edo#3",
+      "Machaera",
+      "machaera#1",
+      "volo#1",
+      "amo",
+    ];
+
+    async function run(q: string) {
+      const engine = fakeCorpusEngine();
+      const view = await runCorpusSearch(
+        { ...BASE, q },
+        engine,
+        CORPUS_TEST_AUTHORS,
+        lemmata
+      );
+      return { view, engine };
+    }
+
+    test.each([
+      [
+        "@lemma:edo",
+        "@lemma:edo - ambiguous lemma; use @lemma:edo#1, @lemma:edo#2, or @lemma:edo#3",
+      ],
+      [
+        "@l:edo",
+        "@l:edo - ambiguous lemma; use @l:edo#1, @l:edo#2, or @l:edo#3",
+      ],
+      [
+        "@lemma:MAGNUS",
+        "@lemma:MAGNUS - ambiguous lemma; use @lemma:Magnus or @lemma:magnus",
+      ],
+      [
+        "@lemma:machaera",
+        "@lemma:machaera - ambiguous lemma; use @lemma:Machaera or @lemma:machaera#1",
+      ],
+      [
+        "@lemma:edo#9",
+        "@lemma:edo#9 - ambiguous lemma; use @lemma:edo#1, @lemma:edo#2, or @lemma:edo#3",
+      ],
+      ["amo ~ @lemma:xyz", "@lemma:xyz - no lemma `xyz` in the corpus"],
+    ])("%s", async (q, message) => {
+      const { view, engine } = await run(q);
+      expect(view.outcome).toEqual({ kind: "error", message });
+      expect(engine.requests).toEqual([]);
+    });
+
+    test.each([
+      ["@lemma:edo1", "@lemma:edo#1"],
+      ["@lemma:EDO#2", "@lemma:edo#2"],
+      ["@lemma:volo", "@lemma:volo#1"],
+      ["@l:Amo", "@l:amo"],
+    ])("%s resolves to %s", async (q, engineQuery) => {
+      const { view, engine } = await run(q);
+      expect(view.outcome.kind).toBe("results");
+      expect(engine.requests[0].query).toBe(engineQuery);
+    });
+
+    test("without a lemma list, values go to the engine as typed", async () => {
+      const engine = fakeCorpusEngine();
+      const view = await runCorpusSearch(
+        { ...BASE, q: "@lemma:edo" },
+        engine,
+        CORPUS_TEST_AUTHORS,
+        () => undefined
+      );
+      expect(view.outcome.kind).toBe("results");
+      expect(engine.requests[0].query).toBe("@lemma:edo");
+    });
   });
 
   test("builds result views with reader links", async () => {
@@ -390,7 +517,7 @@ describe("runCorpusSearch", () => {
   });
 });
 
-describe("readCorpusSuggestionList", () => {
+describe("readCorpusAuthorsList", () => {
   let tmpDir: string;
 
   beforeEach(() => {
@@ -401,31 +528,28 @@ describe("readCorpusSuggestionList", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test("reads a gzipped JSON string array", async () => {
+  test("reads a gzipped JSON CorpusAuthorList", async () => {
     const fileName = "list.json";
     fs.writeFileSync(
       path.join(tmpDir, fileName),
-      zlib.gzipSync(Buffer.from(JSON.stringify(["Caesar", "Ovid"]), "utf8"))
+      zlib.gzipSync(Buffer.from(JSON.stringify(CORPUS_TEST_AUTHORS), "utf8"))
     );
 
-    await expect(readCorpusSuggestionList(fileName, tmpDir)).resolves.toEqual([
-      "Caesar",
-      "Ovid",
-    ]);
+    await expect(readCorpusAuthorsList(fileName, tmpDir)).resolves.toEqual(
+      CORPUS_TEST_AUTHORS
+    );
   });
 
-  test("rejects non-string-array payloads with a warning", async () => {
+  test("rejects malformed payloads with a warning", async () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     const fileName = "bad.json";
     fs.writeFileSync(
       path.join(tmpDir, fileName),
-      zlib.gzipSync(
-        Buffer.from(JSON.stringify({ w: { data: ["Caesar"] } }), "utf8")
-      )
+      zlib.gzipSync(Buffer.from(JSON.stringify(["Caesar"]), "utf8"))
     );
 
     await expect(
-      readCorpusSuggestionList(fileName, tmpDir)
+      readCorpusAuthorsList(fileName, tmpDir)
     ).resolves.toBeUndefined();
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
@@ -434,7 +558,7 @@ describe("readCorpusSuggestionList", () => {
   test("returns undefined when the file is missing", async () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     await expect(
-      readCorpusSuggestionList("missing.json", tmpDir)
+      readCorpusAuthorsList("missing.json", tmpDir)
     ).resolves.toBeUndefined();
     warn.mockRestore();
   });

@@ -12,8 +12,10 @@ import {
   type SafeHtml,
 } from "@/web/ui/core/dom/html.common";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
-import { CORPUS_PATH } from "@/web/ui/corpus/corpus_params.common";
-import { INFLECTION_CATEGORIES } from "@/web/ui/corpus/corpus_syntax.common";
+import {
+  CORPUS_PATH,
+  CORPUS_REFERENCE_PATH,
+} from "@/web/ui/corpus/corpus_params.common";
 
 const CHEVRON_ICONS = {
   right: "strokeChevronRight",
@@ -40,28 +42,10 @@ interface GuideSection {
   readonly badge: string;
   readonly description: string;
   readonly items: readonly GuideItem[];
-  readonly extra?: SafeHtml;
   readonly combine?: SafeHtml;
   readonly note?: string;
-}
-
-function renderInflectionCategories(): SafeHtml {
-  const rows = [...INFLECTION_CATEGORIES].map(([category, values]) => {
-    const list = [...values.keys()].join(", ");
-    return html`<li class="guide-item">
-      <code>@${category}</code>
-      <span>${list}</span>
-    </li>`;
-  });
-  return html`<details class="guide-categories">
-    <summary class="guide-categories-summary">
-      ${raw(chevron("guide-categories-chevron", "right"))}
-      <span>All inflection @categories</span>
-    </summary>
-    <ul class="guide-col-list guide-categories-list">
-      ${joinHtml(rows)}
-    </ul>
-  </details>`;
+  readonly refHref: string;
+  readonly refLabel: string;
 }
 
 const GUIDE_SECTIONS: readonly GuideSection[] = [
@@ -83,9 +67,10 @@ const GUIDE_SECTIONS: readonly GuideSection[] = [
         text: html`Case filter (<code>@c:gen</code>)`,
       },
     ],
-    extra: renderInflectionCategories(),
     combine: html`Combine with <strong>and</strong> / <strong>or</strong>:
       <code>(@c:gen and @l:amo)</code>`,
+    refHref: `${CORPUS_REFERENCE_PATH}#inflections`,
+    refLabel: "All inflection @categories & values →",
   },
   {
     title: "Proximity & distance",
@@ -109,22 +94,30 @@ const GUIDE_SECTIONS: readonly GuideSection[] = [
         text: html`Within 3 words strictly before`,
       },
     ],
+    refHref: `${CORPUS_REFERENCE_PATH}#proximity`,
+    refLabel: "Proximity & span rules →",
   },
   {
-    title: "Author scope",
-    badge: "#Author",
-    description: "Restrict queries to a specific classical author:",
+    title: "Author & work scope",
+    badge: "#Author, #Author/Work",
+    description: "Restrict queries to specific authors or works:",
     items: [
       {
         code: "#Caesar amoris",
         text: html`Caesar's works only`,
       },
       {
-        code: "#Cicero @case:vocative",
-        text: html`Cicero vocatives`,
+        code: "#Vergil/Aeneid fatum",
+        text: html`Vergil's <i>Aeneid</i> only`,
+      },
+      {
+        code: "#Caesar #Cicero bellum",
+        text: html`Caesar's or Cicero's works`,
       },
     ],
-    note: "One author filter permitted per query.",
+    note: "Author and work filters go at the start of the query.",
+    refHref: `${CORPUS_REFERENCE_PATH}#authors`,
+    refLabel: "Browse all authors & works →",
   },
 ];
 
@@ -135,9 +128,6 @@ function renderSectionList(section: GuideSection): SafeHtml {
       <span>${raw(item.text)}</span>
     </li>`
   );
-  if (section.extra !== undefined) {
-    rows.push(html`<li>${raw(section.extra)}</li>`);
-  }
   if (section.combine !== undefined) {
     rows.push(
       html`<li class="guide-item-combine">${raw(section.combine)}</li>`
@@ -146,6 +136,13 @@ function renderSectionList(section: GuideSection): SafeHtml {
   if (section.note !== undefined) {
     rows.push(html`<li class="guide-item-note">${section.note}</li>`);
   }
+  rows.push(
+    html`<li class="guide-item-ref">
+      <a href="${section.refHref}" class="guide-ref-link"
+        >${section.refLabel}</a
+      >
+    </li>`
+  );
   return html`<ul class="guide-col-list">
     ${joinHtml(rows)}
   </ul>`;
@@ -302,6 +299,12 @@ function renderGuideInner(): SafeHtml {
           </div>
         </details>
       </div>
+    </div>
+
+    <div class="guide-footer">
+      <a href="${CORPUS_REFERENCE_PATH}" class="guide-ref-link"
+        >Full search reference &rarr;</a
+      >
     </div>
   </div>`;
 }

@@ -52,6 +52,10 @@ function makeApp(
     requestTimer(res).mark("lookupComplete");
     res.send(`dicts ${String(req.query.q)}`);
   });
+  sub.get("/measured", (_req, res) => {
+    requestTimer(res).record("engineMs", 12.345);
+    res.send("ok");
+  });
   sub.get("/dicts/id/:id", (req, res) => {
     res.send(`id ${req.params.id}`);
   });
@@ -111,6 +115,13 @@ describe("telemetryMiddleware", () => {
     expect(row.outputLength).toBe("id n123".length);
     expect(row.inputLength).toBeUndefined();
     expect(row.extras).toMatchObject({ ui: "v2", mode: "page" });
+  });
+
+  test("records durations the handler measured itself", async () => {
+    await request(app).get("/measured");
+    await settle();
+
+    expect(rows[0].extras?.engineMs).toBe(12.35);
   });
 
   test("measures latency at hand-off and flush separately", async () => {
@@ -391,6 +402,7 @@ describe("requestTimer", () => {
     app.get("/", (_req, res) => {
       const timer = requestTimer(res);
       timer.mark("x");
+      timer.record("z", 1);
       timer.serverExtras().log("y");
       res.send("ok");
     });

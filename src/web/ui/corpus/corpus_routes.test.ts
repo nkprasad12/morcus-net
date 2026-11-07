@@ -6,6 +6,8 @@ import {
   type CorpusRoutesOptions,
 } from "@/web/ui/corpus/corpus_routes.server";
 import type { CorpusEngine } from "@/web/ui/corpus/corpus_query.server";
+import type { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
+import { telemetryMiddleware } from "@/web/ui/core/server/telemetry.server";
 import {
   CORPUS_TEST_AUTHORS,
   fakeCorpusEngine,
@@ -33,6 +35,53 @@ function makeApp(engine?: CorpusEngine, options: CorpusRoutesOptions = {}) {
   );
   return app;
 }
+
+describe("telemetry", () => {
+  function telemetryApp(rows: ApiCallData[]) {
+    const logger: TelemetryLogger = {
+      teardown: async () => {},
+      logApiCall: async (row) => {
+        rows.push(row);
+      },
+      logServerHealth: async () => {},
+    };
+    const app = express();
+    app.use(telemetryMiddleware(Promise.resolve(logger)));
+    app.use(
+      createCorpusRoutes({
+        engine: fakeCorpusEngine(),
+        loadAuthors: () => Promise.resolve(CORPUS_TEST_AUTHORS),
+      })
+    );
+    return app;
+  }
+
+  /** The row is written after the response; let it. */
+  async function settle(): Promise<void> {
+    for (let i = 0; i < 5; i++) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  }
+
+  test("logs the engine's query time as corpusEngineMs", async () => {
+    const rows: ApiCallData[] = [];
+    await request(telemetryApp(rows)).get("/corpus?q=omnis");
+    await settle();
+
+    expect(rows).toHaveLength(1);
+    // The fake engine reports 1.25 ms of timing.
+    expect(rows[0].extras?.corpusEngineMs).toBe(1.25);
+  });
+
+  test("logs no engine time when the engine isn't called", async () => {
+    const rows: ApiCallData[] = [];
+    await request(telemetryApp(rows)).get("/corpus?q=and");
+    await settle();
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].extras).not.toHaveProperty("corpusEngineMs");
+  });
+});
 
 describe("GET /corpus", () => {
   test("renders the landing page", async () => {
@@ -98,6 +147,28 @@ describe("GET /corpus", () => {
     );
     expect(res.status).toBe(200);
     expect(res.text).toContain('role="alert"');
+  });
+
+  test("resolves #Author/Work on GET /corpus and reports invalid works on the 200 error page", async () => {
+    const engine = fakeCorpusEngine();
+    const app = makeApp(engine);
+
+    const ok = await request(app).get(
+      "/corpus?q=%23Caesar%2FDeBelloGallico+omnis"
+    );
+    expect(ok.status).toBe(200);
+    expect(ok.text).toContain('class="corpus-result"');
+    expect(engine.requests).toEqual([
+      expect.objectContaining({
+        query: "[phi0448.phi001.perseus-lat2] omnis",
+      }),
+    ]);
+
+    const bad = await request(app).get("/corpus?q=%23Caesar%2FNope+omnis");
+    expect(bad.status).toBe(200);
+    expect(bad.text).toContain('role="alert"');
+    expect(bad.text).toContain("invalid work #Caesar/Nope");
+    expect(engine.requests).toHaveLength(1);
   });
 
   test("without an engine, answers 503", async () => {
@@ -205,11 +276,11 @@ describe("GET /corpus", () => {
 });
 
 describe("GET /corpus: autocomplete host", () => {
-  test("carries the author list", async () => {
+  test("renders the host without embedding the author list", async () => {
     const res = await request(makeApp(fakeCorpusEngine())).get("/corpus");
 
     expect(res.text).toContain("<morcus-corpus-suggestions");
-    expect(res.text).toContain("data-authors=");
+    expect(res.text).not.toContain("data-authors=");
   });
 
   test("a partial response has no host: it sits outside every slot", async () => {
@@ -217,6 +288,82 @@ describe("GET /corpus: autocomplete host", () => {
       .get("/corpus?q=omnis")
       .set("X-Requested-With", "fetch");
     expect(res.text).not.toContain("morcus-corpus-suggestions");
+  });
+});
+
+describe("GET /corpus/reference", () => {
+  test("renders the full reference page with authors and works even without an engine", async () => {
+    const res = await request(makeApp()).get("/corpus/reference");
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("<!DOCTYPE html>");
+    expect(res.text).toContain("Corpus search reference");
+    expect(res.text).toContain("#Caesar/DeBelloGallico");
+    expect(res.text).toContain("Julius Caesar");
+  });
+
+  test("without the author list, answers 503 and is not cached", async () => {
+    const app = makeApp(undefined, {
+      loadAuthors: () => Promise.resolve(undefined),
+    });
+    const res = await request(app).get("/corpus/reference");
+
+    expect(res.status).toBe(503);
+    expect(res.headers["cache-control"]).toBe("no-store");
+    expect(res.text).toContain(
+      "The corpus author and work list is not available on this server."
+    );
+  });
+});
+
+describe("GET /api/corpus/authors", () => {
+  const savedCommit = process.env.COMMIT_ID;
+
+  beforeEach(() => {
+    process.env.COMMIT_ID = "abc123";
+  });
+
+  afterEach(() => {
+    if (savedCommit === undefined) {
+      delete process.env.COMMIT_ID;
+    } else {
+      process.env.COMMIT_ID = savedCommit;
+    }
+  });
+
+  test("at the current version, returns the author/work map and caches immutably", async () => {
+    const loadAuthors = jest.fn(() => Promise.resolve(CORPUS_TEST_AUTHORS));
+    const app = makeApp(undefined, { loadAuthors });
+
+    const res = await request(app).get("/api/corpus/authors?v=abc123");
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/^application\/json/);
+    expect(res.headers["cache-control"]).toBe(
+      "public, max-age=31536000, immutable"
+    );
+    expect(res.body).toEqual(CORPUS_TEST_AUTHORS);
+
+    // Precompressed once per router.
+    await request(app).get("/api/corpus/authors?v=abc123");
+    expect(loadAuthors).toHaveBeenCalledTimes(1);
+  });
+
+  test("without a version or with a stale version, revalidates", async () => {
+    const app = makeApp();
+    for (const url of ["/api/corpus/authors", "/api/corpus/authors?v=old"]) {
+      const res = await request(app).get(url);
+      expect(res.status).toBe(200);
+      expect(res.headers["cache-control"]).toBe("no-cache");
+    }
+  });
+
+  test("without the author list, answers 503", async () => {
+    const app = makeApp(undefined, {
+      loadAuthors: () => Promise.resolve(undefined),
+    });
+    const res = await request(app).get("/api/corpus/authors?v=abc123");
+    expect(res.status).toBe(503);
+    expect(res.headers["cache-control"]).toBe("no-store");
   });
 });
 

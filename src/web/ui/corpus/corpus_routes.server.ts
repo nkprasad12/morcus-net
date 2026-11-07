@@ -6,6 +6,7 @@ import {
   precompressJson,
   sendPrecompressedJson,
   type PrecompressedJsonStore,
+  type PrecompressedRow,
 } from "@/web/ui/core/server/precompressed_json.server";
 import { isPartialRequest } from "@/web/ui/core/server/request_params.server";
 import { requestTimer } from "@/web/ui/core/server/telemetry.server";
@@ -21,11 +22,19 @@ import {
   type CorpusEngine,
 } from "@/web/ui/corpus/corpus_query.server";
 import {
+  CORPUS_REFERENCE_PAGE_KEY,
+  buildCorpusReferencePageHtml,
+} from "@/web/ui/corpus/corpus_reference.server";
+import type { CorpusAuthorList } from "@/web/ui/corpus/corpus_syntax.common";
+import {
   renderCorpusPageHtml,
   renderCorpusPartialHtml,
   renderCorpusUnavailableHtml,
 } from "@/web/ui/corpus/corpus_view.server";
-import type { CorpusParams } from "@/web/ui/corpus/corpus_params.common";
+import {
+  CORPUS_REFERENCE_PATH,
+  type CorpusParams,
+} from "@/web/ui/corpus/corpus_params.common";
 import {
   sendStaticPageOr,
   type StaticPageLookup,
@@ -49,7 +58,7 @@ export interface CorpusRoutesOptions {
   /** The Rust engine; without one, `/corpus` answers 503. */
   readonly engine?: CorpusEngine;
   /** Overrides the author list source (tests). */
-  readonly loadAuthors?: () => Promise<readonly string[] | undefined>;
+  readonly loadAuthors?: () => Promise<CorpusAuthorList | undefined>;
   /** Overrides the lemma list source (tests). */
   readonly loadLemmata?: () => Promise<readonly string[] | undefined>;
   /** Pre-rendered static pages; see `static_pages.server.ts`. */
@@ -60,6 +69,18 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
   const router = Router();
   const { getAsync } = createAsyncRegistrars(router);
   const loadAuthors = options.loadAuthors ?? loadCorpusAuthors;
+
+  let authorsRow: Promise<PrecompressedRow | undefined> | null = null;
+  const loadAuthorsRow = (): Promise<PrecompressedRow | undefined> => {
+    if (authorsRow === null) {
+      authorsRow = loadAuthors().then((authors) =>
+        authors === undefined
+          ? undefined
+          : precompressJson(JSON.stringify(authors))
+      );
+    }
+    return authorsRow;
+  };
 
   let lemmaStore: Promise<PrecompressedJsonStore | undefined> | null = null;
   const loadLemmaStore = (): Promise<PrecompressedJsonStore | undefined> => {
@@ -102,7 +123,14 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
             engine,
             await loadAuthors()
           );
-          requestTimer(res).mark("lookupComplete");
+          const timer = requestTimer(res);
+          timer.mark("lookupComplete");
+          if (
+            view.outcome.kind === "results" &&
+            view.outcome.timingMs !== undefined
+          ) {
+            timer.record("corpusEngineMs", view.outcome.timingMs);
+          }
           if (isPartial) {
             const body = renderCorpusPartialHtml(view).toString();
             setVersionedCacheControl(req, res, { scope: "private" });
@@ -120,6 +148,39 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
       console.error("Error running corpus search:", err);
       res.status(500).send("Error running corpus search");
     }
+  });
+
+  // Full reference manual for corpus query syntax and author/work codes.
+  getAsync(CORPUS_REFERENCE_PATH, async (req, res) => {
+    await sendStaticPageOr(
+      req,
+      res,
+      options.staticPages,
+      CORPUS_REFERENCE_PAGE_KEY,
+      async () => {
+        const authors = await loadAuthors();
+        requestTimer(res).mark("lookupComplete");
+        if (authors === undefined) {
+          res.setHeader("Cache-Control", "no-store");
+          res.status(503);
+        }
+        return buildCorpusReferencePageHtml(authors);
+      }
+    );
+  });
+
+  // The authors and their works, for `#Author` and `#Author/Work` autocomplete.
+  getAsync("/api/corpus/authors", async (req, res) => {
+    const row = await loadAuthorsRow();
+    requestTimer(res).mark("lookupComplete");
+    if (row === undefined) {
+      res.setHeader("Cache-Control", "no-store");
+      res.status(503).json({ error: "Corpus authors unavailable." });
+      return;
+    }
+    // Without the current version, the URL outlives a corpus rebuild.
+    setVersionedCacheControl(req, res);
+    sendPrecompressedJson(req, res, row);
   });
 
   // The lemmata starting with one letter, for the autocomplete.

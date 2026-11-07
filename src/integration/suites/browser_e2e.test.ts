@@ -31,7 +31,7 @@ async function collectV2AssetPaths(request: APIRequestContext): Promise<{
   cssPath: string;
 }> {
   const routeUrls: Record<V2Route, string> = {
-    about: "/about",
+    static: "/about",
     dicts: "/dicts",
     library: "/library",
     corpus: "/corpus",
@@ -1574,7 +1574,7 @@ test.describe("UI V2 corpus", () => {
     await expect(page.locator(".corpus-query-echo")).toHaveText("Roma");
   });
 
-  test("suggests authors and accepts with keyboard (autocomplete)", async ({
+  test("suggests authors and works and accepts with keyboard (autocomplete)", async ({
     page,
   }) => {
     await page.goto("/corpus");
@@ -1589,11 +1589,31 @@ test.describe("UI V2 corpus", () => {
     await expect(suggestions).toBeVisible();
     await expect(suggestions.locator('li:has-text("#Caesar")')).toBeVisible();
 
-    // Navigate down and choose with Enter
+    // Choosing an author completes without a trailing space and reveals "all works" and "/"
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
 
-    await expect(input).toHaveValue(/#Caesar\s+/);
+    await expect(input).toHaveValue("#Caesar");
+    await expect(suggestions.locator('li:has-text("all works")')).toBeVisible();
+    await expect(
+      suggestions.locator('li:has-text("search in work")')
+    ).toBeVisible();
+
+    // Choosing "search in work" appends "/" and lists the author's works
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+
+    await expect(input).toHaveValue("#Caesar/");
+    await expect(
+      suggestions.locator('li:has-text("#Caesar/DeBello")').first()
+    ).toBeVisible();
+
+    // Choosing a work completes with a trailing space
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+
+    await expect(input).toHaveValue(/^#Caesar\/[A-Za-z0-9]+\s+$/);
   });
 
   test("suggests grammatical categories and lemma completions (autocomplete)", async ({

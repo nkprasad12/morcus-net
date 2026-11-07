@@ -355,24 +355,39 @@ describe("corpus row text matches V2 reader tokens", () => {
 
 describe("toAuthorCode", () => {
   it.each([
-    ["Scriptores Historiae Augustae", "HistoriaAugusta"],
-    ["Ausonius, Decimus Magnus", "Ausonius"],
-    ["Appendix Vergiliana", "AppVerg"],
-    ["Q. Tullius Cicero", "QuintusCicero"],
-    ["Sidonius Apollinaris", "Sidonius"],
+    // Shortened reader slugs.
+    ["Cornelius Nepos", "Nepos"],
     ["Silius Italicus", "Silius"],
-    ["Cato, Marcus Porcius", "Cato"],
-    ["Jerome, Saint", "Jerome"],
-    ["Seneca, Lucius Annaeus", "Seneca Minor"],
-  ])("maps the Phase 2B author %s", (author, code) => {
+    ["Curtius Rufus, Quintus", "Curtius"],
+    ["Florus, Lucius Annaeus", "Florus"],
+    ["Ammianus Marcellinus", "Ammianus"],
+    ["Pompeius Trogus", "Trogus"],
+    ["Pliny the Elder", "PlinyElder"],
+    ["Pliny the Younger", "PlinyYounger"],
+    ["Seneca the Elder", "SenecaElder"],
+    ["L. Annaeus Seneca iunior", "SenecaYounger"],
+    ["L. Annaeus Seneca", "SenecaYounger"],
+    ["Seneca, Lucius Annaeus", "SenecaYounger"],
+    // Multi-word slugs.
+    ["Scriptores Historiae Augustae", "HistoriaAugusta"],
+    ["Q. Tullius Cicero", "QuintusCicero"],
+    ["Valerius Flaccus", "ValeriusFlaccus"],
+    ["Appendix Vergiliana", "AppendixVergiliana"],
+    ["Pseudo-Caesar", "PseudoCaesar"],
+    // Derived by `urlify`, with no custom slug.
+    ["Minucius Felix", "MinuciusFelix"],
+    ["Calpurnius Siculus", "CalpurniusSiculus"],
+    ["Ausonius, Decimus Magnus", "Ausonius"],
+    ["Boethius", "Boethius"],
+  ])("maps %s to %s", (author, code) => {
     expect(toAuthorCode(author)).toBe(code);
   });
 
-  it("passes a one-word author through", () => {
-    expect(toAuthorCode("Boethius")).toBe("Boethius");
+  it("derives a code for an author with no custom slug", () => {
+    expect(toAuthorCode("Nobody Inparticular")).toBe("NobodyInparticular");
   });
 
-  it("rejects an unknown multi-word author", () => {
-    expect(() => toAuthorCode("Nobody Inparticular")).toThrow(/No code/);
+  it("rejects an author whose code can't be a query token", () => {
+    expect(() => toAuthorCode("Ennius 2")).toThrow(/corpus query/);
   });
 });

@@ -16,6 +16,45 @@ impl IndexRange {
     }
 }
 
+/// A `[start, end)` range of token IDs.
+pub type TokenRange = (u32, u32);
+
+/// The exact token ranges a query is restricted to: sorted, disjoint,
+/// non-adjacent `[start, end)` ranges, each a whole number of works (see
+/// `MatchIterator::new`). Indices are sliced with one `IndexRange` covering all
+/// of them, rounded out to 64-token boundaries for zero-copy bitmask slicing,
+/// so candidates must also be clipped to these ranges.
+#[derive(Debug, PartialEq, Eq)]
+pub struct TokenScope {
+    ranges: Vec<TokenRange>,
+}
+
+impl TokenScope {
+    /// Sorts `ranges`, merges any that overlap or touch, and drops empty ones.
+    pub fn new(mut ranges: Vec<TokenRange>) -> Self {
+        ranges.retain(|&(start, end)| start < end);
+        ranges.sort_unstable();
+        let mut merged: Vec<TokenRange> = Vec::with_capacity(ranges.len());
+        for (start, end) in ranges {
+            match merged.last_mut() {
+                Some(last) if start <= last.1 => last.1 = last.1.max(end),
+                _ => merged.push((start, end)),
+            }
+        }
+        TokenScope { ranges: merged }
+    }
+
+    /// The ranges, sorted and disjoint.
+    pub fn ranges(&self) -> &[TokenRange] {
+        &self.ranges
+    }
+
+    /// The smallest `[start, end)` covering every range, or `None` if empty.
+    pub fn bounds(&self) -> Option<TokenRange> {
+        Some((self.ranges.first()?.0, self.ranges.last()?.1))
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct IndexSlice<'a> {
     // Underlying data representing the matches for a particular index.
@@ -63,10 +102,9 @@ impl<'s> IndexSlice<'s> {
             IndexData::List(list) => {
                 // We use binary search instead of partition_point because we know these are unique.
                 let start_idx = list.binary_search(&range.start).unwrap_or_else(|x| x);
-                // +1 - 1 because: in the case where the number is not found in the index, we want that point
-                // to be the end of the range. If the number *is* found, then the end range is exclusive, so we
-                // want to exclude it (thus the -1).
-                let end_idx = list.binary_search(&range.end).unwrap_or_else(|x| x + 1) - 1;
+                // The end is exclusive, so we want the index of the first element >= `range.end`,
+                // whether or not `range.end` itself is in the list.
+                let end_idx = list.binary_search(&range.end).unwrap_or_else(|x| x);
                 IndexDataRoO::Ref(IndexData::List(&list[start_idx..end_idx]))
             }
         };
@@ -98,6 +136,7 @@ pub(super) enum IndexDataRoO<'a> {
 
 impl IndexData<'_> {
     /// Returns the number of elements in the index.
+    #[cfg(test)]
     pub fn num_elements(&self) -> usize {
         match self {
             IndexData::BitMask(bitmask_data) => {
@@ -589,6 +628,59 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn token_scope_sorts_merges_and_drops_empty_ranges() {
+        let scope = TokenScope::new(vec![(50, 60), (0, 10), (5, 20), (20, 30), (40, 40)]);
+        // (0, 10) and (5, 20) overlap; (20, 30) touches; (40, 40) is empty.
+        assert_eq!(scope.ranges(), &[(0, 30), (50, 60)]);
+        assert_eq!(scope.bounds(), Some((0, 60)));
+    }
+
+    #[test]
+    fn token_scope_keeps_a_range_inside_another_merged() {
+        let scope = TokenScope::new(vec![(0, 100), (10, 20)]);
+        assert_eq!(scope.ranges(), &[(0, 100)]);
+    }
+
+    #[test]
+    fn token_scope_empty() {
+        let scope = TokenScope::new(vec![(5, 5)]);
+        assert_eq!(scope.ranges(), &[] as &[TokenRange]);
+        assert_eq!(scope.bounds(), None);
+    }
+
+    fn list_slice(list: &[u32], start: u32, end: u32) -> Vec<u32> {
+        let range = IndexRange { start, end };
+        let index = IndexData::List(list);
+        let slice = IndexSlice::from(&index, &range, 0).unwrap();
+        match slice.data.to_ref() {
+            IndexData::List(l) => l.to_vec(),
+            IndexData::BitMask(_) => panic!("expected a list"),
+        }
+    }
+
+    #[test]
+    fn index_slice_from_list_end_not_in_list() {
+        assert_eq!(list_slice(&[3, 64, 100, 130], 64, 128), vec![64, 100]);
+    }
+
+    #[test]
+    fn index_slice_from_list_end_in_list_keeps_previous_element() {
+        // `range.end` (128) is in the list: it is excluded, but 100 must not be.
+        assert_eq!(list_slice(&[3, 64, 100, 128, 130], 64, 128), vec![64, 100]);
+    }
+
+    #[test]
+    fn index_slice_from_list_end_is_first_element() {
+        // Previously underflowed when `range.end` matched `list[0]`.
+        assert_eq!(list_slice(&[64, 100], 0, 64), Vec::<u32>::new());
+    }
+
+    #[test]
+    fn index_slice_from_list_start_in_list_is_included() {
+        assert_eq!(list_slice(&[0, 64, 127, 130], 64, 128), vec![64, 127]);
+    }
 
     #[test]
     fn num_elements_unpacked_should_return_length() {

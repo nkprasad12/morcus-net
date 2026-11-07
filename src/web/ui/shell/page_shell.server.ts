@@ -100,7 +100,10 @@ function pageRoute(options: PageRouteOptions): V2Route {
   if (options.route !== undefined) {
     return options.route;
   }
-  return options.isExternal ? "external" : options.activePage;
+  if (options.isExternal) {
+    return "external";
+  }
+  return options.activePage === "about" ? "static" : options.activePage;
 }
 
 /**

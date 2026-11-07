@@ -34,6 +34,7 @@
 @import "./library/library.css";
 @import "./experimental_texts/experimental_texts.css";
 @import "./corpus/corpus.css";
+@import "./corpus/corpus_reference.css";
 @import "./external/external.css";
 @import "./macronizer/macronizer.css";
 @import "./shell/page_width.css";

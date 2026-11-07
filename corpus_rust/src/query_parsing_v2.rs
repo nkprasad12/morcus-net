@@ -9,7 +9,9 @@ const SIMPLE_PREFIXES: [&str; 4] = ["@lemma:", "@word:", "@l:", "@w:"];
 #[derive(Debug, Clone)]
 pub struct Query {
     pub terms: Vec<QueryTerm>,
-    pub authors: Vec<String>,
+    /// Authors and/or work IDs the query is restricted to (empty for the whole
+    /// corpus), from the `[...]` prefix.
+    pub scope: Vec<String>,
 }
 
 /// An error that occurs while parsing a query.
@@ -495,11 +497,12 @@ fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParse
 ///
 /// There is no bound in the length of the allowed query.
 ///
-/// A query may be preceded by a list of authors in square brackets.
-/// For example, `[Cicero, Caesar] @lemma:amor` will restrict the search to works
-/// by Cicero or Caesar.
+/// A query may be preceded by a scope in square brackets: a comma-separated list
+/// of authors and/or work IDs. For example, `[Cicero, Caesar] @lemma:amor`
+/// restricts the search to works by Cicero or Caesar, and
+/// `[phi0690.phi003.perseus-lat2] arma` to the Aeneid.
 pub fn parse_query(input: &str) -> Result<Query, QueryParseError> {
-    let (query_body, authors) = parse_author_prefix(input)?;
+    let (query_body, scope) = parse_scope_prefix(input)?;
     let (constraints, relations) = split_query(query_body)?;
     let n = constraints.len();
     check_equal!(n, relations.len() + 1, "Unexpected query split");
@@ -514,10 +517,10 @@ pub fn parse_query(input: &str) -> Result<Query, QueryParseError> {
             relation: parse_relation(&relations[i - 1])?,
         });
     }
-    Ok(Query { terms, authors })
+    Ok(Query { terms, scope })
 }
 
-fn parse_author_prefix(input: &str) -> Result<(&str, Vec<String>), QueryParseError> {
+fn parse_scope_prefix(input: &str) -> Result<(&str, Vec<String>), QueryParseError> {
     let trimmed = input.trim_start();
     if !trimmed.starts_with('[') {
         return Ok((trimmed, Vec::new()));
@@ -525,24 +528,24 @@ fn parse_author_prefix(input: &str) -> Result<(&str, Vec<String>), QueryParseErr
 
     let close_idx = trimmed[1..]
         .find(']')
-        .ok_or_else(|| QueryParseError::new("Missing closing ']' in author list"))?
+        .ok_or_else(|| QueryParseError::new("Missing closing ']' in scope list"))?
         + 1;
 
-    let authors_segment = trimmed[1..close_idx].trim();
-    let authors: Vec<String> = authors_segment
+    let scope_segment = trimmed[1..close_idx].trim();
+    let scope: Vec<String> = scope_segment
         .split(',')
-        .map(|author| author.trim())
-        .filter(|author| !author.is_empty())
-        .map(|author| author.to_string())
+        .map(|item| item.trim())
+        .filter(|item| !item.is_empty())
+        .map(|item| item.to_string())
         .collect();
 
-    if authors.is_empty() {
-        return Err(QueryParseError::new("Author list cannot be empty"));
+    if scope.is_empty() {
+        return Err(QueryParseError::new("Scope list cannot be empty"));
     }
 
     let remainder = trimmed[close_idx + 1..].trim_start();
 
-    Ok((remainder, authors))
+    Ok((remainder, scope))
 }
 
 #[cfg(test)]
@@ -1026,10 +1029,10 @@ mod tests {
     }
 
     #[test]
-    fn parse_query_with_authors_prefix() {
+    fn parse_query_with_scope_prefix() {
         let query = parse_query("[Cicero, Caesar] @lemma:amor").unwrap();
         assert_eq!(
-            query.authors,
+            query.scope,
             vec!["Cicero".to_string(), "Caesar".to_string()]
         );
         assert_eq!(query.terms.len(), 1);
