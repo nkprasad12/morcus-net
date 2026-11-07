@@ -55,11 +55,23 @@ Extend this capability to search passage text within the current work:
 
 ---
 
-## 5. Unified companion panel keyboard shortcuts
+## 5. Unified companion panel & pager keyboard shortcuts
 
-**Status:** not started.
+**Status:** partially implemented; surfacing and `ArrowLeft` / `ArrowRight` paging open.
+See [`../docs/CODE_HEALTH.md`](../docs/CODE_HEALTH.md) for the full UI V2 keyboard shortcut audit table.
 
-Add keyboard shortcuts to switch directly between companion panel tabs (`Dictionary`, `Notes`, `Translation`, `About`) from the reading canvas.
+- **Current state (`reader_view.client.ts`)**:
+  - `[` / `]` (Previous / Next page) and `t` / `T` (Contents & Sections) are implemented and surfaced via `title` tooltips on `#pager-prev`, `#pager-next`, and `#reader-toc-btn`.
+  - `/` (Dictionary tab + focus `#dict-q`) is implemented and surfaced via `<kbd>/</kbd>` in the empty Dictionary panel.
+  - `n` / `N` (Notes tab), `i` / `I` (About tab), and `a` / `A` (Appearance & Typography `Aa`) are implemented in `reader_view.client.ts`, but **not surfaced** in `title` tooltips or `aria-keyshortcuts` in `reader.server.ts`.
+  - **Translation tab**: has no single-key shortcut yet (only reachable via click or `ArrowLeft` / `ArrowRight` when focus is already on `.reader-panel-tabs`).
+- **Why `[` / `]` was originally chosen instead of `ArrowLeft` / `ArrowRight` (and how to support arrows safely)**:
+  - V1 had **no** `[` / `]` shortcut (`[` / `]` was introduced in V2 commit `43ef7a6c`, likely by analogy with PDF/Vim/GitHub bracket navigation).
+  - Binding global `ArrowLeft` / `ArrowRight` to page turns requires guarding 4 browser/widget interactions that `isShortcutBlocked()` (`core/dom/dom.client.ts`) does not block on its own:
+    1. **WAI-ARIA controls**: `.reader-panel-tabs` (`role="tablist"`), `#reader-splitter` (`role="separator"`), and `.page-handle` (`role="separator"`) already handle `ArrowLeft` / `ArrowRight` and call `e.preventDefault()`, so checking `e.defaultPrevented` avoids conflicts.
+    2. **Horizontal scroll (`Shift+Wheel` / overflow)**: When a passage table or verse line overflows horizontally (`scrollWidth > clientWidth`), native `ArrowLeft` / `ArrowRight` scrolls horizontally.
+    3. **Caret & Selection / Find-in-Page**: When the user has an active text selection (`!window.getSelection()?.isCollapsed`), pressing an arrow key collapses the selection rather than turning the page.
+    4. **Embedded Dictionary iframe (`#reader-dict-frame`)**: Unlike `/` (which is forwarded from inside the iframe), `ArrowLeft` / `ArrowRight` inside the dictionary iframe must remain reserved for dictionary scrolling and combobox caret movement.
 
 ---
 
@@ -194,4 +206,3 @@ switches context inside the same panel (whereas V1 rendered notes in tooltips).
     separate footnote list, scrolling in place when a note exceeds `max-height`.
   - **Trade-offs**: Avoids content duplication and gives No-JS readers popovers too, but loses the
     panel view for reading long notes comfortably (especially on phones).
-
