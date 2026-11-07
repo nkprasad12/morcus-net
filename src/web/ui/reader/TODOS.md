@@ -160,3 +160,38 @@ Drawer Swipe`, gate the toast on a coast that saw `> 180ms` post-`touchend` re-a
      and significant prior decay (`speed < 0.65 × peakSpeed`), so a single long swipe or a single
      follow-up flick on the passage is never interrupted, while repeated frustrated swipes in the
      drawer break out of the loop automatically.
+
+---
+
+## 9. Popover preview for translation (and text) notes
+
+**Status:** not started.
+
+Main-body notes work well in the companion panel (`#panel-view-notes`) because the Latin passage and
+the note stay visible side by side. Translation notes live inside the companion panel itself
+(`#panel-view-translation`), so following a marker either scrolls away from the passage being read or
+switches context inside the same panel (whereas V1 rendered notes in tooltips).
+
+- **Corpus properties**:
+  - Notes never contain nested notes.
+  - Notes are usually short glosses, but occasionally multi-sentence or paragraph-length.
+  - Some works have very high note density (see §1), so duplicating note bodies in HTML for both a
+    popover and a panel list would bloat payloads and DOM size.
+- **Recommended Approach (Option A — JS-only shared popover enhancement)**:
+  - **No-JS baseline**: Keep the current single-copy markup (`<a class="reader-note-ref" href="#note-...">`
+    jumping to the rendered note list). If tabs are CSS-driven, `:has(:target)` can also reveal the
+    containing tab automatically.
+  - **JS enhancement**: Maintain a single shared popover element. Clicking a `.reader-note-ref`
+    copies the target `#note-*` body from the existing DOM into the popover and anchors it to the
+    marker (or presents it as a bottom sheet on narrow/touch screens).
+  - **Long notes**: Cap the popover's height with a bottom fade and a `"Continue in notes panel →"`
+    link that jumps to the full note in the panel.
+  - **Unified model**: Consider using the same quick-peek popover for main-body notes (`#note-n*`)
+    as well, so all notes share one mental model (popover for a quick look, panel for reading at
+    length).
+- **Alternative (Option B — Native `popover` as the only copy)**:
+  - Render translation notes only as native declarative `popover` elements (`popovertarget`) with no
+    separate footnote list, scrolling in place when a note exceeds `max-height`.
+  - **Trade-offs**: Avoids content duplication and gives No-JS readers popovers too, but loses the
+    panel view for reading long notes comfortably (especially on phones).
+
