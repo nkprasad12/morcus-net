@@ -122,6 +122,12 @@ export function tokenizeInput(input: string): QueryToken[] {
  */
 export const MAX_AUTHOR_FILTERS = 20;
 
+/**
+ * The most contiguous spans (term groups separated by `~`) a query may have.
+ * Matches the engine's `MAX_QUERY_SPANS` (`corpus_rust/src/corpus_query_engine.rs`).
+ */
+export const MAX_QUERY_SPANS = 10;
+
 type QueryProcessState =
   | "ComplexTerm"
   | "ComplexTerm;LastWasTerm"
@@ -157,12 +163,45 @@ function isLogicalOp(input: string): input is "and" | "or" {
   return input === "and" || input === "or";
 }
 
+function describeExpected(options: readonly NonSpaceToken[]): string {
+  const allowed = new Set(options);
+  const parts: string[] = [];
+  if (allowed.has("wordFilter")) {
+    parts.push(
+      allowed.has("(")
+        ? "a term [word or `(`]"
+        : "a single word or `@filter`"
+    );
+  }
+  if (allowed.has("workFilter")) {
+    parts.push("`#author`");
+  }
+  if (allowed.has("logic:and") && allowed.has("logic:or")) {
+    parts.push("a logical operator [`and` / `or`]");
+  } else if (allowed.has("logic:and")) {
+    parts.push("`and`");
+  } else if (allowed.has("logic:or")) {
+    parts.push("`or`");
+  }
+  if (allowed.has("proximity")) {
+    parts.push("proximity [`~`]");
+  }
+  if (allowed.has(")")) {
+    parts.push("`)`");
+  }
+  if (parts.length <= 2) {
+    return parts.join(" or ");
+  }
+  return `${parts.slice(0, -1).join(", ")}, or ${parts[parts.length - 1]}`;
+}
+
 function feedStateMachine(
   sequence: QueryToken[]
 ): FedStateMachineOutput | string {
   let state: State = ["SpanStartOrWorkFilter", 0];
   let logicalOp: "and" | "or" | null = null;
   let workFilters = 0;
+  let spans = 1;
   let lastWasCloseParen = false;
   const groups: QueryToken[][] = [];
 
@@ -174,25 +213,30 @@ function feedStateMachine(
     );
   }
 
+  function withinLimits(token: NonSpaceToken): boolean {
+    return (
+      (workFilters < MAX_AUTHOR_FILTERS || token !== "workFilter") &&
+      (spans < MAX_QUERY_SPANS || token !== "proximity")
+    );
+  }
+
   for (let i = 0; i < sequence.length; i++) {
     const [token, startIdx, tokenType] = sequence[i];
     if (tokenType === "space") {
       continue;
     }
-    lastWasCloseParen = tokenType === ")";
-    if (tokenType === "workFilter") {
-      workFilters++;
-    }
     if (tokenType.startsWith("logic:")) {
       const unexpectedOr = logicalOp === "and" && token === "or";
       const unexpectedAnd = logicalOp === "or" && token === "and";
-      if (unexpectedOr || unexpectedAnd) {
+      if (
+        state[0] === "ComplexTerm;LastWasTerm" &&
+        (unexpectedOr || unexpectedAnd)
+      ) {
         return "Cannot mix `and` with `or` on the same word.";
       }
       if (!isLogicalOp(token)) {
         return `expected logical operator but got \`${token}\``;
       }
-      logicalOp = token;
     }
 
     const options = getOptions();
@@ -205,17 +249,34 @@ function feedStateMachine(
       while (j >= 0 && sequence[j][2] === "space") {
         j--;
       }
-      const context = i === 0 ? "at start" : `after \`${sequence[j][0]}\``;
-      return `\`${token}\` not allowed ${context}`;
+      const context = j < 0 ? "at start" : `after \`${sequence[j][0]}\``;
+      if (tokenType === ")" && state[1] === 0) {
+        return `unmatched \`)\` ${context}`;
+      }
+      const expected = describeExpected(
+        options.map((o) => o[0]).filter(withinLimits)
+      );
+      return `expected ${expected} ${context}, not \`${token}\``;
     }
-    if (
-      matchingOption[0] === "workFilter" &&
-      workFilters > MAX_AUTHOR_FILTERS
-    ) {
-      return `at most ${MAX_AUTHOR_FILTERS} #author filters allowed`;
+    if (isLogicalOp(token)) {
+      logicalOp = token;
     }
-    if (matchingOption[1] === "InSpan") {
-      // Completing a term in a span resets the logical operator.
+    lastWasCloseParen = tokenType === ")";
+    if (matchingOption[0] === "workFilter") {
+      workFilters++;
+      if (workFilters > MAX_AUTHOR_FILTERS) {
+        return `at most ${MAX_AUTHOR_FILTERS} #author filters allowed`;
+      }
+    }
+    if (matchingOption[0] === "proximity") {
+      spans++;
+      if (spans > MAX_QUERY_SPANS) {
+        return `at most ${MAX_QUERY_SPANS} spans separated by \`~\` allowed`;
+      }
+    }
+    if (matchingOption[2] || matchingOption[1] === "InSpan") {
+      // Starting a new term or completing a parenthesized term resets the
+      // per-word logical operator.
       logicalOp = null;
     }
     const parenIncrement =
@@ -228,8 +289,8 @@ function feedStateMachine(
     groups[groups.length - 1].push([token, startIdx, tokenType]);
   }
   const nextOptions = getOptions()
-    .filter((o) => workFilters < MAX_AUTHOR_FILTERS || o[0] !== "workFilter")
-    .map((o) => o[0]);
+    .map((o) => o[0])
+    .filter(withinLimits);
   return { nextOptions, termGroups: groups };
 }
 

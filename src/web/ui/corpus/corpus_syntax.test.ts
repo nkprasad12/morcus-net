@@ -12,6 +12,7 @@ import {
   hasInflectionFilters,
   isCorpusAuthorList,
   MAX_AUTHOR_FILTERS,
+  MAX_QUERY_SPANS,
   parseProximity,
   resolveWork,
   termGroups,
@@ -319,6 +320,17 @@ describe("findNextOptions", () => {
       const result = findNextOptions(tokens);
       expect(result).toEqual(["wordFilter"]);
     });
+
+    it("should reset logical operator when a new parenthesized term starts after ~ or directly after an unparenthesized term", () => {
+      expect(validateQuery("amo and @c:gen ~ (puer or bar)", undefined)).toBeNull();
+      expect(validateQuery("amo and @c:gen (puer or bar)", undefined)).toBeNull();
+      expect(transformQuery("amo and @c:gen ~ (puer or bar)")).toBe(
+        "( amo and @c:gen ) ~ ( puer or bar )"
+      );
+      expect(transformQuery("amo and @c:gen (puer or bar)")).toBe(
+        "( amo and @c:gen ) ( puer or bar )"
+      );
+    });
   });
 
   describe("parentheses", () => {
@@ -378,7 +390,16 @@ describe("findNextOptions", () => {
     it("should reject invalid token at start", () => {
       const tokens: QueryToken[] = [["and", 0, "logic:and"]];
       const result = findNextOptions(tokens);
-      expect(result).toContain("not allowed at start");
+      expect(result).toBe(
+        "expected a term [word or `(`] or `#author` at start, not `and`"
+      );
+    });
+
+    it("should reject invalid token at start after leading spaces", () => {
+      const result = findNextOptions(tokenizeInput("   and"));
+      expect(result).toBe(
+        "expected a term [word or `(`] or `#author` at start, not `and`"
+      );
     });
 
     it("should reject proximity in complex term", () => {
@@ -388,7 +409,56 @@ describe("findNextOptions", () => {
         ["~5", 16, "proximity"],
       ];
       const result = findNextOptions(tokens);
-      expect(result).toContain("not allowed after");
+      expect(result).toBe(
+        "expected a single word or `@filter` after `and`, not `~5`"
+      );
+    });
+
+    it("should explain every structural error by state", () => {
+      expect(findNextOptions(tokenizeInput(")"))).toBe(
+        "unmatched `)` at start"
+      );
+      expect(findNextOptions(tokenizeInput("amo )"))).toBe(
+        "unmatched `)` after `amo`"
+      );
+      expect(findNextOptions(tokenizeInput("#Caesar ~"))).toBe(
+        "expected a term [word or `(`] or `#author` after `#Caesar`, not `~`"
+      );
+      expect(findNextOptions(tokenizeInput("amo ~5 ~3"))).toBe(
+        "expected a term [word or `(`] after `~5`, not `~3`"
+      );
+      expect(findNextOptions(tokenizeInput("((amo))"))).toBe(
+        "expected a single word or `@filter` after `(`, not `(`"
+      );
+      expect(findNextOptions(tokenizeInput("()"))).toBe(
+        "expected a single word or `@filter` after `(`, not `)`"
+      );
+      expect(findNextOptions(tokenizeInput("(amo puer)"))).toBe(
+        "expected a logical operator [`and` / `or`] or `)` after `amo`, not `puer`"
+      );
+      expect(findNextOptions(tokenizeInput("(amo and @c:gen puer)"))).toBe(
+        "expected `and` or `)` after `@c:gen`, not `puer`"
+      );
+      expect(findNextOptions(tokenizeInput("(amo or @c:gen puer)"))).toBe(
+        "expected `or` or `)` after `@c:gen`, not `puer`"
+      );
+      expect(findNextOptions(tokenizeInput("(amo and @c:gen) and"))).toBe(
+        "expected a term [word or `(`] or proximity [`~`] after `)`, not `and`"
+      );
+    });
+
+    it("should stop offering proximity at MAX_QUERY_SPANS and reject an 11th span", () => {
+      const maxSpansQuery = Array.from(
+        { length: MAX_QUERY_SPANS },
+        (_, i) => `w${i}`
+      ).join(" ~ ");
+      const atLimit = findNextOptions(tokenizeInput(maxSpansQuery));
+      expect(atLimit).not.toContain("proximity");
+
+      const overLimit = findNextOptions(tokenizeInput(`${maxSpansQuery} ~`));
+      expect(overLimit).toBe(
+        `at most ${MAX_QUERY_SPANS} spans separated by \`~\` allowed`
+      );
     });
   });
 
@@ -733,8 +803,9 @@ describe("termGroups", () => {
     it("should return error for invalid token sequence", () => {
       const tokens: QueryToken[] = [["and", 0, "logic:and"]];
       const result = termGroups(tokens);
-      expect(typeof result).toBe("string");
-      expect(result).toContain("not allowed");
+      expect(result).toBe(
+        "expected a term [word or `(`] or `#author` at start, not `and`"
+      );
     });
 
     it("should return error for mixed logical operators", () => {
@@ -1135,7 +1206,9 @@ describe("validateQuery", () => {
   });
 
   it("reports structural errors first", () => {
-    expect(validateQuery("and amor", authors)).toContain("not allowed");
+    expect(validateQuery("and amor", authors)).toBe(
+      "expected a term [word or `(`] or `#author` at start, not `and`"
+    );
     expect(validateQuery("amor #Caesar", authors)).toContain("at start");
   });
 

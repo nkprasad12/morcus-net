@@ -275,6 +275,23 @@ describe("runCorpusSearch", () => {
     expect(engine.requests).toHaveLength(0);
   });
 
+  test("a query with more than 10 spans is rejected before calling the engine", async () => {
+    const engine = fakeCorpusEngine();
+    const view = await runCorpusSearch(
+      {
+        ...BASE,
+        q: "a ~ b ~ c ~ d ~ e ~ f ~ g ~ h ~ i ~ j ~ k",
+      },
+      engine,
+      CORPUS_TEST_AUTHORS
+    );
+    expect(view.outcome).toEqual({
+      kind: "error",
+      message: "at most 10 spans separated by `~` allowed",
+    });
+    expect(engine.requests).toHaveLength(0);
+  });
+
   test("sends the transformed query and settings", async () => {
     const engine = fakeCorpusEngine();
     const cursor = { resultId: 1, resultIndex: 50, candidateIndex: 0 };

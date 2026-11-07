@@ -96,7 +96,7 @@ pub struct CorpusQueryEngine {
 const MAX_SCOPE_ITEMS: usize = 20;
 
 /// The most contiguous spans (term groups separated by `~`) a query may have.
-/// Matches `MAX_QUERY_SPANS` in `src/common/library/corpus/corpus_common.ts`.
+/// Matches `MAX_QUERY_SPANS` in `src/web/ui/corpus/corpus_syntax.common.ts`.
 const MAX_QUERY_SPANS: usize = 10;
 
 impl CorpusQueryEngine {

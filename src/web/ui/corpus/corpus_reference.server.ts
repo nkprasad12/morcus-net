@@ -4,10 +4,7 @@
  * and `#Author/Work` code in the corpus.
  */
 
-import {
-  MAX_QUERY_BODY_LENGTH,
-  MAX_QUERY_SPANS,
-} from "@/common/library/corpus/corpus_common";
+import { MAX_QUERY_BODY_LENGTH } from "@/common/library/corpus/corpus_common";
 import {
   html,
   joinHtml,
@@ -23,6 +20,7 @@ import {
 import {
   INFLECTION_CATEGORIES,
   MAX_AUTHOR_FILTERS,
+  MAX_QUERY_SPANS,
   PROXIMITY_DISTANCE,
   type CorpusAuthorList,
 } from "@/web/ui/corpus/corpus_syntax.common";

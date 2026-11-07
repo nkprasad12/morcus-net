@@ -99,7 +99,9 @@ describe("corpusSuggestions", () => {
   });
 
   test("new-token errors from the grammar and from earlier tokens", () => {
-    expect(suggest("and ")).toEqual(["❌ `and` not allowed at start"]);
+    expect(suggest("and ")).toEqual([
+      "❌ expected a term [word or `(`] or `#author` at start, not `and`",
+    ]);
     expect(suggest("#Nobody ")).toEqual(["❌ invalid author #Nobody"]);
     expect(suggest("@case:xyz ")).toEqual([
       "❌ @case:xyz - invalid option `xyz`",
