@@ -3,7 +3,11 @@
 # `src/devops/pruner/Dockerfile`, so the server and pruner images share base
 # layers and Node upgrades are deliberate. Update all of them together.
 FROM node:26-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39
-RUN apt-get update && apt-get install -y git curl build-essential && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
+# `python3` is only for node-gyp: `npm ci` (npm 11) runs better-sqlite3's
+# implicit `node-gyp rebuild` despite its `"gypfile": false`. With the package's
+# prebuilt binary present, that rebuild compiles nothing, but node-gyp needs
+# Python to evaluate binding.gyp at all. This stage isn't shipped.
+RUN apt-get update && apt-get install -y git curl build-essential python3 && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
 WORKDIR /morcus
 # We automatically load a .env file in node commands for the purposes
 # of local development, so just create one so that we don't need to make separate
