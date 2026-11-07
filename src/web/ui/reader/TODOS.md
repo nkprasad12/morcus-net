@@ -101,30 +101,7 @@ web app manifest.
 
 ---
 
-## 8. Ovid _Tristia_: section content under the wrong id
-
-**Status:** done. Not a V2 bug.
-
-In the V2 artifact for `hypotactic_Tristia_Ovid`, `sec-1.7.x` held the text of poem 1.8
-(e.g. `sec-1.7.1` read "in caput alta suum…", which is 1.8.1; the corpus has "si quis habes
-nostri…" for 1.7.1). About 40 _Tristia_ rows differed between the corpus and V2-rendered sections.
-
-**Cause:** the Hypotactic source JSON numbered the eleven poems of _Tristia_ 1 as
-`1..7, 7, 8, 9, 10`, and `process_hypotactic.ts` copies `poem number` verbatim, so `ProcessedWork2`
-already had two `1.7` pages and 40 duplicate row ids; V2 and the corpus merely inherited them. The
-same defect affected Horace _Epodes_ (`16, 16`, no 15) and Martial _De Spectaculis_ (the "b" poems
-labelled `5, 15, 20, 24`).
-
-**Done:** corrected the data in the `hypotactic` repo (commit `28bd282765adf7aa317c67e728cc747f9d52803a`:
-Tristia 1.8–1.11, Epode 15, Spectacula 6b/16b/21b/25b), pushed and pinned it in
-`upstream_sources.lock.json`, rebuilt the library and corpus artifacts, and added uniqueness assertions
-to both `process_hypotactic.ts` (`assertUniqueIds`) and `preprocessWorkToV2`
-([`src/common/library/preprocess/work_preprocessor.ts`](../../../common/library/preprocess/work_preprocessor.ts))
-so duplicate page IDs from any source fail loudly at build time.
-
----
-
-## 9. iOS Safari: momentum scroll capture over the bottom drawer (#603)
+## 8. iOS Safari: momentum scroll capture over the bottom drawer (#603)
 
 **Status:** deferred edge case (accepted iOS platform limitation for now).
 
