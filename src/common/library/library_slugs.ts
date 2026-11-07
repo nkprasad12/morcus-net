@@ -239,7 +239,9 @@ export function shortWorkTitle(
   workId: string,
   rawTitle: string
 ): string | undefined {
-  return SHORT_TITLE_BY_WORK_ID.get(workId) ?? NAME_TO_DISPLAY_NAME.get(rawTitle);
+  return (
+    SHORT_TITLE_BY_WORK_ID.get(workId) ?? NAME_TO_DISPLAY_NAME.get(rawTitle)
+  );
 }
 
 /** The display title for a work (its short title if configured, else `rawTitle`). */
@@ -249,5 +251,7 @@ export function displayWorkTitle(workId: string, rawTitle: string): string {
 
 /** The reader URL slug (`/work/:urlAuthor/:urlName`) and corpus work code for a work. */
 export function urlifyWork(workId: string, rawTitle: string): string {
-  return URL_NAME_BY_WORK_ID.get(workId) ?? urlify(rawTitle, NAME_TO_URL_LOOKUP);
+  return (
+    URL_NAME_BY_WORK_ID.get(workId) ?? urlify(rawTitle, NAME_TO_URL_LOOKUP)
+  );
 }

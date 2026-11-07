@@ -1043,7 +1043,9 @@ describe("onboarded work slugs", () => {
       byAuthor.set(authorCode, [...(byAuthor.get(authorCode) ?? []), workCode]);
     }
     for (const codes of byAuthor.values()) {
-      expect(new Set(codes.map((c) => c.toLowerCase())).size).toBe(codes.length);
+      expect(new Set(codes.map((c) => c.toLowerCase())).size).toBe(
+        codes.length
+      );
     }
   });
 });
@@ -1097,16 +1099,8 @@ describe("toWorkCorpusCode and buildCorpusAuthorsList", () => {
       buildCorpusAuthorsList({
         authorLookup: { Caesar: [0, 1] },
         workLookup: [
-          [
-            "w1",
-            [],
-            { author: "Julius Caesar", name: "De Bello Gallico" },
-          ],
-          [
-            "w2",
-            [],
-            { author: "Julius Caesar", name: "de bello gallico" },
-          ],
+          ["w1", [], { author: "Julius Caesar", name: "De Bello Gallico" }],
+          ["w2", [], { author: "Julius Caesar", name: "de bello gallico" }],
         ],
       })
     ).toThrow(/Duplicate work code #Caesar\/DeBelloGallico/);
