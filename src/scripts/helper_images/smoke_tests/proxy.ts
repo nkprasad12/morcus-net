@@ -4,9 +4,24 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run, sleep, tryRun } from "@/scripts/helper_images/docker";
 
-/** Base nginx image used by the stub upstream in `smokeTestProxy`. */
-const STUB_NGINX_IMAGE =
-  "nginx:1.30.4-alpine-slim@sha256:77da26c31397bf6694b4bf93275f5b40b0b120ba1b8f114264b603e592c561d6";
+/**
+ * Base nginx image used by the stub upstream in `smokeTestProxy`: the same
+ * pinned image as `morcus-proxy` itself, so it shares its layers and follows
+ * its Dependabot bumps.
+ */
+function stubNginxImage(): string {
+  const dockerfile = readFileSync(
+    "src/devops/reverse_proxy/Dockerfile",
+    "utf8"
+  );
+  const match = /^FROM\s+(nginx:\S+)/m.exec(dockerfile);
+  if (match === null) {
+    throw new Error(
+      "No `FROM nginx:...` in src/devops/reverse_proxy/Dockerfile"
+    );
+  }
+  return match[1];
+}
 
 /**
  * Explicit subnet for `proxy-test-net` so the smoke test can pin container IPs
@@ -104,7 +119,7 @@ function startStubUpstream(
     ip,
     "-v",
     `${confPath}:/etc/nginx/conf.d/default.conf:ro`,
-    STUB_NGINX_IMAGE,
+    stubNginxImage(),
   ]);
 }
 

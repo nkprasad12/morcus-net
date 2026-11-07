@@ -156,6 +156,40 @@ describe("helper images", () => {
     });
   });
 
+  describe("nginx version pin", () => {
+    test("the reverse proxy pins an nginx Stable (even minor) release by digest", () => {
+      const dockerfile = readFileSync(
+        "src/devops/reverse_proxy/Dockerfile",
+        "utf8"
+      );
+      const refs = Array.from(
+        dockerfile.matchAll(/^FROM\s+(nginx:\S+)/gm),
+        (m) => m[1]
+      );
+      expect(refs).toHaveLength(1);
+      const match =
+        /^nginx:1\.(\d+)\.\d+-alpine-slim@sha256:[0-9a-f]{64}$/.exec(refs[0]);
+      if (match === null) {
+        throw new Error(
+          `Expected nginx:1.<minor>.<patch>-alpine-slim@sha256:<digest>, got: ${refs[0]}`
+        );
+      }
+      const minor = Number(match[1]);
+      if (minor % 2 !== 0) {
+        throw new Error(
+          [
+            `${refs[0]} is an nginx Mainline release (odd minor version).`,
+            `The reverse proxy stays on nginx Stable (even minor versions): use the`,
+            `latest 1.${
+              minor - 1
+            }.x, and add "1.${minor}.x" to the nginx ignore list`,
+            `in .github/dependabot.yml if it's missing.`,
+          ].join("\n")
+        );
+      }
+    });
+  });
+
   describe("hashDirectory", () => {
     let dir: string;
 
