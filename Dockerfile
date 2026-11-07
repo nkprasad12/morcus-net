@@ -8,6 +8,9 @@ FROM node:26-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a
 # prebuilt binary present, that rebuild compiles nothing, but node-gyp needs
 # Python to evaluate binding.gyp at all. This stage isn't shipped.
 RUN apt-get update && apt-get install -y git curl build-essential python3 && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
+# Point node-gyp at the base image's own Node headers (/usr/local/include/node)
+# rather than downloading them from nodejs.org on every build.
+ENV npm_config_nodedir=/usr/local
 WORKDIR /morcus
 # We automatically load a .env file in node commands for the purposes
 # of local development, so just create one so that we don't need to make separate
