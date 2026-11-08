@@ -2,11 +2,12 @@
   "schema": 1,
   "tokenCounts": {
     "latinCombiningMarks": 2,
-    "greek": 11326,
-    "editorialBracketsAndPunctuation": 494,
+    "greek": 11323,
+    "editorialBracketsAndPunctuation": 0,
     "corrupted": 125,
     "ligaturesAndRomanNumerals": 0,
     "other": 105
   },
-  "intraWordBracketSplits": 873
+  "intraWordBracketSplits": 0,
+  "residualBracketTokens": 0
 }

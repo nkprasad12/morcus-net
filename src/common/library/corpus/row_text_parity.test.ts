@@ -332,6 +332,25 @@ describe("row_text_parity: extractRowText vs V2 reader tokenization", () => {
         [3, "divisa"],
       ]);
     });
+
+    it("joins intra-word <del> ([...]) and <supplied> (⟨...⟩) spans from TEI into one word", () => {
+      const work = parseTeiWork([
+        'verbum obsole<del>n</del>tior et tacere<del>m</del> vel <del>s</del>et <supplied rend="smallcaps">T</supplied>K finis.',
+      ]);
+      const actualReader = readerWordsForWork(work);
+      const expectedCorpus = work.rows.map(([, row]) => corpusWordsForRow(row));
+      expect(actualReader).toEqual(expectedCorpus);
+      expect(actualReader[0]).toEqual([
+        [0, "verbum"],
+        [1, "obsole[n]tior"],
+        [2, "et"],
+        [3, "tacere[m]"],
+        [4, "vel"],
+        [5, "[s]et"],
+        [6, "⟨T⟩K"],
+        [7, "finis"],
+      ]);
+    });
   });
 
   describe("Rule 2: two adjacent sibling tags with nothing between them break words", () => {

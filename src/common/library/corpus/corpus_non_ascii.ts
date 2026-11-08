@@ -50,6 +50,10 @@ const EDITORIAL_PUNCT_RE = /[〈〉⟨⟩–«»·…§°ʼʽ᾽′]/u;
 const LIGATURES_AND_ROMAN_RE = /[æÆœŒ\u2160-\u217f]/u;
 const APOSTROPHUS_RE = /\u2184/u;
 const ASCII_BRACKET_ONLY_RE = /^[[\]<>()]+$/;
+const LONE_PAREN_ONLY_RE = /^[()]+$/;
+const ENDS_WITH_LETTER_RE = /\p{L}\p{M}*$/u;
+const STARTS_WITH_LETTER_RE = /^\p{L}/u;
+const RESIDUAL_BRACKET_RE = /[[\]<>()〈〉⟨⟩\u2329\u232a]/u;
 
 export function makeCategoryRecord<T>(
   fn: (category: NonAsciiCategory) => T
@@ -161,6 +165,7 @@ export interface NonAsciiAnalysis {
   readonly nonAsciiVocab: number;
   readonly nonAsciiTokens: number;
   readonly intraWordBracketSplits: number;
+  readonly residualBracketTokens: number;
   readonly vocabCounts: Readonly<Record<NonAsciiCategory, number>>;
   readonly tokenCounts: Readonly<Record<NonAsciiCategory, number>>;
   readonly categories: Readonly<
@@ -172,11 +177,18 @@ export interface NonAsciiRatchet {
   readonly schema: typeof NON_ASCII_RATCHET_SCHEMA_VERSION;
   readonly tokenCounts: Readonly<Record<NonAsciiCategory, number>>;
   readonly intraWordBracketSplits: number;
+  readonly residualBracketTokens: number;
 }
 
 export interface NonAsciiRatchetViolation {
-  readonly category: NonAsciiCategory | "intraWordBracketSplits";
-  readonly metric: "tokenCounts" | "intraWordBracketSplits";
+  readonly category:
+    | NonAsciiCategory
+    | "intraWordBracketSplits"
+    | "residualBracketTokens";
+  readonly metric:
+    | "tokenCounts"
+    | "intraWordBracketSplits"
+    | "residualBracketTokens";
   readonly kind: "regression" | "stale";
   readonly expected: number;
   readonly actual: number;
@@ -241,6 +253,7 @@ export function analyzeCorpusNonAscii(
   let totalWorks = 0;
   let totalTokens = 0;
   let intraWordBracketSplits = 0;
+  let residualBracketTokens = 0;
 
   const buckets = makeCategoryRecord<MutableCategoryBucket>(() => ({
     wordCounts: new Map(),
@@ -262,7 +275,10 @@ export function analyzeCorpusNonAscii(
             idx + 1 < rowTokens.length &&
             rowTokens[idx - 1][1] &&
             rowTokens[idx + 1][1] &&
-            ASCII_BRACKET_ONLY_RE.test(token)
+            ASCII_BRACKET_ONLY_RE.test(token) &&
+            !LONE_PAREN_ONLY_RE.test(token) &&
+            ENDS_WITH_LETTER_RE.test(rowTokens[idx - 1][0]) &&
+            STARTS_WITH_LETTER_RE.test(rowTokens[idx + 1][0])
           ) {
             intraWordBracketSplits += 1;
           }
@@ -272,6 +288,12 @@ export function analyzeCorpusNonAscii(
         const normalizedWord = stripped.toLowerCase();
         totalTokens += 1;
         allVocab.add(normalizedWord);
+        if (
+          !GREEK_BASE_RE.test(normalizedWord) &&
+          RESIDUAL_BRACKET_RE.test(normalizedWord)
+        ) {
+          residualBracketTokens += 1;
+        }
 
         let category = wordCategoryCache.get(normalizedWord);
         if (category === undefined) {
@@ -349,6 +371,7 @@ export function analyzeCorpusNonAscii(
     nonAsciiVocab,
     nonAsciiTokens,
     intraWordBracketSplits,
+    residualBracketTokens,
     vocabCounts,
     tokenCounts,
     categories,
@@ -362,6 +385,7 @@ export function buildNonAsciiRatchet(
     schema: NON_ASCII_RATCHET_SCHEMA_VERSION,
     tokenCounts: makeCategoryRecord((cat) => analysis.tokenCounts[cat]),
     intraWordBracketSplits: analysis.intraWordBracketSplits,
+    residualBracketTokens: analysis.residualBracketTokens,
   };
 }
 
@@ -371,6 +395,7 @@ export function serializeNonAsciiRatchet(ratchet: NonAsciiRatchet): string {
       schema: NON_ASCII_RATCHET_SCHEMA_VERSION,
       tokenCounts: makeCategoryRecord((cat) => ratchet.tokenCounts[cat]),
       intraWordBracketSplits: ratchet.intraWordBracketSplits,
+      residualBracketTokens: ratchet.residualBracketTokens,
     },
     null,
     2
@@ -413,24 +438,29 @@ export function evaluateNonAsciiRatchet(
     }
   }
 
-  if (analysis.intraWordBracketSplits > ratchet.intraWordBracketSplits) {
-    regressions.push({
-      category: "intraWordBracketSplits",
-      metric: "intraWordBracketSplits",
-      kind: "regression",
-      expected: ratchet.intraWordBracketSplits,
-      actual: analysis.intraWordBracketSplits,
-      examples: [],
-    });
-  } else if (analysis.intraWordBracketSplits < ratchet.intraWordBracketSplits) {
-    stale.push({
-      category: "intraWordBracketSplits",
-      metric: "intraWordBracketSplits",
-      kind: "stale",
-      expected: ratchet.intraWordBracketSplits,
-      actual: analysis.intraWordBracketSplits,
-      examples: [],
-    });
+  for (const scalarMetric of [
+    "intraWordBracketSplits",
+    "residualBracketTokens",
+  ] as const) {
+    if (analysis[scalarMetric] > ratchet[scalarMetric]) {
+      regressions.push({
+        category: scalarMetric,
+        metric: scalarMetric,
+        kind: "regression",
+        expected: ratchet[scalarMetric],
+        actual: analysis[scalarMetric],
+        examples: [],
+      });
+    } else if (analysis[scalarMetric] < ratchet[scalarMetric]) {
+      stale.push({
+        category: scalarMetric,
+        metric: scalarMetric,
+        kind: "stale",
+        expected: ratchet[scalarMetric],
+        actual: analysis[scalarMetric],
+        examples: [],
+      });
+    }
   }
 
   return {
@@ -488,6 +518,9 @@ export function renderNonAsciiMarkdownReport(
       "en-US"
     )} (${analysis.nonAsciiTokens.toLocaleString("en-US")} tokens)`,
     `- **Intra-word ASCII bracket splits (\`[]<>()\`)**: ${analysis.intraWordBracketSplits.toLocaleString(
+      "en-US"
+    )}`,
+    `- **Residual bracket tokens (Latin path)**: ${analysis.residualBracketTokens.toLocaleString(
       "en-US"
     )}`,
     "",
@@ -603,6 +636,11 @@ export async function runNonAsciiReportCli(options?: {
     `  ${"intraWordBracketSplits".padEnd(32)} ${String(
       analysis.intraWordBracketSplits
     ).padStart(6)} splits`
+  );
+  console.log(
+    `  ${"residualBracketTokens".padEnd(32)} ${String(
+      analysis.residualBracketTokens
+    ).padStart(6)} tokens`
   );
   console.log(
     `Wrote ${path.relative(process.cwd(), reportPath)} and ${path.relative(

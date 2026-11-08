@@ -1,6 +1,8 @@
 import {
+  foldLatinLigaturesAndNumerals,
   processTokens,
   removeDiacritics,
+  stripEditorialBrackets,
   trimRawQuery,
 } from "@/common/text_cleaning";
 
@@ -115,7 +117,9 @@ export function isLatinWord(
 ): { isLatin: boolean; cleanWord: string } {
   const stripped = GREEK_LETTER_REGEX.test(token)
     ? token
-    : removeDiacritics(token);
+    : removeDiacritics(
+        foldLatinLigaturesAndNumerals(stripEditorialBrackets(token))
+      );
   const cleanWord = stripped.replaceAll("-", "").trim();
   const isLatin =
     isWord && !/\d/.test(token) && LOOKUP_LETTER_REGEX.test(cleanWord);
@@ -134,7 +138,7 @@ export function extractSelectedWord(): string {
 
   for (const [token, isWord] of processTokens(selection.toString())) {
     if (!isWord) continue;
-    const cleaned = trimRawQuery(token);
+    const cleaned = trimRawQuery(stripEditorialBrackets(token));
     if (cleaned) return cleaned;
   }
   return "";

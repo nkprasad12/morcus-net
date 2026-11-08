@@ -69,6 +69,34 @@ describe("normalizeCorpusToken", () => {
     expect(normalizeCorpusToken("\u0430c")).toBe("\u0430c");
   });
 
+  it("drops closed [...] deletions with their content and strips < > 〈 〉 ⟨ ⟩ ( ) characters on the Latin path", () => {
+    const cases: Array<[token: string, expected: string]> = [
+      ["obsole[n]tior", "obsoletior"],
+      ["tacere[m]", "tacere"],
+      ["[s]et", "et"],
+      ["or[di]narentur", "ornarentur"],
+      ["[de]cedentibus", "cedentibus"],
+      ["Infama<n>s", "Infamans"],
+      ["<t>ibi", "tibi"],
+      ["abolito〈que〉", "abolitoque"],
+      ["abolito\u2329que\u232a", "abolitoque"],
+      ["fu〉ncturae", "functurae"],
+      ["pr(aetoris)", "praetoris"],
+      ["K(a)l(endas)", "Kalendas"],
+      ["⟨T⟩K", "TK"],
+      ["⟨CC⟩Z", "CCZ"],
+      ["pudor[is", "pudoris"],
+      ["ae[s", "aes"],
+      ["at]que", "atque"],
+      ["conteri[t", "conterit"],
+      ["epip]horis", "epiphoris"],
+    ];
+
+    for (const [token, expected] of cases) {
+      expect(normalizeCorpusToken(token)).toBe(expected);
+    }
+  });
+
   it("falls back to the original token when stripping combining marks leaves an empty string", () => {
     expect(normalizeCorpusToken("\u0335")).toBe("\u0335");
     expect(normalizeCorpusToken("\u0301")).toBe("\u0301");

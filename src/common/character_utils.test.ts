@@ -124,4 +124,26 @@ describe("haveCompatibleVowelLength", () => {
   it("returns true with mix", () => {
     expect(haveCompatibleVowelLength("qĭŭs", "qĭŭs")).toBe(true);
   });
+
+  it("ignores non-length combining marks (acute ictus, diaeresis, circumflex, underdots, overlines) while enforcing macrons and breves", () => {
+    expect(haveCompatibleVowelLength("e\u0301go", "ĕgŏ")).toBe(true);
+    expect(haveCompatibleVowelLength("égo", "ĕgŏ")).toBe(true);
+    expect(haveCompatibleVowelLength("poe\u0308tae", "poētae")).toBe(true);
+    expect(haveCompatibleVowelLength("denu\u0302m", "dēnum")).toBe(true);
+    expect(haveCompatibleVowelLength("rog\u0323a\u0323s", "rogās")).toBe(true);
+    expect(haveCompatibleVowelLength("x\u0305v\u0305i\u0305", "xvi")).toBe(
+      true
+    );
+    expect(haveCompatibleVowelLength("ēgo", "ĕgo")).toBe(false);
+  });
+
+  it("folds ligatures and Roman numeral codepoints and preserves Ã/Õ as long", () => {
+    expect(haveCompatibleVowelLength("ǣquus", "aequus")).toBe(true);
+    expect(haveCompatibleVowelLength("quǽso", "quaeso")).toBe(true);
+    expect(haveCompatibleVowelLength("ⅻ", "xii")).toBe(true);
+    expect(haveCompatibleVowelLength("Ã", "ā")).toBe(true);
+    expect(haveCompatibleVowelLength("Ã", "ă")).toBe(false);
+    expect(haveCompatibleVowelLength("Õ", "ō")).toBe(true);
+    expect(haveCompatibleVowelLength("Õ", "ŏ")).toBe(false);
+  });
 });

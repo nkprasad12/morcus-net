@@ -115,4 +115,26 @@ describe("preprocessText", () => {
       false,
     ]);
   });
+
+  it("preserves intra-word editorial brackets verbatim on the unknown-word path so pasted text is not rewritten", () => {
+    const input = "acclī[m]nat <P>anthia[m]";
+
+    const [processed, words, spaces] = preprocessText(input);
+    expect(processed).toHaveLength(3);
+    const acclinat = processed[0] as TokenResult;
+    const panthia = processed[2] as TokenResult;
+
+    expect(acclinat.word).toBe("accli[m]nat");
+    expect(acclinat.strippedWord).toBe("accli[m]nat");
+    expect(acclinat.typed).toBe("acclī[m]nat");
+    expect(acclinat.crunched).toEqual([]);
+
+    expect(panthia.word).toBe("<P>anthia[m]");
+    expect(panthia.strippedWord).toBe("<P>anthia[m]");
+    expect(panthia.typed).toBe("<P>anthia[m]");
+    expect(panthia.crunched).toEqual([]);
+
+    expect(words).toEqual(["accli[m]nat", " ", "<P>anthia[m]"]);
+    expect(spaces).toEqual([false, true, false]);
+  });
 });

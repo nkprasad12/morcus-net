@@ -109,4 +109,26 @@ describe("findEntriesForQuery", () => {
       },
     ]);
   });
+
+  it("folds precomposed ligatures and Roman numeral codepoints and ignores non-length combining marks", async () => {
+    const ligatureSetup = setup([analysis("qui#1", "quae")]);
+    const ligatureResults = await ligatureSetup.query("quǽ");
+    expect(ligatureSetup.matchesForCleanName).toHaveBeenCalledWith("quae");
+    expect(ligatureResults.map((r) => r.entry)).toEqual(["qui"]);
+
+    const upperSetup = setup([analysis("qui#1", "quae")]);
+    const upperLigatureResults = await upperSetup.query("QUǢ");
+    expect(upperSetup.matchesForCleanName).toHaveBeenCalledWith("quae");
+    expect(upperLigatureResults.map((r) => r.entry)).toEqual(["qui"]);
+
+    const numeralSetup = setup([]);
+    const numeralResults = await numeralSetup.query("ⅹ\u0305ⅰ\u0305ⅰ\u0305");
+    expect(numeralSetup.matchesForCleanName).toHaveBeenCalledWith("xii");
+    expect(numeralResults).toEqual([]);
+
+    const ictusSetup = setup([analysis("quis#1", "quĭs")]);
+    const ictusResults = await ictusSetup.query("quís");
+    expect(ictusSetup.matchesForCleanName).toHaveBeenCalledWith("quis");
+    expect(ictusResults.map((r) => r.entry)).toEqual(["quis"]);
+  });
 });

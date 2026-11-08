@@ -1,8 +1,13 @@
+import { foldLatinLigaturesAndNumerals } from "@/common/text_cleaning";
+
 // The last two are tilde characters. This look the same in VS code.
 export const MACRONS = "āēīōūȳĀĒĪŌŪȲÃÕ";
 export const BREVES = "ăĕĭŏŭўĂĬĔŎŬY̆";
 export const MACRON_COMBINER = "\u0304";
 export const BREVE_COMBINER = "\u0306";
+const TILDE_COMBINER = "\u0303";
+const COMBINING_MARK_CHAR_RE = /\p{M}/u;
+const NON_ASCII_RE = /[\u0080-\uffff]/;
 const UNMARKED_VOWELS = "aeiouyAEIOUY";
 
 export type VowelLength = "Long" | "Short" | "Ambiguous";
@@ -22,20 +27,28 @@ export function getVowelLength(input: string): VowelLength {
 }
 
 function extractLengthCombiners(input: string): [string, number[], number[]] {
+  const normalized = NON_ASCII_RE.test(input)
+    ? foldLatinLigaturesAndNumerals(input).normalize("NFD")
+    : input;
   let resultString = "";
   const long: number[] = [];
   const short: number[] = [];
-  for (let i = 0; i < input.length; i++) {
+  for (let i = 0; i < normalized.length; i++) {
+    const ch = normalized[i];
     // Morpheus uses these for diareses. We can ignore these here.
-    if (input[i] === "+") {
+    if (ch === "+") {
       continue;
     }
-    if (input[i] === MACRON_COMBINER || input[i] === "_") {
+    if (ch === MACRON_COMBINER || ch === "_" || ch === TILDE_COMBINER) {
       long.push(resultString.length - 1);
-    } else if (input[i] === BREVE_COMBINER || input[i] === "^") {
+    } else if (ch === BREVE_COMBINER || ch === "^") {
       short.push(resultString.length - 1);
+    } else if (COMBINING_MARK_CHAR_RE.test(ch)) {
+      // Ignore non-length combining marks (acute ictus, diaeresis, circumflex,
+      // underdot, overline, stroke, etc.) so base letters stay aligned.
+      continue;
     } else {
-      resultString += input[i];
+      resultString += ch;
     }
   }
   return [resultString, long, short];

@@ -197,6 +197,41 @@ describe("isLatinWord", () => {
     });
   });
 
+  it("strips intra-word editorial brackets from cleanWord on Latin words", () => {
+    expect(isLatinWord("obsole[n]tior", true)).toEqual({
+      isLatin: true,
+      cleanWord: "obsoletior",
+    });
+    expect(isLatinWord("tacere[m]", true)).toEqual({
+      isLatin: true,
+      cleanWord: "tacere",
+    });
+    expect(isLatinWord("[s]et", true)).toEqual({
+      isLatin: true,
+      cleanWord: "et",
+    });
+    expect(isLatinWord("<t>ibi", true)).toEqual({
+      isLatin: true,
+      cleanWord: "tibi",
+    });
+    expect(isLatinWord("abolito〈que〉", true)).toEqual({
+      isLatin: true,
+      cleanWord: "abolitoque",
+    });
+    expect(isLatinWord("pr(aetoris)", true)).toEqual({
+      isLatin: true,
+      cleanWord: "praetoris",
+    });
+    expect(isLatinWord("præterierat", true)).toEqual({
+      isLatin: true,
+      cleanWord: "praeterierat",
+    });
+    expect(isLatinWord("ⅹ\u0305ⅰ\u0305ⅰ\u0305", true)).toEqual({
+      isLatin: true,
+      cleanWord: "xii",
+    });
+  });
+
   it("identifies Ancient Greek words and preserves polytonic diacritics", () => {
     expect(isLatinWord("λόγος", true)).toEqual({
       isLatin: true,
@@ -261,6 +296,19 @@ describe("extractSelectedWord", () => {
     sel.addRange(range);
 
     expect(extractSelectedWord()).toBe("Mūsa");
+  });
+
+  it("strips intra-word editorial brackets from the selected word", () => {
+    const p = document.createElement("p");
+    p.textContent = "obsole[n]tior tacere[m]";
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    expect(extractSelectedWord()).toBe("obsoletior");
   });
 
   it("returns empty string when selection contains only punctuation or whitespace", () => {
@@ -565,6 +613,23 @@ describe("tokenizeSubtree with joinAcrossInline", () => {
       ["combaepumam", 0],
       ["combaepumam", 0],
       ["est", 1],
+    ]);
+  });
+
+  it("keeps intra-word editorial brackets inside a word and splits non-ASCII break characters", () => {
+    const { seen } = tokenize(
+      'obsole[n]tior tacere[m] [s]et abolito〈que〉 <span class="smallcaps">⟨T⟩</span>K «aliqua» δʼἕτερον'
+    );
+    expect(seen.map((s) => [s.part?.word ?? s.token, s.index])).toEqual([
+      ["obsole[n]tior", 0],
+      ["tacere[m]", 1],
+      ["[s]et", 2],
+      ["abolito〈que〉", 3],
+      ["⟨T⟩K", 4],
+      ["⟨T⟩K", 4],
+      ["aliqua", 5],
+      ["δ", 6],
+      ["ἕτερον", 7],
     ]);
   });
 

@@ -1,8 +1,10 @@
 import {
+  foldLatinLigaturesAndNumerals,
   processWords,
   removeDiacritics,
   removeMacrons,
   stripDiacritics,
+  stripEditorialBrackets,
   trimRawQuery,
 } from "@/common/text_cleaning";
 
@@ -154,15 +156,52 @@ describe("processWords", () => {
   });
 
   it("splits punctuation inside word", () => {
-    expect(processWords("h[ell]o darkness", (s) => s)).toStrictEqual([
+    expect(processWords("h.ell;o darkness", (s) => s)).toStrictEqual([
       "h",
-      "[",
+      ".",
       "ell",
-      "]",
+      ";",
       "o",
       " ",
       "darkness",
     ]);
+  });
+
+  it("keeps intra-word editorial brackets inside words and breaks standalone/multi-word brackets", () => {
+    const cases: Array<[input: string, expected: string[]]> = [
+      // Case (a): bracket has a word character directly on both sides
+      ["obsole[n]tior", ["W(obsole[n]tior)"]],
+      ["fu〉ncturae", ["W(fu〉ncturae)"]],
+      ["fu\u232ancturae", ["W(fu\u232ancturae)"]],
+      ["Infama<n>s", ["W(Infama<n>s)"]],
+      // Case (b): closed group with no break characters inside touching a word character on at least one outer side
+      ["tacere[m]", ["W(tacere[m])"]],
+      ["[s]et", ["W([s]et)"]],
+      ["abolito〈que〉", ["W(abolito〈que〉)"]],
+      ["abolito\u2329que\u232a", ["W(abolito\u2329que\u232a)"]],
+      ["<t>ibi", ["W(<t>ibi)"]],
+      ["pr(aetoris)", ["W(pr(aetoris))"]],
+      ["⟨T⟩K", ["W(⟨T⟩K)"]],
+      // Otherwise it is a break (including adjacent digits/symbols and unclosed parentheses)
+      ["<in>", ["<", "W(in)", ">"]],
+      ["[dum coquitur]", ["[", "W(dum)", " ", "W(coquitur)", "]"]],
+      ["〈poenae", ["〈", "W(poenae)"]],
+      ["enim〉", ["W(enim)", "〉"]],
+      ["〈", ["〈"]],
+      ["(quaeso)", ["(", "W(quaeso)", ")"]],
+      ["[certa]1", ["[", "W(certa)", "]", "W(1)"]],
+      ["terras(19-23)", ["W(terras)", "(", "W(19-23)", ")"]],
+      ["Augustus)1", ["W(Augustus)", ")", "W(1)"]],
+      ["cedere)nescia", ["W(cedere)", ")", "W(nescia)"]],
+      ["e(iiciens", ["W(e)", "(", "W(iiciens)"]],
+      ["e)mo\\s", ["W(e)", ")", "W(mo\\s)"]],
+      ["*[et", ["W(*)", "[", "W(et)"]],
+      ["*)ενοσίχθονα", ["W(*)", ")", "W(ενοσίχθονα)"]],
+    ];
+
+    for (const [input, expected] of cases) {
+      expect(processWords(input, (s) => `W(${s})`)).toStrictEqual(expected);
+    }
   });
 
   it("splits on non-ASCII editorial punctuation and Greek elision marks", () => {
@@ -197,6 +236,45 @@ describe("processWords", () => {
       "W(ἀπόλλω)",
       "·",
     ]);
+  });
+});
+
+describe("stripEditorialBrackets", () => {
+  it("drops closed [...] deletions with their content and strips remaining bracket characters", () => {
+    expect(stripEditorialBrackets("obsole[n]tior")).toBe("obsoletior");
+    expect(stripEditorialBrackets("tacere[m]")).toBe("tacere");
+    expect(stripEditorialBrackets("[s]et")).toBe("et");
+    expect(stripEditorialBrackets("<t>ibi")).toBe("tibi");
+    expect(stripEditorialBrackets("abolito〈que〉")).toBe("abolitoque");
+    expect(stripEditorialBrackets("abolito\u2329que\u232a")).toBe("abolitoque");
+    expect(stripEditorialBrackets("⟨T⟩K")).toBe("TK");
+    expect(stripEditorialBrackets("pr(aetoris)")).toBe("praetoris");
+    expect(stripEditorialBrackets("K(a)l(endas)")).toBe("Kalendas");
+    expect(stripEditorialBrackets("pudor[is")).toBe("pudoris");
+    expect(stripEditorialBrackets("ae[s")).toBe("aes");
+    expect(stripEditorialBrackets("at]que")).toBe("atque");
+    expect(stripEditorialBrackets("conteri[t")).toBe("conterit");
+    expect(stripEditorialBrackets("epip]horis")).toBe("epiphoris");
+  });
+});
+
+describe("foldLatinLigaturesAndNumerals", () => {
+  it("folds ligatures, precomposed ligatures with marks, and Roman numeral codepoints and is idempotent", () => {
+    expect(foldLatinLigaturesAndNumerals("canaba")).toBe("canaba");
+    expect(foldLatinLigaturesAndNumerals("præterierat")).toBe("praeterierat");
+    expect(foldLatinLigaturesAndNumerals("Ægyptus")).toBe("Aegyptus");
+    expect(foldLatinLigaturesAndNumerals("cœrceas")).toBe("coerceas");
+    expect(foldLatinLigaturesAndNumerals("Œdipus")).toBe("Oedipus");
+    expect(foldLatinLigaturesAndNumerals("quǽso")).toBe("quae\u0301so");
+    expect(foldLatinLigaturesAndNumerals("prǣter")).toBe("prae\u0304ter");
+    expect(foldLatinLigaturesAndNumerals("ⅻ")).toBe("xii");
+    expect(foldLatinLigaturesAndNumerals("ⅹ\u0305ⅰ\u0305ⅰ\u0305")).toBe(
+      "x\u0305i\u0305i\u0305"
+    );
+    const sample = "quǽso ⅻ præterierat";
+    expect(
+      foldLatinLigaturesAndNumerals(foldLatinLigaturesAndNumerals(sample))
+    ).toBe(foldLatinLigaturesAndNumerals(sample));
   });
 });
 

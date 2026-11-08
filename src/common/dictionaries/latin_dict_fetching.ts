@@ -10,18 +10,15 @@ import type {
 } from "@/common/dictionaries/dict_storage";
 import type { DictOptions } from "@/common/dictionaries/dictionaries";
 import type { DeepReadonly } from "@/common/misc_utils";
-import { removeDiacritics } from "@/common/text_cleaning";
+import {
+  foldLatinLigaturesAndNumerals,
+  removeDiacritics,
+} from "@/common/text_cleaning";
 import { type LatinWordAnalysis } from "@/morceus/cruncher_types";
 import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
 import type { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
-const REPLACED_CHARS = new Map<string, string>([
-  ["ſ", "s"],
-  ["æ", "ae"],
-  ["Æ", "Ae"],
-  ["œ", "oe"],
-  ["Œ", "Oe"],
-]);
+const REPLACED_CHARS = new Map<string, string>([["ſ", "s"]]);
 
 /**
  * Finds analyses for the diacritic-free input.
@@ -50,7 +47,7 @@ export async function findEntriesForQuery<T extends EntryResult>(
   args: FindEntriesForQueryArgs<T>
 ): Promise<EntryResult[]> {
   const { extras, options, storage, inflectionProvider } = args;
-  const input = rawInput
+  const input = foldLatinLigaturesAndNumerals(rawInput)
     .split("")
     .map((c) => REPLACED_CHARS.get(c) || c)
     .join("");

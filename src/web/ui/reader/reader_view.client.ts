@@ -37,7 +37,7 @@ import {
   type EmbeddedDictLookupRequest,
 } from "@/web/ui/dict/search/dict_frame_host.client";
 import type { SafeHtml } from "@/web/ui/core/dom/html.common";
-import { removeMacrons } from "@/common/text_cleaning";
+import { removeMacrons, stripEditorialBrackets } from "@/common/text_cleaning";
 import {
   READER_PAGE_SLOTS,
   formatReaderPageTitle,
@@ -937,6 +937,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   #lookupWord(word: string, activeAnchor?: HTMLElement) {
+    word = stripEditorialBrackets(word);
     if (!word) return;
     this.#pendingDictFocusWord = null;
 
@@ -1113,7 +1114,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
           // Every part of a split word carries the whole word in `data-word`.
           return createWordSpan(token, {
-            word: part?.word,
+            word: stripEditorialBrackets(part?.word ?? token),
             extraClass: isMatch ? "reader-match" : undefined,
           });
         },

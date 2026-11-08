@@ -1,47 +1,12 @@
 import { assert } from "@/common/assert";
+import {
+  foldLatinLigaturesAndNumerals,
+  stripEditorialBrackets,
+} from "@/common/text_cleaning";
 
+const NEEDS_CORPUS_NORMALIZATION_RE = /[\u0080-\uffff[\]<>()]/;
 const GREEK_CODEPOINT_RE = /[\u0370-\u03ff\u1f00-\u1fff]/u;
 const COMBINING_MARK_RE = /\p{M}/gu;
-const ROMAN_AND_LIGATURE_RE = /[æÆœŒ\u2160-\u217f]/gu;
-
-const ROMAN_AND_LIGATURE_MAP: Readonly<Record<string, string>> = {
-  æ: "ae",
-  Æ: "Ae",
-  œ: "oe",
-  Œ: "Oe",
-  "\u2160": "I",
-  "\u2161": "II",
-  "\u2162": "III",
-  "\u2163": "IV",
-  "\u2164": "V",
-  "\u2165": "VI",
-  "\u2166": "VII",
-  "\u2167": "VIII",
-  "\u2168": "IX",
-  "\u2169": "X",
-  "\u216a": "XI",
-  "\u216b": "XII",
-  "\u216c": "L",
-  "\u216d": "C",
-  "\u216e": "D",
-  "\u216f": "M",
-  "\u2170": "i",
-  "\u2171": "ii",
-  "\u2172": "iii",
-  "\u2173": "iv",
-  "\u2174": "v",
-  "\u2175": "vi",
-  "\u2176": "vii",
-  "\u2177": "viii",
-  "\u2178": "ix",
-  "\u2179": "x",
-  "\u217a": "xi",
-  "\u217b": "xii",
-  "\u217c": "l",
-  "\u217d": "c",
-  "\u217e": "d",
-  "\u217f": "m",
-};
 
 /**
  * Normalizes a word token for corpus storage (`tokens[]` in
@@ -53,16 +18,26 @@ const ROMAN_AND_LIGATURE_MAP: Readonly<Record<string, string>> = {
  *   (breve), keeping Greek breathings, accents, and iota subscripts.
  * - **Latin path** (everything else):
  *   1. NFD (so precomposed ligatures with marks like `ǽ`/`ǣ` decompose to
- *      `æ` + mark before folding).
- *   2. Fold Roman numeral codepoints U+2160–U+217F to ASCII letters and
+ *      `æ` + mark before folding, and `\u2329`/`\u232a` canonicalize to
+ *      `〈`/`〉`).
+ *   2. Drop closed `[…]` deletions together with their content (`obsole[n]tior`
+ *      → `obsoletior`), and strip `< > 〈 〉 ⟨ ⟩ ( )` editorial bracket
+ *      characters while keeping their content (`<t>ibi` → `tibi`,
+ *      `abolito〈que〉` → `abolitoque`, `pr(aetoris)` → `praetoris`).
+ *   3. Fold Roman numeral codepoints U+2160–U+217F to ASCII letters and
  *      ligatures `æ Æ œ Œ` to `ae Ae oe Oe`.
- *   3. Strip all combining marks `\p{M}`.
+ *   4. Strip all combining marks `\p{M}`.
  * - Fallback: if stripping leaves an empty string (e.g. a standalone combining
  *   mark `\u0335`), keep the NFD-normalized `token` so every word token
  *   retains a non-empty slot aligned with the reader.
  */
 export function normalizeCorpusToken(token: string): string {
   assert(token.length > 0, "Corpus word token must not be empty");
+  // Plain ASCII without editorial brackets has no combining marks, ligatures,
+  // or Roman numeral codepoints and is unchanged by NFD (most Latin words).
+  if (!NEEDS_CORPUS_NORMALIZATION_RE.test(token)) {
+    return token;
+  }
   const nfd = token.normalize("NFD");
 
   if (GREEK_CODEPOINT_RE.test(nfd)) {
@@ -70,10 +45,8 @@ export function normalizeCorpusToken(token: string): string {
     return greekStripped.length > 0 ? greekStripped : nfd;
   }
 
-  const folded = nfd.replaceAll(
-    ROMAN_AND_LIGATURE_RE,
-    (ch) => ROMAN_AND_LIGATURE_MAP[ch] ?? ch
-  );
+  const debracketed = stripEditorialBrackets(nfd);
+  const folded = foldLatinLigaturesAndNumerals(debracketed);
   const stripped = folded.replaceAll(COMBINING_MARK_RE, "");
   return stripped.length > 0 ? stripped : nfd;
 }

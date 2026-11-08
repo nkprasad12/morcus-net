@@ -224,6 +224,37 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(wordTexts).toEqual(["Mūsa", "mihi", "causās", "memorā"]);
   });
 
+  test("strips intra-word editorial brackets from data-word and dictionary lookup while preserving displayed text", () => {
+    const passageHtml = `
+      <div class="reader-section" id="sec-1.1">
+        <div class="reader-passage">
+          <span class="reader-line">obsole[n]tior tacere[m] abolito〈que〉 <span class="smallcaps">⟨T⟩</span>K</span>
+        </div>
+      </div>
+    `;
+
+    const el = createReaderView(passageHtml);
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
+    expect(words.map((w) => w.textContent)).toEqual([
+      "obsole[n]tior",
+      "tacere[m]",
+      "abolito〈que〉",
+      "⟨T⟩",
+      "K",
+    ]);
+    expect(words.map((w) => w.dataset.word)).toEqual([
+      "obsoletior",
+      "tacere",
+      "abolitoque",
+      "TK",
+      "TK",
+    ]);
+
+    words[0].click();
+    const iframe = dictFrame(el);
+    expect(currentIframeSrc(iframe)).toContain("q=obsoletior");
+  });
+
   test("scopes tokenization to .reader-section > .reader-passage", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">

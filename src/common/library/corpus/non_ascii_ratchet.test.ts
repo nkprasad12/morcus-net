@@ -173,10 +173,13 @@ describe("evaluateNonAsciiRatchet on synthetic fixtures", () => {
 
   it("passes when actual counts match the ratchet exactly and keeps accented typos in corrupted after normalization", () => {
     const analysis = analyzeCorpusNonAscii(sampleWorks);
-    expect(analysis.intraWordBracketSplits).toBe(3);
-    // `quæso` and `e\u0301go` normalize to ASCII (`quaeso`, `ego`), while
-    // `qua\u0300a` and `commendata\u0302` remain tracked in `corrupted` via raw NFD check.
+    expect(analysis.intraWordBracketSplits).toBe(0);
+    expect(analysis.residualBracketTokens).toBe(0);
+    // `quæso`, `e\u0301go`, `abolito〈que〉`, `obsole[n]tior`, and `tacere[m]`
+    // normalize to ASCII (`quaeso`, `ego`, `abolitoque`, `obsoletior`, `tacere`),
+    // while `qua\u0300a` and `commendata\u0302` remain tracked in `corrupted` via raw NFD check.
     expect(analysis.vocabCounts.latinCombiningMarks).toBe(0);
+    expect(analysis.vocabCounts.editorialBracketsAndPunctuation).toBe(0);
     expect(analysis.vocabCounts.ligaturesAndRomanNumerals).toBe(0);
     expect(analysis.vocabCounts.corrupted).toBe(3);
     expect(analysis.tokenCounts.corrupted).toBe(3);
@@ -194,7 +197,11 @@ describe("evaluateNonAsciiRatchet on synthetic fixtures", () => {
   });
 
   it("fails on count regressions and cites offending words", () => {
-    const analysis = analyzeCorpusNonAscii(sampleWorks);
+    const analysis = {
+      ...analyzeCorpusNonAscii(sampleWorks),
+      intraWordBracketSplits: 3,
+      residualBracketTokens: 2,
+    };
     const ratchet = buildNonAsciiRatchet(analysis);
     const stricterRatchet: NonAsciiRatchet = {
       ...ratchet,
@@ -203,16 +210,20 @@ describe("evaluateNonAsciiRatchet on synthetic fixtures", () => {
         corrupted: 0,
       },
       intraWordBracketSplits: 0,
+      residualBracketTokens: 0,
     };
 
     const report = evaluateNonAsciiRatchet(stricterRatchet, analysis);
     expect(report.passed).toBe(false);
-    expect(report.regressions).toHaveLength(2);
+    expect(report.regressions).toHaveLength(3);
     const msg = formatNonAsciiRatchetReport(report);
     expect(msg).toContain("[tokenCounts] corrupted: 0 → 3");
     expect(msg).toContain("civit\ufffdtem (1)");
     expect(msg).toContain(
       "[intraWordBracketSplits] intraWordBracketSplits: 0 → 3"
+    );
+    expect(msg).toContain(
+      "[residualBracketTokens] residualBracketTokens: 0 → 2"
     );
   });
 
@@ -234,7 +245,7 @@ describe("evaluateNonAsciiRatchet on synthetic fixtures", () => {
     const msg = formatNonAsciiRatchetReport(report);
     expect(msg).toContain("[tokenCounts] latinCombiningMarks: 10 → 0");
     expect(msg).toContain(
-      "[intraWordBracketSplits] intraWordBracketSplits: 10 → 3"
+      "[intraWordBracketSplits] intraWordBracketSplits: 10 → 0"
     );
     expect(msg).toContain(
       "Run: ./morcus.sh corpus --non_ascii_report --update"
