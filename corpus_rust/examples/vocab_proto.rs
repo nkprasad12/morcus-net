@@ -237,12 +237,12 @@ fn cold_bench<'a>(
         let (pre, suf) = pat.split_once('*').expect("wildcard");
         let ids = || -> Vec<u32> {
             if pre.is_empty() {
-                vocab.suffix_ids(suf).to_vec()
+                vocab.suffix_ids_unsorted(suf).to_vec()
             } else {
                 vocab
                     .prefix_range(pre)
                     .filter(|&id| {
-                        let w = vocab.word(id);
+                        let w = vocab.word(id).unwrap_or_default();
                         w.len() >= pre.len() + suf.len() && w.ends_with(suf.as_bytes())
                     })
                     .collect()
@@ -339,7 +339,8 @@ fn main() {
     }
     let (h0, r0) = heap();
     let t = Instant::now();
-    let (vocab, new_to_old) = SortedVocab::build(&old_words);
+    let (vocab, new_to_old) =
+        SortedVocab::build(&old_words, &vec![0; old_words.len()]).expect("vocab");
     let build_ms = t.elapsed().as_secs_f64() * 1e3;
     let (h1, r1) = heap();
     // `new_to_old` is prototype-only: a real build writes indices in new-ID
@@ -352,8 +353,8 @@ fn main() {
         mb(text)
     );
     println!(
-        "SortedVocab: {:.2} MB held (text {:.2} + offsets {:.2} + by_suffix {:.2}); malloc-reserved {:.2} MB; built in {build_ms:.0} ms",
-        mb(vocab.heap_bytes()),
+        "SortedVocab: {:.2} MB encoded (text {:.2} + offsets {:.2} + by_suffix {:.2} + ...); malloc-reserved {:.2} MB; built in {build_ms:.0} ms",
+        mb(vocab.byte_len()),
         mb(text),
         mb(4 * (vocab.len() + 1)),
         mb(4 * vocab.len()),
@@ -380,12 +381,6 @@ fn main() {
     for (new, &old) in new_to_old.iter().enumerate().step_by(997) {
         assert_eq!(vocab.lookup(old_words[old as usize]), Some(new as u32));
     }
-    let (mut total, mut max) = (0u64, 0u32);
-    for w in &queries {
-        let (_, c) = vocab.lookup_counting(w);
-        total += c as u64;
-        max = max.max(c);
-    }
     let misses = ["xqzv", "amorr", "bellumx", "a", "zzzzzz"];
     assert!(
         misses
@@ -393,11 +388,10 @@ fn main() {
             .all(|w| word_map.contains_key(*w) == vocab.lookup(w).is_some())
     );
     println!(
-        "exact lookup (all {} words, shuffled): HashMap {:.0} ns, binary search {:.0} ns; comparisons avg {:.1}, max {max}",
+        "exact lookup (all {} words, shuffled): HashMap {:.0} ns, binary search {:.0} ns",
         queries.len(),
         hash_ms * 1e6 / n,
         bin_ms * 1e6 / n,
-        total as f64 / n
     );
 
     // --- Wildcards: lookup, then merge (scattered lists vs contiguous lists). ---
@@ -490,12 +484,12 @@ fn main() {
         });
         let ids = |v: &SortedVocab| -> Vec<u32> {
             if pre.is_empty() {
-                v.suffix_ids(suf).to_vec()
+                v.suffix_ids_unsorted(suf).to_vec()
             } else {
                 v.prefix_range(pre)
                     .filter(|&id| {
-                        v.word(id).len() >= pre.len() + suf.len()
-                            && v.word(id).ends_with(suf.as_bytes())
+                        let w = v.word(id).unwrap_or_default();
+                        w.len() >= pre.len() + suf.len() && w.ends_with(suf.as_bytes())
                     })
                     .collect()
             }

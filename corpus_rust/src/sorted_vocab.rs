@@ -1,26 +1,218 @@
-//! PROTOTYPE (TODOS.md §3.4): the word vocabulary as one sorted, packed array.
+//! The corpus word vocabulary as one sorted, packed, memory-mappable array
+//! (`latin_corpus_vocab.bin`).
 //!
-//! Not used by the engine yet, and not reviewed as production code. Review it
-//! properly (or replace it) when §3.4 is implemented, or delete it if that
-//! work is dropped.
+//! Word IDs are positions in UTF-8 byte order, so:
+//! - exact lookup is a binary search;
+//! - `prefix*` is a contiguous ID range;
+//! - `*suffix` is a contiguous run of `by_suffix` (the IDs sorted by their
+//!   reversed bytes);
+//! - the postings of any contiguous ID range are one contiguous run of the
+//!   word postings, located through `postings_offsets` in O(1).
 //!
-//! If the corpus build numbered words in sorted order, a word's position here
-//! would be its ID, replacing `id_table["word"]` (a `HashMap<String, u32>`).
-//! Exact lookup is a binary search; `prefix*` is a contiguous ID range; and
-//! `*suffix` is a contiguous run of `by_suffix`, the IDs sorted by reversed
-//! spelling. Comparisons are on bytes, so a suffix match on UTF-8 bytes is
+//! Comparisons are on bytes, so a prefix or suffix match on UTF-8 bytes is
 //! also a match on characters.
+//!
+//! - `binary_format`: the on-disk layout, encoding, opening and validation.
+//! - `jump_table`: the 2-byte buckets that narrow every binary search.
+
+mod binary_format;
+mod jump_table;
+#[cfg(test)]
+mod tests;
 
 use std::cmp::Ordering;
 use std::ops::Range;
 
+pub use crate::byte_readers::{RawByteReader, ReaderKind};
+pub use binary_format::{MAGIC, VERSION};
+pub use jump_table::NUM_BUCKETS;
+use jump_table::{bucket, pattern_buckets};
+
+/// The vocabulary, read in place from its encoded bytes (see `binary_format`).
 pub struct SortedVocab {
-    /// Every word, concatenated in sorted (byte-wise) order.
-    bytes: Vec<u8>,
-    /// `bytes[offsets[i]..offsets[i + 1]]` is word `i`. Length `len() + 1`.
-    offsets: Vec<u32>,
-    /// Word IDs sorted by their reversed bytes, for suffix lookups.
-    by_suffix: Vec<u32>,
+    reader: Box<dyn RawByteReader>,
+    /// Byte ranges of each section within `reader`.
+    forward_jump: Range<usize>,
+    suffix_jump: Range<usize>,
+    text_offsets: Range<usize>,
+    by_suffix: Range<usize>,
+    postings_offsets: Range<usize>,
+    text: Range<usize>,
+}
+
+impl SortedVocab {
+    pub fn len(&self) -> usize {
+        self.words().len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// The encoded size of the vocabulary, in bytes.
+    pub fn byte_len(&self) -> usize {
+        self.text.end
+    }
+
+    /// The bytes of word `id`, if it exists.
+    pub fn word(&self, id: u32) -> Option<&[u8]> {
+        ((id as usize) < self.len()).then(|| self.words().get(id))
+    }
+
+    /// The ID of `word`, if present.
+    pub fn lookup(&self, word: &str) -> Option<u32> {
+        let target = word.as_bytes();
+        let b = bucket(forward_key(target));
+        let range = self.jump_bounds(&self.forward_jump, b..b + 1);
+        let words = self.words();
+        let i = range.start
+            + partition(range.len(), |k| {
+                words.get((range.start + k) as u32) < target
+            });
+        (i < range.end && words.get(i as u32) == target).then_some(i as u32)
+    }
+
+    /// The IDs of the words starting with `prefix`: a contiguous range.
+    pub fn prefix_range(&self, prefix: &str) -> Range<u32> {
+        let p = prefix.as_bytes();
+        let range = self.jump_bounds(&self.forward_jump, pattern_buckets(forward_key(p)));
+        let words = self.words();
+        let start =
+            range.start + partition(range.len(), |k| words.get((range.start + k) as u32) < p);
+        let n = partition(range.end - start, |k| {
+            words.get((start + k) as u32).starts_with(p)
+        });
+        start as u32..(start + n) as u32
+    }
+
+    /// The IDs of the words ending with `suffix`, in reversed-spelling order.
+    pub fn suffix_ids_unsorted(&self, suffix: &str) -> &[u32] {
+        let s = suffix.as_bytes();
+        let range = self.jump_bounds(&self.suffix_jump, pattern_buckets(reversed_key(s)));
+        let ids = self.u32s(&self.by_suffix).get(range).unwrap_or(&[]);
+        let words = self.words();
+        let start = partition(ids.len(), |k| {
+            cmp_reversed(words.get(ids[k]), s) == Ordering::Less
+        });
+        let n = partition(ids.len() - start, |k| {
+            words.get(ids[start + k]).ends_with(s)
+        });
+        &ids[start..start + n]
+    }
+
+    /// The IDs of the words ending with `suffix`, in ascending order.
+    pub fn suffix_ids_sorted(&self, suffix: &str) -> Vec<u32> {
+        let mut ids = self.suffix_ids_unsorted(suffix).to_vec();
+        ids.sort_unstable();
+        ids
+    }
+
+    /// The IDs of the words matching `prefix*suffix`, in ascending order. The
+    /// prefix and suffix may not overlap: `ab*ba` does not match `aba`.
+    pub fn prefix_suffix_ids_sorted(&self, prefix: &str, suffix: &str) -> Vec<u32> {
+        let (p, s) = (prefix.as_bytes(), suffix.as_bytes());
+        let min_len = p.len() + s.len();
+        let words = self.words();
+        let by_prefix = self.prefix_range(prefix);
+        let by_suffix = self.suffix_ids_unsorted(suffix);
+        if by_prefix.len() <= by_suffix.len() {
+            by_prefix
+                .filter(|&id| words.byte_len(id) >= min_len && words.get(id).ends_with(s))
+                .collect()
+        } else {
+            // `by_prefix` is exactly the IDs starting with `prefix`.
+            let mut ids: Vec<u32> = by_suffix
+                .iter()
+                .copied()
+                .filter(|id| by_prefix.contains(id))
+                .collect();
+            ids.sort_unstable();
+            ids.retain(|&id| words.byte_len(id) >= min_len);
+            ids
+        }
+    }
+
+    /// The postings range of word `word_id`, if it exists.
+    pub fn word_postings_range(&self, word_id: u32) -> Option<Range<u32>> {
+        self.prefix_postings_range(word_id..word_id.checked_add(1)?)
+    }
+
+    /// The postings range of the contiguous `word_ids` (e.g. a prefix range),
+    /// if they exist. Its length is their total number of postings.
+    pub fn prefix_postings_range(&self, word_ids: Range<u32>) -> Option<Range<u32>> {
+        if word_ids.start > word_ids.end {
+            return None;
+        }
+        let offsets = self.u32s(&self.postings_offsets);
+        let start = *offsets.get(word_ids.start as usize)?;
+        let end = *offsets.get(word_ids.end as usize)?;
+        Some(start..end)
+    }
+
+    /// A validated `u32` section (empty only if it was never validated).
+    fn u32s(&self, range: &Range<usize>) -> &[u32] {
+        as_u32s(self.reader.bytes(range.start, range.end)).unwrap_or(&[])
+    }
+
+    fn words(&self) -> Words<'_> {
+        Words {
+            offsets: self.u32s(&self.text_offsets),
+            text: self.reader.bytes(self.text.start, self.text.end),
+        }
+    }
+
+    /// The sorted positions `jump[buckets.start]..jump[buckets.end]`.
+    fn jump_bounds(&self, jump: &Range<usize>, buckets: Range<usize>) -> Range<usize> {
+        let jump = self.u32s(jump);
+        let at = |k: usize| jump.get(k).map_or(0, |&j| j as usize).min(self.len());
+        let start = at(buckets.start);
+        start..at(buckets.end).max(start)
+    }
+}
+
+/// The words, as slices of the mapped file.
+#[derive(Clone, Copy)]
+struct Words<'a> {
+    offsets: &'a [u32],
+    text: &'a [u8],
+}
+
+impl<'a> Words<'a> {
+    fn len(&self) -> usize {
+        self.offsets.len().saturating_sub(1)
+    }
+
+    /// The byte length of word `id`, read from the offsets alone.
+    fn byte_len(&self, id: u32) -> usize {
+        let i = id as usize;
+        match (self.offsets.get(i), self.offsets.get(i + 1)) {
+            (Some(&start), Some(&end)) => end.saturating_sub(start) as usize,
+            _ => 0,
+        }
+    }
+
+    /// Word `id`, or empty if `id` is out of range (impossible once validated).
+    fn get(&self, id: u32) -> &'a [u8] {
+        let i = id as usize;
+        match (self.offsets.get(i), self.offsets.get(i + 1)) {
+            (Some(&start), Some(&end)) => {
+                self.text.get(start as usize..end as usize).unwrap_or(&[])
+            }
+            _ => &[],
+        }
+    }
+}
+
+fn forward_key(word: &[u8]) -> impl Iterator<Item = u8> + Clone + '_ {
+    word.iter().copied()
+}
+
+fn reversed_key(word: &[u8]) -> impl Iterator<Item = u8> + Clone + '_ {
+    word.iter().rev().copied()
+}
+
+fn cmp_reversed(a: &[u8], b: &[u8]) -> Ordering {
+    a.iter().rev().cmp(b.iter().rev())
 }
 
 /// The first index in `0..n` for which `is_before` is false, assuming it is
@@ -38,164 +230,10 @@ fn partition(n: usize, mut is_before: impl FnMut(usize) -> bool) -> usize {
     lo
 }
 
-fn cmp_reversed(a: &[u8], b: &[u8]) -> Ordering {
-    a.iter().rev().cmp(b.iter().rev())
-}
-
-impl SortedVocab {
-    /// Builds the vocabulary. Also returns, for each new ID, the index of that
-    /// word in `words` (which a real build would use to renumber its indices).
-    pub fn build(words: &[&str]) -> (Self, Vec<u32>) {
-        let mut order: Vec<u32> = (0..words.len() as u32).collect();
-        order.sort_unstable_by(|&a, &b| words[a as usize].cmp(words[b as usize]));
-        let total: usize = words.iter().map(|w| w.len()).sum();
-        let mut bytes = Vec::with_capacity(total);
-        let mut offsets = Vec::with_capacity(words.len() + 1);
-        offsets.push(0);
-        for &i in &order {
-            bytes.extend_from_slice(words[i as usize].as_bytes());
-            offsets.push(bytes.len() as u32);
-        }
-        let mut vocab = SortedVocab {
-            bytes,
-            offsets,
-            by_suffix: Vec::new(),
-        };
-        let mut by_suffix: Vec<u32> = (0..words.len() as u32).collect();
-        by_suffix.sort_unstable_by(|&a, &b| cmp_reversed(vocab.word(a), vocab.word(b)));
-        vocab.by_suffix = by_suffix;
-        (vocab, order)
-    }
-
-    pub fn len(&self) -> usize {
-        self.offsets.len() - 1
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    pub fn word(&self, id: u32) -> &[u8] {
-        let i = id as usize;
-        &self.bytes[self.offsets[i] as usize..self.offsets[i + 1] as usize]
-    }
-
-    /// Bytes held: the packed text plus the two `u32` arrays.
-    pub fn heap_bytes(&self) -> usize {
-        self.bytes.capacity() + 4 * (self.offsets.capacity() + self.by_suffix.capacity())
-    }
-
-    /// The ID of `word`, if present, and how many comparisons it took.
-    pub fn lookup_counting(&self, word: &str) -> (Option<u32>, u32) {
-        let target = word.as_bytes();
-        let mut comparisons = 0;
-        let i = partition(self.len(), |i| {
-            comparisons += 1;
-            self.word(i as u32) < target
-        });
-        let found = i < self.len() && self.word(i as u32) == target;
-        (found.then_some(i as u32), comparisons)
-    }
-
-    pub fn lookup(&self, word: &str) -> Option<u32> {
-        let target = word.as_bytes();
-        let i = partition(self.len(), |i| self.word(i as u32) < target);
-        (i < self.len() && self.word(i as u32) == target).then_some(i as u32)
-    }
-
-    /// The IDs of the words starting with `prefix`: a contiguous range.
-    pub fn prefix_range(&self, prefix: &str) -> Range<u32> {
-        let p = prefix.as_bytes();
-        let lo = partition(self.len(), |i| self.word(i as u32) < p);
-        let n = partition(self.len() - lo, |k| {
-            self.word((lo + k) as u32).starts_with(p)
-        });
-        lo as u32..(lo + n) as u32
-    }
-
-    /// The IDs of the words ending with `suffix` (in reversed-spelling order).
-    pub fn suffix_ids(&self, suffix: &str) -> &[u32] {
-        let s = suffix.as_bytes();
-        let ids = &self.by_suffix;
-        let lo = partition(ids.len(), |i| {
-            cmp_reversed(self.word(ids[i]), s) == Ordering::Less
-        });
-        let n = partition(ids.len() - lo, |k| self.word(ids[lo + k]).ends_with(s));
-        &ids[lo..lo + n]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn vocab() -> SortedVocab {
-        SortedVocab::build(&[
-            "bellum",
-            "amor",
-            "bello",
-            "ratio",
-            "amo",
-            "bellumque",
-            "oratio",
-        ])
-        .0
-    }
-
-    fn words(v: &SortedVocab, ids: impl IntoIterator<Item = u32>) -> Vec<String> {
-        ids.into_iter()
-            .map(|id| String::from_utf8(v.word(id).to_vec()).unwrap())
-            .collect()
-    }
-
-    #[test]
-    fn ids_are_sorted_positions() {
-        let v = vocab();
-        assert_eq!(
-            words(&v, 0..v.len() as u32),
-            [
-                "amo",
-                "amor",
-                "bello",
-                "bellum",
-                "bellumque",
-                "oratio",
-                "ratio"
-            ]
-        );
-        assert_eq!(v.lookup("bellum"), Some(3));
-        assert_eq!(v.lookup("amo"), Some(0));
-        assert_eq!(v.lookup("ratio"), Some(6));
-        assert_eq!(v.lookup("bell"), None);
-        assert_eq!(v.lookup("zzz"), None);
-        assert_eq!(v.lookup(""), None);
-    }
-
-    #[test]
-    fn prefix_and_suffix() {
-        let v = vocab();
-        assert_eq!(
-            words(&v, v.prefix_range("bell")),
-            ["bello", "bellum", "bellumque"]
-        );
-        assert_eq!(words(&v, v.prefix_range("amo")), ["amo", "amor"]);
-        assert!(v.prefix_range("x").is_empty());
-        assert_eq!(
-            words(&v, v.suffix_ids("ratio").iter().copied()),
-            ["ratio", "oratio"]
-        );
-        assert_eq!(
-            words(&v, v.suffix_ids("oratio").iter().copied()),
-            ["oratio"]
-        );
-        assert_eq!(
-            words(&v, v.suffix_ids("tio").iter().copied()),
-            ["ratio", "oratio"]
-        );
-        assert_eq!(
-            words(&v, v.suffix_ids("que").iter().copied()),
-            ["bellumque"]
-        );
-        assert!(v.suffix_ids("xyz").is_empty());
-    }
+/// Reinterprets native-endian (checked to be little-endian on open) bytes.
+fn as_u32s(bytes: &[u8]) -> Option<&[u32]> {
+    // SAFETY: every bit pattern is a valid `u32`, and `align_to` only puts
+    // correctly aligned, whole `u32`s in the middle slice.
+    let (head, body, tail) = unsafe { bytes.align_to::<u32>() };
+    (head.is_empty() && tail.is_empty()).then_some(body)
 }
