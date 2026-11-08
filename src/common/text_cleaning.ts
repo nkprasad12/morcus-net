@@ -2,38 +2,16 @@ const TEXT_BREAK_CHAR_SET = new Set(
   " ()[];:.,?!'\n\t—\"†‘“”’<>–«»·…§°ʼʽ᾽′\u2329\u232a\u3008\u3009\u27e8\u27e9"
 );
 
-const OPEN_BRACKET_TO_CLOSE: Readonly<Record<string, string>> = {
-  "[": "]",
-  "<": ">",
-  "\u2329": "\u232a",
-  "\u3008": "\u3009",
-  "\u27e8": "\u27e9",
-  "(": ")",
-};
-
-const CLOSE_BRACKET_TO_OPEN: Readonly<Record<string, string>> = {
-  "]": "[",
-  ">": "<",
-  "\u232a": "\u2329",
-  "\u3009": "\u3008",
-  "\u27e9": "\u27e8",
-  ")": "(",
-};
-
-const EDITORIAL_BRACKET_SET = new Set([
-  "[",
-  "]",
-  "<",
-  ">",
-  "\u2329",
-  "\u232a",
-  "\u3008",
-  "\u3009",
-  "\u27e8",
-  "\u27e9",
-  "(",
-  ")",
-]);
+/**
+ * Intra-word editorial bracket pairs in `[open, close]` order:
+ * - Even index (`(bIdx & 1) === 0`) is an opening bracket; odd index is a
+ *   closing bracket; `bIdx ^ 1` gives the matching delimiter.
+ * - Indices `0..9` (`[] <> 〈〉 ⟨⟩`) are square/angle brackets eligible for
+ *   both rule (a) and rule (b) in `isIntraWordBracket`.
+ * - Indices `10..11` (`()`) must stay last: parentheses only join under rule
+ *   (b) (a closed `(letters)` group), never rule (a) (`bIdx < 10`).
+ */
+const BRACKET_PAIRS = "[]<>\u2329\u232a\u3008\u3009\u27e8\u27e9()";
 
 const LETTER_CHAR_RE = /\p{L}/u;
 const COMBINING_MARK_CHAR_RE = /\p{M}/u;
@@ -44,43 +22,11 @@ const EDITORIAL_BRACKET_CHAR_RE = /[[\]<>〈〉⟨⟩\u2329\u232a()]/gu;
 const HAS_ROMAN_OR_LIGATURE_RE = /[æÆœŒǼǽǢǣ\u2160-\u217f]/;
 const ROMAN_AND_LIGATURE_RE = /[æÆœŒ\u2160-\u217f]/gu;
 
-const ROMAN_AND_LIGATURE_MAP: Readonly<Record<string, string>> = {
+const LIGATURE_MAP: Readonly<Record<string, string>> = {
   æ: "ae",
   Æ: "Ae",
   œ: "oe",
   Œ: "Oe",
-  "\u2160": "I",
-  "\u2161": "II",
-  "\u2162": "III",
-  "\u2163": "IV",
-  "\u2164": "V",
-  "\u2165": "VI",
-  "\u2166": "VII",
-  "\u2167": "VIII",
-  "\u2168": "IX",
-  "\u2169": "X",
-  "\u216a": "XI",
-  "\u216b": "XII",
-  "\u216c": "L",
-  "\u216d": "C",
-  "\u216e": "D",
-  "\u216f": "M",
-  "\u2170": "i",
-  "\u2171": "ii",
-  "\u2172": "iii",
-  "\u2173": "iv",
-  "\u2174": "v",
-  "\u2175": "vi",
-  "\u2176": "vii",
-  "\u2177": "viii",
-  "\u2178": "ix",
-  "\u2179": "x",
-  "\u217a": "xi",
-  "\u217b": "xii",
-  "\u217c": "l",
-  "\u217d": "c",
-  "\u217e": "d",
-  "\u217f": "m",
 };
 
 export function isTextBreakChar(c: string): boolean {
@@ -109,47 +55,29 @@ function hasLetterAfter(input: string, idx: number): boolean {
  *   (`tacere[m]`, `[s]et`, `abolito〈que〉`, `<t>ibi`, `pr(aetoris)`).
  */
 function isIntraWordBracket(input: string, i: number): boolean {
-  const ch = input[i];
-  if (!EDITORIAL_BRACKET_SET.has(ch)) {
+  const bIdx = BRACKET_PAIRS.indexOf(input[i]);
+  if (bIdx < 0) {
     return false;
   }
-  if (
-    ch !== "(" &&
-    ch !== ")" &&
-    hasLetterBefore(input, i - 1) &&
-    hasLetterAfter(input, i + 1)
-  ) {
+  const left = hasLetterBefore(input, i - 1);
+  const right = hasLetterAfter(input, i + 1);
+  if (bIdx < 10 && left && right) {
     return true;
   }
-  const closeCh = OPEN_BRACKET_TO_CLOSE[ch];
-  if (closeCh !== undefined) {
-    if (!hasLetterAfter(input, i + 1)) {
-      return false;
-    }
-    let j = i + 1;
-    while (j < input.length && LETTER_OR_MARK_CHAR_RE.test(input[j])) {
-      j++;
-    }
-    return (
-      j > i + 1 &&
-      input[j] === closeCh &&
-      (hasLetterBefore(input, i - 1) || hasLetterAfter(input, j + 1))
-    );
+  const isOpen = (bIdx & 1) === 0;
+  const step = isOpen ? 1 : -1;
+  let j = i + step;
+  while (j >= 0 && j < input.length && LETTER_OR_MARK_CHAR_RE.test(input[j])) {
+    j += step;
   }
-  const openCh = CLOSE_BRACKET_TO_OPEN[ch];
-  if (openCh !== undefined) {
-    let k = i - 1;
-    while (k >= 0 && LETTER_OR_MARK_CHAR_RE.test(input[k])) {
-      k--;
-    }
-    return (
-      k < i - 1 &&
-      input[k] === openCh &&
-      hasLetterAfter(input, k + 1) &&
-      (hasLetterBefore(input, k - 1) || hasLetterAfter(input, i + 1))
-    );
-  }
-  return false;
+  return (
+    j !== i + step &&
+    input[j] === BRACKET_PAIRS[bIdx ^ 1] &&
+    hasLetterAfter(input, (isOpen ? i : j) + 1) &&
+    (isOpen
+      ? left || hasLetterAfter(input, j + 1)
+      : right || hasLetterBefore(input, j - 1))
+  );
 }
 
 /**
@@ -184,7 +112,7 @@ export function foldLatinLigaturesAndNumerals(input: string): string {
     .normalize("NFD")
     .replaceAll(
       ROMAN_AND_LIGATURE_RE,
-      (ch) => ROMAN_AND_LIGATURE_MAP[ch] ?? ch
+      (ch) => LIGATURE_MAP[ch] ?? ch.normalize("NFKD")
     );
 }
 

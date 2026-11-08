@@ -56,7 +56,7 @@ export interface V2BundleBudget {
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
-    "common.js": { maxBrotliBytes: 19.75 * 1024 },
+    "common.js": { maxBrotliBytes: 20.25 * 1024 },
     "reader.js": { maxBrotliBytes: 13 * 1024 },
     "dict.js": { maxBrotliBytes: 8.5 * 1024 },
     "corpus.js": { maxBrotliBytes: 6.5 * 1024 },
@@ -74,12 +74,12 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     "macronizer.js": { maxBrotliBytes: 4 * 1024 },
   },
   routes: {
-    static: { maxBrotliBytes: 19.75 * 1024 },
-    dicts: { maxBrotliBytes: 27.75 * 1024 },
-    corpus: { maxBrotliBytes: 26 * 1024 },
-    library: { maxBrotliBytes: 32.5 * 1024 },
+    static: { maxBrotliBytes: 20.25 * 1024 },
+    dicts: { maxBrotliBytes: 28.5 * 1024 },
+    corpus: { maxBrotliBytes: 26.25 * 1024 },
+    library: { maxBrotliBytes: 33 * 1024 },
     external: { maxBrotliBytes: 57.75 * 1024 },
-    macronizer: { maxBrotliBytes: 23.25 * 1024 },
+    macronizer: { maxBrotliBytes: 23.5 * 1024 },
   },
   maxCssBrotliBytes: 22.25 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):

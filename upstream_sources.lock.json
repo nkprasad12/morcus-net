@@ -57,7 +57,7 @@
     "canonical-latinlit": {
       "repo": "https://github.com/nkprasad12/canonical-latinlit.git",
       "branch": "master",
-      "commit": "087c067dc0f325e29b2bb5534a1762541f8741d7",
+      "commit": "cba397cae8539c4e37fd154a37484f6326cc9fd8",
       "env": "LIB_XML_ROOT"
     },
     "hypotactic": {
@@ -89,7 +89,7 @@
     "thelatinlibrary": {
       "repo": "https://github.com/nkprasad12/TheLatinLibrary.git",
       "branch": "main",
-      "commit": "0add164aa2de66ad51f10afdced5a84d564132e7",
+      "commit": "3112132297788fa4e7848db09c4ccd8a2a3807b8",
       "env": "THELATINLIBRARY_ROOT"
     }
   }

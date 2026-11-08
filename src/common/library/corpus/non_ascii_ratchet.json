@@ -2,9 +2,9 @@
   "schema": 1,
   "tokenCounts": {
     "latinCombiningMarks": 2,
-    "greek": 11323,
+    "greek": 11331,
     "editorialBracketsAndPunctuation": 0,
-    "corrupted": 125,
+    "corrupted": 0,
     "ligaturesAndRomanNumerals": 0,
     "other": 105
   },

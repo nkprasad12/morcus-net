@@ -104,9 +104,87 @@ const DIGEST_PATCHES: Record<number, [string, string, string][]> = {
     ],
   ],
 };
+const DECLAMATION_PATCHES: Record<number, [string, string, string][]> = {
+  10: [
+    [
+      "patri&#151;ignosce deceptae &#152;confessa sum",
+      "patri&#151;ignosce deceptae&#151;confessa sum",
+      "closing dash typed as &#152; (tilde) instead of &#151;",
+    ],
+  ],
+};
+const GAIUS_PATCHES: Record<number, [string, string, string][]> = {
+  1: [
+    [
+      "quasi spor\ufffddhn concepti",
+      "quasi sporadhn concepti",
+      "corrupted byte in transliterated Greek sporadhn",
+    ],
+  ],
+  3: [
+    [
+      '"d\ufffdseis; d\ufffds\ufffd, homologeis; homolog\ufffd, pistei keleueis; pistei keleu\ufffd, poi\ufffdseis; poi\ufffds\ufffd"',
+      '"doseis; doso, homologeis; homologo, pistei keleueis; pistei keleuo, poieseis; poieso"',
+      "corrupted bytes for transliterated Greek ē and ō in 3.93",
+    ],
+    [
+      "\"enthen ar' oinizonto kar\ufffdkomo\ufffdntes Achaioi, alloi men chalk\ufffdi, alloi d' aith\ufffdni sid\ufffdr\ufffdi, alloi de rhinois, alloi d' aut\ufffdisi boessin,\"",
+      "\"enthen ar' oinizonto karekomoontes Achaioi, alloi men chalkoi, alloi d' aithoni sideroi, alloi de rhinois, alloi d' auteisi boessin,\"",
+      "corrupted bytes for transliterated Greek ē and ō in Il. 7.472-475 (3.141)",
+    ],
+  ],
+};
 const JUSTIN_PATCHES: Record<number, [string, string, string][]> = {
+  9: [
+    [
+      "tumulum ei e\ufffddem fecit",
+      "tumulum ei eodem fecit",
+      "corrupted byte for o in eodem",
+    ],
+    [
+      "a qua p\ufffdlsa Philippi",
+      "a qua pulsa Philippi",
+      "corrupted byte for u in pulsa",
+    ],
+  ],
+  12: [
+    [
+      "in Macedoniam divu]garetur",
+      "in Macedoniam divulgaretur",
+      "] for l in divulgaretur",
+    ],
+    [
+      "Respondit \ufffddignissimum.",
+      "Respondit dignissimum.",
+      "stray corrupted byte before dignissimum",
+    ],
+  ],
   13: [
     ["putares; I1 quippe", "putares; 11 quippe", "section number typed as I1"],
+    [
+      "quod civit\ufffdtem in eiusdem",
+      "quod civitatem in eiusdem",
+      "corrupted byte for a in civitatem",
+    ],
+    [
+      "Sta\ufffdim igitur exercitu",
+      "Statim igitur exercitu",
+      "corrupted byte for t in Statim",
+    ],
+  ],
+  14: [
+    [
+      "duces absumpsistis \ufffd.",
+      "duces absumpsistis.",
+      "stray corrupted byte after absumpsistis",
+    ],
+  ],
+  18: [
+    [
+      "patris inludat\ufffd.",
+      "patris inludat.",
+      "stray corrupted byte after inludat",
+    ],
   ],
   21: [
     [
@@ -115,11 +193,23 @@ const JUSTIN_PATCHES: Record<number, [string, string, string][]> = {
       "section number typed as l0",
     ],
   ],
+  23: [
+    [
+      "inde Romanis peric\ufffdlosum",
+      "inde Romanis periculosum",
+      "corrupted byte for u in periculosum",
+    ],
+  ],
   24: [
     [
       "convenere. 8, Prius",
       "convenere. 8 Prius",
       "stray comma after a section number",
+    ],
+    [
+      "quasi bella non diff\ufffdcilius",
+      "quasi bella non difficilius",
+      "corrupted byte for i in difficilius",
     ],
   ],
   28: [
@@ -134,6 +224,20 @@ const JUSTIN_PATCHES: Record<number, [string, string, string][]> = {
       "rex I1lyriorum",
       "rex Illyriorum",
       "digit 1 for the letter l in Illyriorum",
+    ],
+  ],
+  31: [
+    [
+      "decernunt ducemqu\ufffd praetorem",
+      "decernunt ducemque praetorem",
+      "corrupted byte for e in ducemque",
+    ],
+  ],
+  43: [
+    [
+      "quas Graeci \ufffdsceptra dixere",
+      "quas Graeci sceptra dixere",
+      "stray corrupted byte before sceptra",
     ],
   ],
   44: [["LIBER XIVL", "LIBER XLIV", "book number misprinted as XIVL"]],
@@ -166,6 +270,7 @@ const WORKS: WorkSpec[] = [
       page: `quintilian/quintilian.decl.mai${n}.shtml`,
       convert: (html: string) => convertDeclamation(html, n),
       cltkPath: `quintilian/quintilian.decl.mai${n}.txt`,
+      patches: DECLAMATION_PATCHES[n],
     })),
   },
   {
@@ -201,6 +306,7 @@ const WORKS: WorkSpec[] = [
       page: `gaius${n}.html`,
       convert: (html: string) => convertGaiusCommentary(html, n),
       cltkPath: `gaius${n}.txt`,
+      patches: GAIUS_PATCHES[n],
     })),
   },
   {
