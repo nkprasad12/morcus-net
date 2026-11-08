@@ -335,6 +335,21 @@ function makeInflectionLookups(
   };
 }
 
+/**
+ * Normalizes a word token for corpus storage (`stripped`, written to
+ * `latin_corpus_raw.txt`) and vocabulary indexing (`normalizedWord`,
+ * lowercased).
+ */
+export function normalizeTokenForCorpus(
+  token: string
+): [stripped: string, normalizedWord: string] {
+  const stripped = token
+    .normalize("NFD")
+    .replaceAll("\u0304", "")
+    .replaceAll("\u0306", "");
+  return [stripped, stripped.toLowerCase()];
+}
+
 /** Absorbs the given work in the corpus. */
 function absorbWork(
   work: CorpusInputWork,
@@ -413,11 +428,7 @@ function absorbWork(
         }
         continue;
       }
-      const stripped = token
-        .normalize("NFD")
-        .replaceAll("\u0304", "")
-        .replaceAll("\u0306", "");
-      const normalizedWord = stripped.toLowerCase();
+      const [stripped, normalizedWord] = normalizeTokenForCorpus(token);
       wordIndex.add(normalizedWord, tokens.length);
 
       StoredInflections.ingest(

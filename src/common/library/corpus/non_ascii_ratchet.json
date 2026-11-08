@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "tokenCounts": {
+    "latinCombiningMarks": 13354,
+    "greek": 11325,
+    "editorialBracketsAndPunctuation": 671,
+    "corrupted": 125,
+    "ligaturesAndRomanNumerals": 45,
+    "other": 105
+  },
+  "intraWordBracketSplits": 873
+}

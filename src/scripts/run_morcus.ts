@@ -53,7 +53,9 @@ if (args.command === WEB_SERVER) {
 } else if (args.command === E2E) {
   void runE2eTests(args).then(assert);
 } else if (args.command === CORPUS) {
-  void runCorpusCommand(args).then(assert);
+  void runCorpusCommand(args).then((ok) => {
+    if (!ok) process.exit(1);
+  });
 } else if (args.command === VISUAL_DIFF || args.command === "diff") {
   void runVisualDiff(args).then(assert);
 } else if (args.command === VISUAL_BASELINES) {
@@ -441,6 +443,22 @@ function parseArguments() {
   corpus.add_argument("-c", "--context", {
     help: "The context length to use for the query.",
     default: "10",
+  });
+  corpus.add_argument("--non_ascii_report", {
+    help:
+      "Scans the corpus input works using the corpus tokenize/normalize path " +
+      "and writes a non-ASCII vocabulary report and counts JSON.",
+    action: "store_true",
+  });
+  corpus.add_argument("-u", "--update", {
+    help: "With --non_ascii_report: also updates src/common/library/corpus/non_ascii_ratchet.json.",
+    action: "store_true",
+  });
+  corpus.add_argument("--out", {
+    help:
+      "With --non_ascii_report: output directory for report.md and counts.json " +
+      "(default: .cache/corpus-non-ascii).",
+    default: "",
   });
 
   const inventory = subparsers.add_parser(INVENTORY, {
@@ -1044,6 +1062,15 @@ async function runE2eTests(args: any) {
 }
 
 async function runCorpusCommand(args: any) {
+  if (args.non_ascii_report) {
+    const { runNonAsciiReportCli } = await import(
+      "@/common/library/corpus/corpus_non_ascii"
+    );
+    return runNonAsciiReportCli({
+      update: Boolean(args.update),
+      outDir: args.out || undefined,
+    });
+  }
   const command = args.rust
     ? ["cargo", "run", "--package", "corpus", "--release", "cli"]
     : args.bun
