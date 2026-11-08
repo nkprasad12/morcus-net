@@ -164,6 +164,40 @@ describe("processWords", () => {
       "darkness",
     ]);
   });
+
+  it("splits on non-ASCII editorial punctuation and Greek elision marks", () => {
+    expect(
+      processWords("–sīc est– «aliqua» ·X·III … §20 °", (s) => `W(${s})`)
+    ).toStrictEqual([
+      "–",
+      "W(sīc)",
+      " ",
+      "W(est)",
+      "– «",
+      "W(aliqua)",
+      "» ·",
+      "W(X)",
+      "·",
+      "W(III)",
+      " … §",
+      "W(20)",
+      " °",
+    ]);
+    expect(
+      processWords("παρ᾽ δʼ ʽἡρακλέους γλαῦκ′ ἀπόλλω·", (s) => `W(${s})`)
+    ).toStrictEqual([
+      "W(παρ)",
+      "᾽ ",
+      "W(δ)",
+      "ʼ ʽ",
+      "W(ἡρακλέους)",
+      " ",
+      "W(γλαῦκ)",
+      "′ ",
+      "W(ἀπόλλω)",
+      "·",
+    ]);
+  });
 });
 
 describe("trimRawQuery", () => {
