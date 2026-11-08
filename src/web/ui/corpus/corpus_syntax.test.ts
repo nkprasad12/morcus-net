@@ -13,6 +13,8 @@ import {
   isCorpusAuthorList,
   MAX_AUTHOR_FILTERS,
   MAX_QUERY_SPANS,
+  MAX_WILDCARD_TERMS,
+  MIN_AFFIX_LETTERS,
   parseProximity,
   resolveWork,
   termGroups,
@@ -322,8 +324,12 @@ describe("findNextOptions", () => {
     });
 
     it("should reset logical operator when a new parenthesized term starts after ~ or directly after an unparenthesized term", () => {
-      expect(validateQuery("amo and @c:gen ~ (puer or bar)", undefined)).toBeNull();
-      expect(validateQuery("amo and @c:gen (puer or bar)", undefined)).toBeNull();
+      expect(
+        validateQuery("amo and @c:gen ~ (puer or bar)", undefined)
+      ).toBeNull();
+      expect(
+        validateQuery("amo and @c:gen (puer or bar)", undefined)
+      ).toBeNull();
       expect(transformQuery("amo and @c:gen ~ (puer or bar)")).toBe(
         "( amo and @c:gen ) ~ ( puer or bar )"
       );
@@ -458,6 +464,17 @@ describe("findNextOptions", () => {
       const overLimit = findNextOptions(tokenizeInput(`${maxSpansQuery} ~`));
       expect(overLimit).toBe(
         `at most ${MAX_QUERY_SPANS} spans separated by \`~\` allowed`
+      );
+    });
+
+    it("should allow up to MAX_WILDCARD_TERMS wildcards and reject a 4th", () => {
+      const threeWildcards = "con* *que in*bilis";
+      expect(
+        Array.isArray(findNextOptions(tokenizeInput(threeWildcards)))
+      ).toBe(true);
+      const fourWildcards = "con* *que in*bilis per*";
+      expect(findNextOptions(tokenizeInput(fourWildcards))).toBe(
+        `at most ${MAX_WILDCARD_TERMS} wildcard (\`*\`) terms allowed`
       );
     });
   });
@@ -955,6 +972,15 @@ describe("transformQuery", () => {
         "( puella and @lemma:puer ) 3~ @case:acc"
       );
     });
+
+    it("should pass wildcard terms through in spans and parenthesized groups", () => {
+      expect(transformQuery("#Caesar (con* or per*) ~3 *que")).toBe(
+        "[Caesar] ( con* or per* ) 3~ *que"
+      );
+      expect(transformQuery("con* and @voice:passive")).toBe(
+        "( con* and @voice:passive )"
+      );
+    });
   });
 
   describe("edge cases", () => {
@@ -1184,6 +1210,58 @@ describe("errorsForToken", () => {
       "range after ~ must be 1-15",
     ]);
   });
+
+  it("accepts valid prefix, suffix, and prefix*suffix wildcard words", () => {
+    expect(errorsForToken("con*", authors)).toEqual([]);
+    expect(errorsForToken("*que", authors)).toEqual([]);
+    expect(errorsForToken("in*bilis", authors)).toEqual([]);
+    expect(errorsForToken("CON*", authors)).toEqual([]);
+  });
+
+  it("rejects wildcards on @lemma and @inflection filters", () => {
+    expect(errorsForToken("@lemma:con*", authors)).toEqual([
+      "wildcards (`*`) are only supported for words, not @lemma",
+    ]);
+    expect(errorsForToken("@l:con*", authors)).toEqual([
+      "wildcards (`*`) are only supported for words, not @lemma",
+    ]);
+    expect(errorsForToken("@case:a*", authors)).toEqual([
+      "wildcards (`*`) are only supported for words, not @case",
+    ]);
+    expect(errorsForToken("@c:a*", authors)).toEqual([
+      "wildcards (`*`) are only supported for words, not @case",
+    ]);
+  });
+
+  it("rejects malformed bare wildcard tokens", () => {
+    expect(errorsForToken("*", authors)).toEqual([
+      `a wildcard must include at least ${MIN_AFFIX_LETTERS} letters`,
+    ]);
+    expect(errorsForToken("in*", authors)).toEqual([
+      `wildcard \`in*\` is too short: use at least ${MIN_AFFIX_LETTERS} letters`,
+    ]);
+    expect(errorsForToken("*um", authors)).toEqual([
+      `wildcard \`*um\` is too short: use at least ${MIN_AFFIX_LETTERS} letters`,
+    ]);
+    expect(errorsForToken("a*b", authors)).toEqual([
+      `wildcard \`a*b\` is too short: use at least ${MIN_AFFIX_LETTERS} letters`,
+    ]);
+    expect(errorsForToken("*mor*", authors)).toEqual([
+      "wildcard `*mor*` has more than one `*`: use at most one per word",
+    ]);
+    expect(errorsForToken("a*b*c", authors)).toEqual([
+      "wildcard `a*b*c` has more than one `*`: use at most one per word",
+    ]);
+    expect(errorsForToken("con1*", authors)).toEqual([
+      "wildcard `con1*` may only contain letters (a-z) and `*`",
+    ]);
+    expect(errorsForToken("cōn*", authors)).toEqual([
+      "wildcard `cōn*` may only contain letters (a-z) and `*`",
+    ]);
+    expect(errorsForToken("bell-*", authors)).toEqual([
+      "wildcard `bell-*` may only contain letters (a-z) and `*`",
+    ]);
+  });
 });
 
 describe("validateQuery", () => {
@@ -1203,6 +1281,8 @@ describe("validateQuery", () => {
       validateQuery("#Caesar @lemma:do and @case:dat ~3> hostis", authors)
     ).toBeNull();
     expect(validateQuery("#Caesar/DeBelloGallico bellum", authors)).toBeNull();
+    expect(validateQuery("#Caesar (con* or per*) ~3 *que", authors)).toBeNull();
+    expect(validateQuery("in*bilis", authors)).toBeNull();
   });
 
   it("reports structural errors first", () => {
@@ -1210,6 +1290,9 @@ describe("validateQuery", () => {
       "expected a term [word or `(`] or `#author` at start, not `and`"
     );
     expect(validateQuery("amor #Caesar", authors)).toContain("at start");
+    expect(validateQuery("con* *que in*bilis per*", authors)).toBe(
+      `at most ${MAX_WILDCARD_TERMS} wildcard (\`*\`) terms allowed`
+    );
   });
 
   it("reports token errors", () => {
@@ -1218,6 +1301,12 @@ describe("validateQuery", () => {
       "invalid work #Caesar/aeneid"
     );
     expect(validateQuery("amor ~99 amo", authors)).toContain("1-15");
+    expect(validateQuery("in*", authors)).toBe(
+      `wildcard \`in*\` is too short: use at least ${MIN_AFFIX_LETTERS} letters`
+    );
+    expect(validateQuery("@lemma:con*", authors)).toBe(
+      "wildcards (`*`) are only supported for words, not @lemma"
+    );
   });
 });
 

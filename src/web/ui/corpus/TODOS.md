@@ -89,10 +89,7 @@ Our engine indexes `@feature → token_id` (Stage 1: set operations on `IndexSli
 
 ### 3.4 Prefix / suffix matching (`con*`, `*que`, `in*bilis`)
 
-**Status:** Designed and prototyped; not wired in. Choose option B (sorted word IDs) below. The prototype is [`sorted_vocab.rs`](../../../../corpus_rust/src/sorted_vocab.rs), and [`examples/vocab_proto.rs`](../../../../corpus_rust/examples/vocab_proto.rs) produced every number in this section (`cargo run --release -p corpus --example vocab_proto -- [--cold]`, from the repo root after building the corpus).
-
-> [!NOTE]
-> Both files are unreviewed prototypes, kept so the numbers can be reproduced. When this work concludes, review them properly (folding `SortedVocab` into the real implementation) or delete them.
+**Status:** Implemented (`latin_corpus_vocab.bin` `SortedVocab` with 2-char prefix/suffix jump tables, `TokenConstraintAtom::Affix`, `MIN_AFFIX_LETTERS = 3`, `MAX_WILDCARD_TERMS = 3`, scoped work budget in `merge_affixes` with sparse-anchor fast path, 0-match wildcards returning 0 results, and Web UI validation/autocomplete/docs; `examples/vocab_proto.rs` removed). Chosen option B (sorted word IDs) below; the design notes and prototype measurements that guided the implementation are preserved for reference.
 
 **Measured on the current build, not the 8M-token sizing example:** 6.47M tokens and 297k unique words (2.76 MB of text, 9.3 bytes on average), on a 24-vCPU EPYC 7B12 cloudtop. Costs scale roughly linearly with vocabulary size and with hits.
 

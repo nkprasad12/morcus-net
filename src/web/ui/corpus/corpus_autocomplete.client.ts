@@ -209,6 +209,9 @@ export function corpusSuggestions(
   if (current.startsWith("~")) {
     return proximitySuggestions(current);
   }
+  if (current.includes("*")) {
+    return wildcardSuggestions(current, previous, tokens);
+  }
   return [infoRow(`the word \`${current}\``), ...logicOps(previous, current)];
 }
 
@@ -432,6 +435,9 @@ function filterValueSuggestions(
   const rawKey = current.slice(1, colon);
   const keyword = resolveKeyword(rawKey);
   const value = current.slice(colon + 1);
+  if (value.includes("*")) {
+    return errorsForToken(current, undefined).map(errorRow);
+  }
   if (keyword === "lemma") {
     return lemmaSuggestions(current, value, lemmata);
   }
@@ -502,6 +508,31 @@ function proximitySuggestions(current: string): CorpusSuggestion[] {
     infoRow(`${within} of`),
     { prefix: current, option: ">", help: `${within} before` },
   ];
+}
+
+function wildcardSuggestions(
+  current: string,
+  previous: string | undefined,
+  tokens: readonly QueryToken[]
+): CorpusSuggestion[] {
+  const errors = errorsForToken(current, undefined);
+  if (errors.length > 0) {
+    return errors.map(errorRow);
+  }
+  const next = findNextOptions([...tokens]);
+  if (typeof next === "string") {
+    return [errorRow(next)];
+  }
+  const star = current.indexOf("*");
+  const prefix = current.slice(0, star).toLowerCase();
+  const suffix = current.slice(star + 1).toLowerCase();
+  const description =
+    suffix === ""
+      ? `words starting with \`${prefix}\``
+      : prefix === ""
+      ? `words ending with \`${suffix}\``
+      : `words starting with \`${prefix}\` and ending with \`${suffix}\``;
+  return [infoRow(description), ...logicOps(previous, current)];
 }
 
 /**

@@ -302,6 +302,55 @@ describe("corpusSuggestions", () => {
       ]);
     });
   });
+
+  describe("wildcards (*)", () => {
+    test("explains prefix, suffix, and prefix*suffix wildcards and offers operators after a word", () => {
+      expect(suggest("con*")).toEqual(["ℹ words starting with `con`"]);
+      expect(suggest("*que")).toEqual(["ℹ words ending with `que`"]);
+      expect(suggest("in*bilis")).toEqual([
+        "ℹ words starting with `in` and ending with `bilis`",
+      ]);
+      expect(suggest("CON*")).toEqual(["ℹ words starting with `con`"]);
+      expect(suggest("amor *que")).toEqual([
+        "ℹ words ending with `que`",
+        "*que[ and ] (restrict further)",
+        "*que[ or ] (relax restriction)",
+      ]);
+    });
+
+    test("surfaces wildcard rule violations while typing and after a trailing space", () => {
+      expect(suggest("*")).toEqual([
+        "❌ a wildcard must include at least 3 letters",
+      ]);
+      expect(suggest("in*")).toEqual([
+        "❌ wildcard `in*` is too short: use at least 3 letters",
+      ]);
+      expect(suggest("in* ")).toEqual([
+        "❌ wildcard `in*` is too short: use at least 3 letters",
+      ]);
+      expect(suggest("*mor*")).toEqual([
+        "❌ wildcard `*mor*` has more than one `*`: use at most one per word",
+      ]);
+      expect(suggest("con1*")).toEqual([
+        "❌ wildcard `con1*` may only contain letters (a-z) and `*`",
+      ]);
+      expect(suggest("@lemma:con*")).toEqual([
+        "❌ wildcards (`*`) are only supported for words, not @lemma",
+      ]);
+      expect(suggest("@l:con*")).toEqual([
+        "❌ wildcards (`*`) are only supported for words, not @lemma",
+      ]);
+      expect(suggest("@case:a*")).toEqual([
+        "❌ wildcards (`*`) are only supported for words, not @case",
+      ]);
+      expect(suggest("con* *que in*bilis per*")).toEqual([
+        "❌ at most 3 wildcard (`*`) terms allowed",
+      ]);
+      expect(suggest("con* *que in*bilis per* ")).toEqual([
+        "❌ at most 3 wildcard (`*`) terms allowed",
+      ]);
+    });
+  });
 });
 
 // // // // // // // // // //
@@ -993,6 +1042,18 @@ describe("<morcus-corpus-suggestions>", () => {
       fetch.respond(["ego", "et"]);
       await settle();
       expect(listbox.hidden).toBe(true);
+    });
+
+    test("does not fetch lemma shards when @lemma value contains a wildcard", () => {
+      const fetch = controlFetch();
+      const { input, listbox } = mount();
+      input.focus();
+
+      type(input, "@l:fer*");
+      expect(fetch.mock).not.toHaveBeenCalled();
+      expect(rowTexts(listbox)).toEqual([
+        "❌ wildcards (`*`) are only supported for words, not @lemma",
+      ]);
     });
   });
 });

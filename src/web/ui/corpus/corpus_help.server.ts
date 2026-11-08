@@ -51,12 +51,16 @@ interface GuideSection {
 const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
     title: "Narrowing words",
-    badge: "@lemma, @case",
+    badge: "*, @lemma, @case",
     description: "Target words, lemmas, or inflection tags:",
     items: [
       {
         code: "amoris",
         text: html`Exact word (case-insensitive)`,
+      },
+      {
+        code: "con*, *que",
+        text: html`Prefix or suffix wildcard (3+ letters)`,
       },
       {
         code: "@lemma:amo",
@@ -207,6 +211,12 @@ const EXAMPLES: readonly Example[] = [
     query: "amoris",
     description: html`Exact occurrences of <i>amoris</i>`,
     sample: html`amoris, Amoris`,
+  },
+  {
+    query: "in*bilis",
+    description: html`Words starting with <i>in-</i> and ending with
+      <i>-bilis</i>`,
+    sample: html`incredibilis, innumerabilis...`,
   },
 ];
 

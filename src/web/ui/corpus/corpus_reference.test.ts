@@ -180,4 +180,24 @@ describe("corpus reference page (/corpus/reference)", () => {
       "The corpus author and work list is not available on this server."
     );
   });
+
+  test("documents wildcard syntax and limits in both the syntax guide and reference manual", () => {
+    const helpDoc = parse(renderCorpusHelp());
+    const helpText = text(helpDoc);
+    expect(helpText).toContain("*, @lemma, @case");
+    expect(helpText).toContain("con*, *que");
+    expect(helpText).toContain("Prefix or suffix wildcard (3+ letters)");
+    expect(helpText).toContain("in*bilis");
+
+    const refDoc = parse(renderCorpusReferenceContentHtml(CORPUS_TEST_AUTHORS));
+    const wordsText = text(refDoc.getElementById("words"));
+    expect(wordsText).toContain("Wildcards (*)");
+    expect(wordsText).toContain("con*");
+    expect(wordsText).toContain("*que");
+    expect(wordsText).toContain("in*bilis");
+
+    const limitsText = text(refDoc.getElementById("limits"));
+    expect(limitsText).toContain("Wildcards:");
+    expect(limitsText).toContain("At most 3 wildcard (*) terms per query");
+  });
 });

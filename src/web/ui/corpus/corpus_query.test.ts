@@ -292,6 +292,44 @@ describe("runCorpusSearch", () => {
     expect(engine.requests).toHaveLength(0);
   });
 
+  test("passes valid wildcard queries to the engine and rejects invalid wildcards beforehand", async () => {
+    const engine = fakeCorpusEngine();
+    const valid = await runCorpusSearch(
+      {
+        ...BASE,
+        q: "#Caesar (con* or per*) ~3 *que",
+      },
+      engine,
+      CORPUS_TEST_AUTHORS
+    );
+    expect(valid.outcome.kind).toBe("results");
+    expect(engine.requests).toEqual([
+      expect.objectContaining({
+        query: "[Caesar] ( con* or per* ) 3~ *que",
+      }),
+    ]);
+
+    for (const [badQuery, expectedMessage] of [
+      ["in*", "wildcard `in*` is too short: use at least 3 letters"],
+      [
+        "@lemma:con*",
+        "wildcards (`*`) are only supported for words, not @lemma",
+      ],
+      ["con* *que in*bilis per*", "at most 3 wildcard (`*`) terms allowed"],
+    ] as const) {
+      const invalid = await runCorpusSearch(
+        { ...BASE, q: badQuery },
+        engine,
+        CORPUS_TEST_AUTHORS
+      );
+      expect(invalid.outcome).toEqual({
+        kind: "error",
+        message: expectedMessage,
+      });
+    }
+    expect(engine.requests).toHaveLength(1);
+  });
+
   test("sends the transformed query and settings", async () => {
     const engine = fakeCorpusEngine();
     const cursor = { resultId: 1, resultIndex: 50, candidateIndex: 0 };

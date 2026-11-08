@@ -200,7 +200,7 @@ fn parse_affix(raw: &str) -> Result<AffixPattern, QueryParseError> {
         .all(|c| c.is_ascii_alphabetic())
     {
         return Err(QueryParseError::new(&format!(
-            "Wildcard '{raw}' may only contain Latin letters (a-z) and '*'"
+            "Wildcard '{raw}' may only contain letters (a-z) and '*'"
         )));
     }
     if prefix.len() + suffix.len() < MIN_AFFIX_LETTERS {
@@ -1273,12 +1273,12 @@ mod tests {
     fn wildcard_allows_only_latin_letters() {
         for input in ["con1*", "bell-*", "ē*", "*quē", "@word:a1*bc"] {
             assert!(
-                atom_error(input).contains("may only contain Latin letters"),
+                atom_error(input).contains("may only contain letters (a-z)"),
                 "{input}"
             );
         }
-        assert!(query_error("ē*").contains("may only contain Latin letters"));
-        assert!(query_error("arma ē*").contains("may only contain Latin letters"));
+        assert!(query_error("ē*").contains("may only contain letters (a-z)"));
+        assert!(query_error("arma ē*").contains("may only contain letters (a-z)"));
     }
 
     #[test]
@@ -1303,7 +1303,7 @@ mod tests {
 
     #[test]
     fn multibyte_characters_never_split_mid_codepoint() {
-        let latin_only = "may only contain Latin letters";
+        let letters_only = "may only contain letters (a-z)";
         for query in [
             "(*quē)",
             "(ē*)",
@@ -1313,7 +1313,7 @@ mod tests {
             "ē* arma",
             "arma ~ (con* and *quē)",
         ] {
-            assert!(query_error(query).contains(latin_only), "{query}");
+            assert!(query_error(query).contains(letters_only), "{query}");
         }
         assert!(query_error("arma aa—~ *que").contains("Invalid token atom"));
         assert!(query_error("(quē)").contains("Invalid token atom"));

@@ -128,6 +128,20 @@ export const MAX_AUTHOR_FILTERS = 20;
  */
 export const MAX_QUERY_SPANS = 10;
 
+/**
+ * The fewest fixed letters (`a`–`z`) a wildcard word term (`con*`, `*que`,
+ * `in*bilis`) must contain. Matches `MIN_AFFIX_LETTERS` in
+ * `corpus_rust/src/query_parsing_v2.rs`.
+ */
+export const MIN_AFFIX_LETTERS = 3;
+
+/**
+ * The most wildcard (`*`) terms a query may contain. Matches
+ * `MAX_WILDCARD_TERMS` in
+ * `corpus_rust/src/corpus_query_engine/query_validation.rs`.
+ */
+export const MAX_WILDCARD_TERMS = 3;
+
 type QueryProcessState =
   | "ComplexTerm"
   | "ComplexTerm;LastWasTerm"
@@ -168,9 +182,7 @@ function describeExpected(options: readonly NonSpaceToken[]): string {
   const parts: string[] = [];
   if (allowed.has("wordFilter")) {
     parts.push(
-      allowed.has("(")
-        ? "a term [word or `(`]"
-        : "a single word or `@filter`"
+      allowed.has("(") ? "a term [word or `(`]" : "a single word or `@filter`"
     );
   }
   if (allowed.has("workFilter")) {
@@ -202,6 +214,7 @@ function feedStateMachine(
   let logicalOp: "and" | "or" | null = null;
   let workFilters = 0;
   let spans = 1;
+  let wildcardTerms = 0;
   let lastWasCloseParen = false;
   const groups: QueryToken[][] = [];
 
@@ -272,6 +285,16 @@ function feedStateMachine(
       spans++;
       if (spans > MAX_QUERY_SPANS) {
         return `at most ${MAX_QUERY_SPANS} spans separated by \`~\` allowed`;
+      }
+    }
+    if (
+      matchingOption[0] === "wordFilter" &&
+      !token.startsWith("@") &&
+      token.includes("*")
+    ) {
+      wildcardTerms++;
+      if (wildcardTerms > MAX_WILDCARD_TERMS) {
+        return `at most ${MAX_WILDCARD_TERMS} wildcard (\`*\`) terms allowed`;
       }
     }
     if (matchingOption[2] || matchingOption[1] === "InSpan") {
@@ -609,6 +632,11 @@ export function errorsForToken(
     if (value.length === 0) {
       return [`${token} - @keyword without \`:value\``];
     }
+    if (value.includes("*")) {
+      return [
+        `wildcards (\`*\`) are only supported for words, not @${keyword}`,
+      ];
+    }
     if (keyword === "lemma") {
       // Anything can be the value for a lemma.
       return [];
@@ -622,6 +650,28 @@ export function errorsForToken(
   if (token.includes("~")) {
     const proximity = parseProximity(token);
     return typeof proximity === "string" ? [proximity] : [];
+  }
+
+  if (token.includes("*")) {
+    const star = token.indexOf("*");
+    const prefix = token.slice(0, star);
+    const suffix = token.slice(star + 1);
+    if (suffix.includes("*")) {
+      return [
+        `wildcard \`${token}\` has more than one \`*\`: use at most one per word`,
+      ];
+    }
+    if (prefix.length === 0 && suffix.length === 0) {
+      return [`a wildcard must include at least ${MIN_AFFIX_LETTERS} letters`];
+    }
+    if (!/^[a-zA-Z]*$/.test(prefix) || !/^[a-zA-Z]*$/.test(suffix)) {
+      return [`wildcard \`${token}\` may only contain letters (a-z) and \`*\``];
+    }
+    if (prefix.length + suffix.length < MIN_AFFIX_LETTERS) {
+      return [
+        `wildcard \`${token}\` is too short: use at least ${MIN_AFFIX_LETTERS} letters`,
+      ];
+    }
   }
   return [];
 }

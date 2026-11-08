@@ -21,6 +21,8 @@ import {
   INFLECTION_CATEGORIES,
   MAX_AUTHOR_FILTERS,
   MAX_QUERY_SPANS,
+  MAX_WILDCARD_TERMS,
+  MIN_AFFIX_LETTERS,
   PROXIMITY_DISTANCE,
   type CorpusAuthorList,
 } from "@/web/ui/corpus/corpus_syntax.common";
@@ -39,6 +41,11 @@ const QUICK_START_EXAMPLES: readonly QuickStartExample[] = [
   {
     query: "amoris",
     summary: html`Exact word (case-insensitive)`,
+  },
+  {
+    query: "con*",
+    summary: html`Words starting with <i>con-</i> (or <code>*que</code> for
+      suffix, <code>in*bilis</code> for both)`,
   },
   {
     query: "gallia est omnis",
@@ -327,6 +334,47 @@ export function renderCorpusReferenceContentHtml(
           Exact word tokens match the spelling printed in the edition. To match
           every spelling and inflected form of a word across editions, use a
           <a href="#lemmas"><code>@lemma:</code> filter</a> instead.
+        </li>
+      </ul>
+      <h3>Wildcards (<code>*</code>)</h3>
+      <p>
+        Include a single <code>*</code> in a word token to match any zero or
+        more characters at the start, end, or middle of a word:
+      </p>
+      <ul>
+        <li>
+          <strong>Prefix (<code>prefix*</code>):</strong>
+          ${raw(renderExampleCode("con*"))} matches words starting with
+          <i>con-</i> (including <i>con</i> itself, <i>contra</i>,
+          <i>consilium</i>, and so on).
+        </li>
+        <li>
+          <strong>Suffix (<code>*suffix</code>):</strong>
+          ${raw(renderExampleCode("*que"))} matches words ending with
+          <i>-que</i> (such as <i>atque</i>, <i>populusque</i>, and
+          <i>ubique</i>).
+        </li>
+        <li>
+          <strong>Prefix and suffix (<code>prefix*suffix</code>):</strong>
+          ${raw(renderExampleCode("in*bilis"))} matches words starting with
+          <i>in-</i> and ending with <i>-bilis</i> (such as
+          <i>incredibilis</i> and <i>innumerabilis</i>).
+        </li>
+        <li>
+          <strong>Combining with other filters:</strong> Wildcards can be
+          combined with <code>and</code> or <code>or</code> inside parentheses
+          like any other word filter &mdash; for example,
+          ${raw(renderExampleCode("(con* and @voice:passive)"))} or
+          ${raw(renderExampleCode("(con* or per*)"))}.
+        </li>
+        <li>
+          <strong>Rules:</strong> Each wildcard word must include at least
+          ${MIN_AFFIX_LETTERS} plain ASCII letters
+          (<code>a</code>&ndash;<code>z</code>, no macrons) and at most one
+          <code>*</code> (infix patterns like
+          <code class="corpus-ref-code">*mor*</code> are not supported).
+          Wildcards apply only to bare word tokens, not to
+          <code>@lemma:</code> or <code>@case:</code> values.
         </li>
       </ul>
     </section>
@@ -672,6 +720,15 @@ export function renderCorpusReferenceContentHtml(
         <li>
           <strong>Contiguous spans:</strong> At most ${MAX_QUERY_SPANS}
           contiguous word/phrase spans connected by <code>~</code>.
+        </li>
+        <li>
+          <strong>Wildcards:</strong> At most ${MAX_WILDCARD_TERMS} wildcard
+          (<code>*</code>) terms per query. Each wildcard must have at least
+          ${MIN_AFFIX_LETTERS} fixed ASCII letters
+          (<code>a</code>&ndash;<code>z</code>) and at most one <code>*</code>.
+          Very broad wildcard combinations that exceed the query posting budget
+          are rejected; add more letters or narrow with <code>#Author</code> or
+          <code>#Author/Work</code>.
         </li>
       </ul>
     </section>
