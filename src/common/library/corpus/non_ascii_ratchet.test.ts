@@ -165,15 +165,21 @@ describe("evaluateNonAsciiRatchet on synthetic fixtures", () => {
       workName: "Epitoma",
       author: "Justin",
       authorCode: "Justin",
-      rows: ["civit\ufffdtem quæso ciↄ"],
+      rows: ["civit\ufffdtem quæso ciↄ qua\u0300a commendata\u0302"],
       rowIds: [["1"]],
       sectionDepth: 1,
     },
   ];
 
-  it("passes when actual counts match the ratchet exactly", () => {
+  it("passes when actual counts match the ratchet exactly and keeps accented typos in corrupted after normalization", () => {
     const analysis = analyzeCorpusNonAscii(sampleWorks);
     expect(analysis.intraWordBracketSplits).toBe(3);
+    // `quæso` and `e\u0301go` normalize to ASCII (`quaeso`, `ego`), while
+    // `qua\u0300a` and `commendata\u0302` remain tracked in `corrupted` via raw NFD check.
+    expect(analysis.vocabCounts.latinCombiningMarks).toBe(0);
+    expect(analysis.vocabCounts.ligaturesAndRomanNumerals).toBe(0);
+    expect(analysis.vocabCounts.corrupted).toBe(3);
+    expect(analysis.tokenCounts.corrupted).toBe(3);
     const ratchet = buildNonAsciiRatchet(analysis);
     const report = evaluateNonAsciiRatchet(ratchet, analysis);
 
@@ -203,7 +209,7 @@ describe("evaluateNonAsciiRatchet on synthetic fixtures", () => {
     expect(report.passed).toBe(false);
     expect(report.regressions).toHaveLength(2);
     const msg = formatNonAsciiRatchetReport(report);
-    expect(msg).toContain("[tokenCounts] corrupted: 0 → 1");
+    expect(msg).toContain("[tokenCounts] corrupted: 0 → 3");
     expect(msg).toContain("civit\ufffdtem (1)");
     expect(msg).toContain(
       "[intraWordBracketSplits] intraWordBracketSplits: 0 → 3"
@@ -226,7 +232,7 @@ describe("evaluateNonAsciiRatchet on synthetic fixtures", () => {
     expect(report.passed).toBe(false);
     expect(report.stale).toHaveLength(2);
     const msg = formatNonAsciiRatchetReport(report);
-    expect(msg).toContain("[tokenCounts] latinCombiningMarks: 10 → 2");
+    expect(msg).toContain("[tokenCounts] latinCombiningMarks: 10 → 0");
     expect(msg).toContain(
       "[intraWordBracketSplits] intraWordBracketSplits: 10 → 3"
     );

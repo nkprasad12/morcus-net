@@ -2,9 +2,9 @@ import fs from "fs";
 import path from "path";
 
 import { assert } from "@/common/assert";
-import { normalizeTokenForCorpus } from "@/common/library/corpus/build_corpus";
 import type { CorpusInputWork } from "@/common/library/corpus/corpus_common";
 import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_utils";
+import { normalizeCorpusToken } from "@/common/library/corpus/corpus_normalization";
 import { processTokens } from "@/common/text_cleaning";
 
 export const NON_ASCII_RATCHET_SCHEMA_VERSION = 1;
@@ -268,7 +268,8 @@ export function analyzeCorpusNonAscii(
           }
           continue;
         }
-        const [, normalizedWord] = normalizeTokenForCorpus(token);
+        const stripped = normalizeCorpusToken(token);
+        const normalizedWord = stripped.toLowerCase();
         totalTokens += 1;
         allVocab.add(normalizedWord);
 
