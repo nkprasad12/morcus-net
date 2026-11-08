@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::{
     bitmask_utils::Direction,
     corpus_index::StoredMapValue,
@@ -13,6 +15,12 @@ use crate::{
         QueryRelation, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
     },
 };
+
+pub(super) enum AtomPostings<'a> {
+    Stored(&'a StoredMapValue),
+    /// An element (not byte) range of the word postings.
+    Words(Range<u32>),
+}
 
 pub(super) struct SpanResult<'a> {
     pub(super) candidates: IndexSlice<'a>,
@@ -234,15 +242,40 @@ impl CorpusQueryEngine {
         Ok(bitmask)
     }
 
-    pub(super) fn get_metadata_for(&self, part: &TokenConstraintAtom) -> Option<&StoredMapValue> {
+    /// `None` if `part` matches nothing.
+    pub(super) fn get_postings_for(&self, part: &TokenConstraintAtom) -> Option<AtomPostings<'_>> {
         match part {
             TokenConstraintAtom::Word(word) => {
-                self.get_str_keyed_metadata("word", &word.to_lowercase())
+                let id = self.vocab.lookup(&word.to_lowercase())?;
+                Some(AtomPostings::Words(self.vocab.word_postings_range(id)?))
             }
-            TokenConstraintAtom::Lemma(lemma) => self.get_str_keyed_metadata("lemma", lemma),
-            &TokenConstraintAtom::Inflection(inflection) => {
-                self.get_metadata(inflection.get_label(), inflection.get_code())
-            }
+            TokenConstraintAtom::Lemma(lemma) => self
+                .get_str_keyed_metadata("lemma", lemma)
+                .map(AtomPostings::Stored),
+            &TokenConstraintAtom::Inflection(inflection) => self
+                .get_metadata(inflection.get_label(), inflection.get_code())
+                .map(AtomPostings::Stored),
+        }
+    }
+
+    pub(super) fn num_postings(&self, postings: &AtomPostings) -> u32 {
+        match postings {
+            AtomPostings::Stored(metadata) => self.raw_buffers.num_elements(metadata),
+            AtomPostings::Words(elements) => elements.len() as u32,
+        }
+    }
+
+    pub(super) fn resolve_postings(
+        &self,
+        postings: &AtomPostings,
+    ) -> Result<IndexData<'_>, String> {
+        match postings {
+            AtomPostings::Stored(metadata) => self
+                .raw_buffers
+                .resolve_index(metadata, self.corpus.num_tokens),
+            AtomPostings::Words(elements) => self
+                .raw_buffers
+                .resolve_word_postings(self.corpus.word_postings_offset, elements),
         }
     }
 
@@ -251,7 +284,8 @@ impl CorpusQueryEngine {
         part: &'a TokenConstraintAtom,
         range: &'a IndexRange,
     ) -> Option<IndexSlice<'a>> {
-        self.index_for_metadata(self.get_metadata_for(part)?, range)
+        let full = self.resolve_postings(&self.get_postings_for(part)?).ok()?;
+        IndexSlice::from(&full, range, 0).ok()
     }
 
     fn index_for_metadata<'a>(

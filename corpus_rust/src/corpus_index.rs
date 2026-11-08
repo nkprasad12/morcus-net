@@ -71,6 +71,11 @@ pub struct LatinCorpusIndex {
     pub inflections_raw_buffer_path: String,
     /// The offsets for the encoded inflection options for each word in the corpus.
     pub inflections_offsets_path: String,
+    /// A `SortedVocab` file. Words are not in `indices` or `id_table`.
+    pub vocab_path: String,
+    /// The byte offset in the raw buffers of the word postings: one `u32`
+    /// array, in vocabulary order, indexed by the vocabulary's postings offsets.
+    pub word_postings_offset: u32,
     pub indices: HashMap<String, Vec<StoredMapValue>>,
     pub id_table: HashMap<String, HashMap<String, u32>>,
     pub num_tokens: u32,

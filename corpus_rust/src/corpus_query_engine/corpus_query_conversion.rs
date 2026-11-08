@@ -48,13 +48,13 @@ impl std::fmt::Display for InternalQueryTerm<'_> {
 impl CorpusQueryEngine {
     /// Get the size bounds for a token constraint atom. This should be present in the raw data.
     fn get_bounds_for_atom(&self, atom: &TokenConstraintAtom) -> SizeBounds {
-        let metadata = match self.get_metadata_for(atom) {
-            Some(m) => m,
+        let postings = match self.get_postings_for(atom) {
+            Some(p) => p,
             None => {
                 return SizeBounds { upper: 0, lower: 0 };
             }
         };
-        let elements_in_index = self.raw_buffers.num_elements(metadata);
+        let elements_in_index = self.num_postings(&postings);
         SizeBounds {
             upper: elements_in_index as usize,
             lower: elements_in_index as usize,

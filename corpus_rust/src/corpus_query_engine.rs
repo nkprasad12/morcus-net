@@ -24,6 +24,7 @@ use crate::query_parsing_v2::{Query, parse_query};
 
 use super::corpus_index::LatinCorpusIndex;
 use super::profiler::TimeProfiler;
+use super::sorted_vocab::SortedVocab;
 
 use std::collections::HashMap;
 use std::error::Error;
@@ -86,6 +87,8 @@ pub struct CorpusQueryEngine {
     raw_buffers: IndexBuffers,
     starts: TokenStarts,
     inflections: InflectionLookup,
+    /// The word vocabulary; word IDs index the word postings in `raw_buffers`.
+    vocab: SortedVocab,
     /// For resolving a query's `[...]` scope.
     scope_ranges: ScopeRanges,
 }
@@ -107,10 +110,11 @@ impl CorpusQueryEngine {
         Ok(CorpusQueryEngine {
             scope_ranges,
             corpus,
-            starts: readers.0,
-            text: readers.1,
-            raw_buffers: readers.2,
-            inflections: readers.3,
+            starts: readers.starts,
+            text: readers.text,
+            raw_buffers: readers.raw_buffers,
+            inflections: readers.inflections,
+            vocab: readers.vocab,
         })
     }
 
@@ -264,6 +268,46 @@ mod tests {
     #[test]
     fn validate_queries() {
         walk_pages(TEST_QUERIES);
+    }
+
+    /// The vocabulary written by the TypeScript corpus build meets every
+    /// invariant the Rust reader assumes (UTF-8 order, `by_suffix`, jump
+    /// tables), and its postings point at the right words.
+    #[test]
+    fn built_vocab_is_valid() {
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            None => return,
+        };
+        let vocab = &engine.vocab;
+        vocab.verify_invariants().unwrap();
+        assert_eq!(vocab.len(), engine.corpus.stats.unique_words as usize);
+        let all = vocab.prefix_postings_range(0..vocab.len() as u32).unwrap();
+        // Every token is exactly one word.
+        assert_eq!(all, 0..engine.corpus.num_tokens);
+        assert!(!engine.corpus.indices.contains_key("word"));
+        assert!(!engine.corpus.id_table.contains_key("word"));
+
+        for word in ["et", "arma", "virumque", "caesar"] {
+            let id = vocab.lookup(word).unwrap();
+            let elements = vocab.word_postings_range(id).unwrap();
+            let postings = match engine
+                .raw_buffers
+                .resolve_word_postings(engine.corpus.word_postings_offset, &elements)
+                .unwrap()
+            {
+                IndexData::List(list) => list,
+                IndexData::BitMask(_) => panic!("word postings must be lists"),
+            };
+            assert_eq!(postings.len(), elements.len(), "{word}");
+            assert!(postings.windows(2).all(|w| w[0] < w[1]), "{word}");
+            for &token in postings.iter().step_by(postings.len().div_ceil(50)) {
+                let start = engine.starts.token_start(token).unwrap();
+                let text = engine.text.slice(start, start + word.len());
+                assert_eq!(text.to_lowercase(), word, "token {token}");
+            }
+        }
+        assert_eq!(vocab.lookup("notaword"), None);
     }
 
     #[test]

@@ -420,6 +420,27 @@ describe("Corpus Integration Test", () => {
     expect(results.matches).toHaveLength(5);
   });
 
+  it("should handle proximity searches with a bitmask non-anchor span", () => {
+    // Word postings are always lists, so the span after `~` (whose leaders
+    // `find_span_leader` looks up) has to be a lemma to be a bitmask in this
+    // small corpus.
+    const query = "et ~ @lemma:marmor";
+
+    const results = queryCorpus(query);
+
+    // One result per `et` in "Marmor et marmoris et marmorem. Et marmore et
+    // marmoribus et marmora et.", each showing the first `marmor` form within
+    // 5 words (`marmorem` isn't one: marmor is neuter).
+    expect(results.matches.map(getMatchText)).toEqual([
+      ["Marmor", "et"],
+      ["Marmor", "et"],
+      ["Marmor", "Et"],
+      ["marmoris", "et"],
+      ["marmore", "et"],
+      ["marmore", "et"],
+    ]);
+  });
+
   it("should trim context at work boundaries", () => {
     const query = "Gallus regem";
 

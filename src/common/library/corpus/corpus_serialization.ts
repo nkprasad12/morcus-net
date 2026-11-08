@@ -8,8 +8,13 @@ import {
   CORPUS_TOKEN_STARTS,
   CORPUS_AUTHORS_LIST,
   CORPUS_LEMMATA_DB,
+  CORPUS_VOCAB,
   type CorpusIndexKeyTypes,
 } from "@/common/library/corpus/corpus_common";
+import {
+  encodeVocab,
+  sortWordTable,
+} from "@/common/library/corpus/corpus_vocab";
 import {
   displayWorkTitle,
   toWorkCorpusCode,
@@ -170,13 +175,18 @@ async function serializeCorpus(
     );
   }
   rawWriteStream.write(new Uint32Array([numTokens]));
+  // The word postings come right after the u32 for `numTokens`.
+  const wordPostingsOffset = 4;
+  const wordPostingsLen = writeWordVocabulary(obj, corpusDir, rawWriteStream);
+  // @ts-expect-error
+  obj.wordPostingsOffset = wordPostingsOffset;
   // @ts-expect-error
   obj.indices = prepareAllIndices(
     obj.indices,
     obj.idTable,
     numTokens,
     rawWriteStream,
-    4 // 4 bytes because we wrote a u32 for `numTokens` above
+    wordPostingsOffset + 4 * wordPostingsLen
   );
   const replacer = (_key: string, value: any) => {
     if (value instanceof Map) {
@@ -190,6 +200,43 @@ async function serializeCorpus(
     rawWriteStream.on("error", (err) => reject(err));
     rawWriteStream.end();
   });
+}
+
+/**
+ * Writes the word vocabulary file, and the postings of every word to `writer`
+ * as one contiguous `u32` array in sorted word order (always lists, never
+ * bitmasks, so the postings of any range of words are contiguous). Removes
+ * the words from `idTable` and `indices`, and returns the number of postings.
+ */
+function writeWordVocabulary(
+  obj: InProgressLatinCorpus,
+  corpusDir: string,
+  writer: fs.WriteStream
+): number {
+  const { words, oldIds } = sortWordTable(obj.idTable.word);
+  const postingsOffsets = new Uint32Array(words.length + 1);
+  oldIds.forEach((oldId, i) => {
+    const postingsLen = obj.indices.word[oldId].length;
+    postingsOffsets[i + 1] = postingsOffsets[i] + postingsLen;
+    if (postingsOffsets[i + 1] !== postingsOffsets[i] + postingsLen) {
+      throw new Error("Too many word postings for a u32 offset");
+    }
+  });
+  const postings = new Uint32Array(postingsOffsets[words.length]);
+  oldIds.forEach((oldId, i) =>
+    postings.set(obj.indices.word[oldId], postingsOffsets[i])
+  );
+  writer.write(Buffer.from(postings.buffer));
+
+  const vocabPath = path.join(corpusDir, CORPUS_VOCAB);
+  fs.writeFileSync(vocabPath, encodeVocab(words, postingsOffsets));
+  // @ts-expect-error
+  obj.vocabPath = vocabPath;
+  // @ts-expect-error
+  delete obj.idTable.word;
+  // @ts-expect-error
+  delete obj.indices.word;
+  return postings.length;
 }
 
 function prepareAllIndices(

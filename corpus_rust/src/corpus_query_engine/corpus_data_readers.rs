@@ -1,8 +1,10 @@
 use std::error::Error;
+use std::ops::Range;
 
 use crate::byte_readers::{RawByteReader, ReaderKind, byte_reader};
 use crate::corpus_index::{LatinCorpusIndex, StoredMapValue};
 use crate::corpus_query_engine::IndexData;
+use crate::sorted_vocab::SortedVocab;
 
 const IN_MEMORY_BUFFERS: &str = "IN_MEMORY";
 const MMAP_NO_POPULATE: &str = "MMAP_NO_POPULATE";
@@ -69,12 +71,34 @@ impl CorpusText {
 
 pub struct IndexBuffers {
     reader: Box<dyn RawByteReader>,
+    byte_len: usize,
 }
 
 impl IndexBuffers {
     fn new(raw_buffer_path: &str, kind: ReaderKind) -> Result<Self, Box<dyn Error>> {
+        let byte_len = usize::try_from(std::fs::metadata(raw_buffer_path)?.len())?;
         let reader = byte_reader(kind, raw_buffer_path)?;
-        Ok(IndexBuffers { reader })
+        Ok(IndexBuffers { reader, byte_len })
+    }
+
+    fn u32_byte_range(&self, base: u32, elements: &Range<u32>) -> Option<Range<usize>> {
+        let at = |i: u32| (base as usize).checked_add((i as usize).checked_mul(4)?);
+        let range = at(elements.start)?..at(elements.end)?;
+        (range.start <= range.end && range.end <= self.byte_len).then_some(range)
+    }
+
+    /// `elements` are `u32` indices into the array that starts at byte `base`.
+    pub fn resolve_word_postings(
+        &self,
+        base: u32,
+        elements: &Range<u32>,
+    ) -> Result<IndexData<'_>, String> {
+        let range = self
+            .u32_byte_range(base, elements)
+            .ok_or_else(|| format!("Word postings {elements:?} are out of bounds"))?;
+        Ok(IndexData::List(u32_from_bytes(
+            self.reader.bytes(range.start, range.end),
+        )?))
     }
 
     pub fn resolve_index(
@@ -152,10 +176,17 @@ fn choose_reader_kind() -> ReaderKind {
     }
 }
 
-pub fn data_readers(
-    corpus: &LatinCorpusIndex,
-) -> Result<(TokenStarts, CorpusText, IndexBuffers, InflectionLookup), Box<dyn Error>> {
+pub struct DataReaders {
+    pub starts: TokenStarts,
+    pub text: CorpusText,
+    pub raw_buffers: IndexBuffers,
+    pub inflections: InflectionLookup,
+    pub vocab: SortedVocab,
+}
+
+pub fn data_readers(corpus: &LatinCorpusIndex) -> Result<DataReaders, Box<dyn Error>> {
     let kind = choose_reader_kind();
+    let vocab = SortedVocab::open(&corpus.vocab_path, kind)?;
     let text = CorpusText::new(&corpus.raw_text_path, kind)?;
     let raw_buffers = IndexBuffers::new(&corpus.raw_buffer_path, kind)?;
     let starts = TokenStarts::new(&corpus.token_starts_path, kind)?;
@@ -164,5 +195,20 @@ pub fn data_readers(
         &corpus.inflections_raw_buffer_path,
         kind,
     )?;
-    Ok((starts, text, raw_buffers, inflections))
+    let all_postings = vocab
+        .prefix_postings_range(0..vocab.len() as u32)
+        .ok_or("Vocabulary has no postings offsets")?;
+    if raw_buffers
+        .u32_byte_range(corpus.word_postings_offset, &all_postings)
+        .is_none()
+    {
+        return Err("Word postings extend past the end of the raw buffers".into());
+    }
+    Ok(DataReaders {
+        starts,
+        text,
+        raw_buffers,
+        inflections,
+        vocab,
+    })
 }

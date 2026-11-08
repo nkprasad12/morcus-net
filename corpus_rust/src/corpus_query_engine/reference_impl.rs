@@ -124,11 +124,12 @@ impl CorpusQueryEngine {
     ) -> Result<Vec<u32>, QueryExecError> {
         match constraint {
             TokenConstraint::Atom(atom) => {
-                let metadata = self.get_metadata_for(atom).unwrap();
-                let index = self
-                    .raw_buffers
-                    .resolve_index(metadata, self.corpus.num_tokens)
-                    .unwrap();
+                // Like the engine, an atom that isn't in the corpus (e.g. an
+                // unknown word) matches nothing.
+                let Some(postings) = self.get_postings_for(atom) else {
+                    return Ok(vec![]);
+                };
+                let index = self.resolve_postings(&postings).unwrap();
                 match index {
                     IndexData::List(list) => Ok(list.to_vec()),
                     IndexData::BitMask(bitmask) => Ok(from_bitmask(bitmask)),
