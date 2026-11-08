@@ -255,6 +255,8 @@ impl CorpusQueryEngine {
             &TokenConstraintAtom::Inflection(inflection) => self
                 .get_metadata(inflection.get_label(), inflection.get_code())
                 .map(AtomPostings::Stored),
+            // `validate_query` rejects wildcards until they can be executed.
+            TokenConstraintAtom::Affix(_) => None,
         }
     }
 

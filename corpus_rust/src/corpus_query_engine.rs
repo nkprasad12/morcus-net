@@ -19,7 +19,7 @@ use crate::corpus_query_engine::index_data::{
     IndexData, IndexDataRoO, IndexRange, TokenRange, TokenScope,
 };
 use crate::corpus_query_engine::query_pruning::prune_query;
-use crate::corpus_query_engine::query_validation::is_query_currently_supported;
+use crate::corpus_query_engine::query_validation::validate_query;
 use crate::query_parsing_v2::{Query, parse_query};
 
 use super::corpus_index::LatinCorpusIndex;
@@ -175,11 +175,7 @@ impl CorpusQueryEngine {
 
         // Parse the query
         let query = parse_query(query_str).map_err(|e| QueryExecError::new(&e.message))?;
-        if !is_query_currently_supported(&query) {
-            return Err(QueryExecError::new(
-                "The given query contains constructs that are not yet supported",
-            ));
-        }
+        validate_query(&query)?;
         let query = match prune_query(query) {
             Ok(q) => q,
             // TODO: Pipe the error to the user.

@@ -4,6 +4,9 @@ use super::analyzer_types::LatinInflection;
 
 const DEFAULT_PROXIMITY: u8 = 5;
 const SIMPLE_PREFIXES: [&str; 4] = ["@lemma:", "@word:", "@l:", "@w:"];
+/// The fewest fixed letters a wildcard word may have, since shorter affixes
+/// match too much of the vocabulary.
+const MIN_AFFIX_LETTERS: usize = 3;
 
 /// A query on the corpus.
 #[derive(Debug, Clone)]
@@ -62,11 +65,30 @@ impl std::fmt::Display for QueryRelation {
     }
 }
 
+/// A word with one `*` wildcard. The fixed letters are lowercase.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum AffixPattern {
+    Prefix(String),
+    Suffix(String),
+    PrefixSuffix { prefix: String, suffix: String },
+}
+
+impl std::fmt::Display for AffixPattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AffixPattern::Prefix(p) => write!(f, "{p}*"),
+            AffixPattern::Suffix(s) => write!(f, "*{s}"),
+            AffixPattern::PrefixSuffix { prefix, suffix } => write!(f, "{prefix}*{suffix}"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenConstraintAtom {
     Word(String),
     Lemma(String),
     Inflection(LatinInflection),
+    Affix(AffixPattern),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -95,6 +117,7 @@ impl std::fmt::Display for TokenConstraint {
                 TokenConstraintAtom::Inflection(inf) => {
                     write!(f, "@{}:{}", inf.get_label(), inf.get_code())
                 }
+                TokenConstraintAtom::Affix(pattern) => write!(f, "{pattern}"),
             },
             TokenConstraint::Composed { op, children } => {
                 let op_str = match op {
@@ -145,6 +168,51 @@ fn is_valid_lemma(s: &str) -> bool {
     chars.all(|c| c.is_ascii_alphabetic())
 }
 
+fn parse_affix(raw: &str) -> Result<AffixPattern, QueryParseError> {
+    let Some((prefix, suffix)) = raw.split_once('*') else {
+        return Err(QueryParseError::new(&format!("'{raw}' has no wildcard")));
+    };
+    if suffix.contains('*') {
+        return Err(QueryParseError::new(&format!(
+            "Wildcard '{raw}' has more than one '*': use at most one per word \
+             (infix wildcards like '*mor*' are not supported)"
+        )));
+    }
+    if prefix.is_empty() && suffix.is_empty() {
+        return Err(QueryParseError::new(&format!(
+            "A wildcard must include at least {MIN_AFFIX_LETTERS} letters"
+        )));
+    }
+    if !prefix
+        .chars()
+        .chain(suffix.chars())
+        .all(|c| c.is_ascii_alphabetic())
+    {
+        return Err(QueryParseError::new(&format!(
+            "Wildcard '{raw}' may only contain Latin letters (a-z) and '*'"
+        )));
+    }
+    if prefix.len() + suffix.len() < MIN_AFFIX_LETTERS {
+        return Err(QueryParseError::new(&format!(
+            "Wildcard '{raw}' is too short: use at least {MIN_AFFIX_LETTERS} letters"
+        )));
+    }
+    let (prefix, suffix) = (prefix.to_ascii_lowercase(), suffix.to_ascii_lowercase());
+    Ok(if suffix.is_empty() {
+        AffixPattern::Prefix(prefix)
+    } else if prefix.is_empty() {
+        AffixPattern::Suffix(suffix)
+    } else {
+        AffixPattern::PrefixSuffix { prefix, suffix }
+    })
+}
+
+fn wildcard_tag_error(tag: &str) -> QueryParseError {
+    QueryParseError::new(&format!(
+        "Wildcards ('*') are only supported for words, not {tag}"
+    ))
+}
+
 /// Helper to parse a token atom from a string
 fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError> {
     for simple_prefix in SIMPLE_PREFIXES.iter() {
@@ -158,6 +226,12 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
         if content.is_empty() {
             return Err(QueryParseError::new("Empty token atom not allowed"));
         }
+        if content.contains('*') {
+            return match *simple_prefix {
+                "@w:" | "@word:" => Ok(TokenConstraintAtom::Affix(parse_affix(&content)?)),
+                _ => Err(wildcard_tag_error("@lemma")),
+            };
+        }
         if !is_valid_lemma(&content) {
             return Err(QueryParseError::new("Token atom must be alphabetic"));
         }
@@ -169,12 +243,20 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
     }
 
     if let Some(inflection_str) = input.strip_prefix('@') {
+        if inflection_str.contains('*') {
+            let tag = inflection_str.split(':').next().unwrap_or_default();
+            return Err(wildcard_tag_error(&format!("@{tag}")));
+        }
         // Handle inflection categories
         if let Ok(inflection) = LatinInflection::from_str(inflection_str) {
             return Ok(TokenConstraintAtom::Inflection(inflection));
         } else {
             return Err(QueryParseError::new("Invalid inflection category"));
         }
+    }
+
+    if input.contains('*') {
+        return Ok(TokenConstraintAtom::Affix(parse_affix(input)?));
     }
 
     // Default to word for plain text that matches Latin alphabet
@@ -189,24 +271,16 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
 
 fn parse_relation(raw_input: &str) -> Result<QueryRelation, QueryParseError> {
     let input = raw_input.trim();
-    let n = input.chars().count();
-    if n == 0 {
+    if input.is_empty() {
         return Ok(QueryRelation::After);
     }
-
-    if n == 1 {
-        check_equal!(input.chars().next(), Some('~'), "");
-        return Ok(QueryRelation::Proximity {
-            distance: 5,
-            is_directed: false,
-        });
-    }
-
-    let penult = input.chars().nth(n - 2);
-    let ult = input.chars().nth(n - 1);
-    let is_directed = ult == Some('>');
-    check_equal!(if is_directed { penult } else { ult }, Some('~'), "");
-    let leading = &input[..n - (if is_directed { 2 } else { 1 })];
+    let (leading, is_directed) = if let Some(leading) = input.strip_suffix("~>") {
+        (leading, true)
+    } else if let Some(leading) = input.strip_suffix('~') {
+        (leading, false)
+    } else {
+        return Err(QueryParseError::new(""));
+    };
     let distance = leading.parse::<u8>().unwrap_or(DEFAULT_PROXIMITY);
     Ok(QueryRelation::Proximity {
         distance,
@@ -252,8 +326,9 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
         // Check for balanced parentheses before stripping
         let mut balance = 0;
         let mut fully_wrapped = true;
-        let n = effective_input.chars().count();
-        for (_i, c) in effective_input.char_indices().skip(1).take(n - 2) {
+        // Byte offsets: the parentheses are one byte each.
+        let n = effective_input.len();
+        for c in effective_input[1..n - 1].chars() {
             if c == '(' {
                 balance += 1;
             } else if c == ')' {
@@ -275,16 +350,16 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
     let mut last_split = 0;
     let mut children_str = vec![];
 
-    for i in 0..effective_input.chars().count() {
-        match effective_input.chars().nth(i) {
-            Some('(') => paren_level += 1,
-            Some(')') => {
+    for (i, c) in effective_input.char_indices() {
+        match c {
+            '(' => paren_level += 1,
+            ')' => {
                 if paren_level == 0 {
                     return Err(QueryParseError::new("Unmatched closing parenthesis"));
                 }
                 paren_level -= 1;
             }
-            Some(' ') if paren_level == 0 => {
+            ' ' if paren_level == 0 => {
                 let current_op;
                 let op_len;
 
@@ -340,95 +415,91 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
     }
 }
 
-/// Returns the index of the close parenthesis for the given open parenthesis.
+// The term splitting below works on byte offsets, which is safe because every
+// delimiter (`!`, `@`, `(`, `)`, `*`, ` `) is one byte.
+
+/// Returns the byte offset of the close parenthesis for the open one at `open_idx`.
 fn find_close_paren(input: &str, open_idx: usize) -> Result<usize, QueryParseError> {
-    check_equal!(input.chars().nth(open_idx), Some('('), "Expected '('");
+    check_equal!(
+        input.get(open_idx..).and_then(|rest| rest.chars().next()),
+        Some('('),
+        "Expected '('"
+    );
     let mut balance = 1;
-    for (i, c) in input.char_indices().skip(open_idx + 1) {
+    for (i, c) in input[open_idx + 1..].char_indices() {
         if c == '(' {
             balance += 1;
         } else if c == ')' {
             balance -= 1;
             if balance == 0 {
-                return Ok(i);
+                return Ok(open_idx + 1 + i);
             }
         }
     }
     Err(QueryParseError::new("Unmatched opening parenthesis"))
 }
 
-/// Returns the index of the end of the "word" starting at the `start_idx`.
-/// This is defined as the last character before a space or the end of the string.
+/// Returns the (exclusive) byte offset of the end of the word starting at
+/// `start_idx`: the next space, or the end of the string.
 fn find_word_end(input: &str, start_idx: usize) -> usize {
-    let n = input.chars().count();
-    if start_idx >= n {
-        return n;
-    }
-    for (char_idx, c) in input.chars().enumerate().skip(start_idx) {
-        if c == ' ' {
-            return char_idx - 1;
-        }
-    }
-    n - 1
+    input
+        .get(start_idx..)
+        .and_then(|rest| rest.find(' '))
+        .map_or(input.len(), |k| start_idx + k)
 }
 
-/// Finds the start of the next constraint after `start_idx`.
-/// This is defined as the first `!`, `(`, `@`, or alphabet letter.
-fn find_next_constraint(input: &str, start_idx: isize) -> Option<usize> {
-    if start_idx < -1 {
-        return None;
-    }
-    for (i, c) in input.char_indices().skip((start_idx + 1) as usize) {
-        match c {
-            '!' | '@' | '(' | 'a'..='z' | 'A'..='Z' => return Some(i),
-            _ => {}
-        }
-    }
-    None
+/// Finds the byte offset of the start of the next constraint, searching from
+/// the start of `input`, or after the character at `after`. A constraint
+/// starts with `!`, `(`, `@`, `*`, or a letter (non-ASCII letters too, so they
+/// get a clear error when the term is parsed).
+fn find_next_constraint(input: &str, after: Option<usize>) -> Option<usize> {
+    let (from, skip) = match after {
+        None => (0, 0),
+        Some(i) => (i, 1),
+    };
+    input
+        .get(from..)?
+        .char_indices()
+        .skip(skip)
+        .find(|&(_, c)| matches!(c, '!' | '@' | '(' | '*') || c.is_alphabetic())
+        .map(|(i, _)| from + i)
 }
 
 /// Splits the query into terms.
 fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParseError> {
     let input = raw_input.trim();
-    let n = input.chars().count();
+    let n = input.len();
 
     let mut constraints: Vec<String> = Vec::new();
     let mut relations: Vec<String> = Vec::new();
-    let mut i = find_next_constraint(input, -1).ok_or(QueryParseError::new("No constraints!."))?;
+    let mut i =
+        find_next_constraint(input, None).ok_or(QueryParseError::new("No constraints!."))?;
     check_equal!(i, 0, raw_input);
     let mut splits = 0;
 
     while i < n {
         if splits % 2 != 0 {
-            let end = find_next_constraint(input, i as isize)
+            let end = find_next_constraint(input, Some(i))
                 .ok_or(QueryParseError::new("Unexpected end of query."))?;
-            relations.push(input.chars().skip(i).take(end - i).collect());
+            relations.push(input[i..end].to_string());
             i = end;
             splits += 1;
             continue;
         }
         let start = i;
         // If we have negation, skip that and try the next character.
-        if input.chars().nth(i) == Some('!') {
+        if input[i..].starts_with('!') {
             i += 1;
         }
-        let c = input.chars().nth(i);
-        match c {
-            Some('(') => {
-                i = find_close_paren(input, i)?;
-            }
-            Some('@') => {
-                i = find_word_end(input, i);
-            }
-            Some(c) if c.is_alphabetic() => {
-                i = find_word_end(input, i);
-            }
+        i = match input[i..].chars().next() {
+            Some('(') => find_close_paren(input, i)? + 1,
+            Some('@') | Some('*') => find_word_end(input, i),
+            Some(c) if c.is_alphabetic() => find_word_end(input, i),
             _ => {
                 return Err(QueryParseError::new("Unexpected character in query."));
             }
-        }
-        i += 1;
-        constraints.push(input.chars().skip(start).take(i - start).collect());
+        };
+        constraints.push(input[start..i].to_string());
         splits += 1;
     }
     Ok((constraints, relations))
@@ -450,6 +521,9 @@ fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParse
 /// - `@lemma:<lemma>`
 /// - `@word:<word>` or simply `<word>`. Note that `<word>` can only be
 ///   composed of characters in the Latin alphabet (a-z, A-Z).
+/// - A word with one `*` wildcard and at least 3 letters: `con*` (prefix),
+///   `*que` (suffix), or `in*bilis` (both). Also allowed after `@word:`, but
+///   not on lemmata or inflections.
 /// - `@case:<case>`, `@tense:<tense>` etc... for each inflection
 ///   category in `LatinInflection`.
 ///
@@ -1046,5 +1120,219 @@ mod tests {
     #[test]
     fn parse_query_invalid_author_missing_bracket() {
         assert!(parse_query("[Cicero @lemma:amor").is_err());
+    }
+
+    //
+    // Tests for wildcards
+    //
+    fn affix(pattern: AffixPattern) -> TokenConstraint {
+        TokenConstraint::Atom(TokenConstraintAtom::Affix(pattern))
+    }
+
+    fn prefix(p: &str) -> AffixPattern {
+        AffixPattern::Prefix(p.to_string())
+    }
+
+    fn suffix(s: &str) -> AffixPattern {
+        AffixPattern::Suffix(s.to_string())
+    }
+
+    fn atom_error(input: &str) -> String {
+        parse_token_atom(input).unwrap_err().message
+    }
+
+    fn query_error(input: &str) -> String {
+        parse_query(input).unwrap_err().message
+    }
+
+    #[test]
+    fn parse_wildcard_atoms() {
+        let parsed = |input: &str| match parse_token_atom(input).unwrap() {
+            TokenConstraintAtom::Affix(pattern) => pattern,
+            other => panic!("{input} parsed as {other:?}"),
+        };
+        assert_eq!(parsed("con*"), prefix("con"));
+        assert_eq!(parsed("CON*"), prefix("con"));
+        assert_eq!(parsed("*que"), suffix("que"));
+        assert_eq!(parsed("*QuE"), suffix("que"));
+        assert_eq!(
+            parsed("In*Bilis"),
+            AffixPattern::PrefixSuffix {
+                prefix: "in".to_string(),
+                suffix: "bilis".to_string()
+            }
+        );
+        assert_eq!(parsed("a*bc"), parsed("@word:a*bc"));
+        assert_eq!(parsed("@word:con*"), prefix("con"));
+        assert_eq!(parsed("@w:*que"), suffix("que"));
+        assert_eq!(parsed("@word:in*bilis"), parsed("in*bilis"));
+    }
+
+    #[test]
+    fn display_wildcards() {
+        assert_eq!(prefix("con").to_string(), "con*");
+        assert_eq!(suffix("que").to_string(), "*que");
+        assert_eq!(
+            AffixPattern::PrefixSuffix {
+                prefix: "in".to_string(),
+                suffix: "bilis".to_string()
+            }
+            .to_string(),
+            "in*bilis"
+        );
+        let query = parse_query("(*que or @w:Tio*)").unwrap();
+        assert_eq!(query.terms[0].constraint.to_string(), "(*que or tio*)");
+    }
+
+    #[test]
+    fn parse_queries_with_wildcards() {
+        let query = parse_query("*que").unwrap();
+        assert_eq!(query.terms.len(), 1);
+        assert_eq!(query.terms[0].constraint, affix(suffix("que")));
+
+        let query = parse_query("!*que").unwrap();
+        assert_eq!(
+            query.terms[0].constraint,
+            TokenConstraint::Negated(Box::new(affix(suffix("que"))))
+        );
+
+        let query = parse_query("(*que or *tio)").unwrap();
+        assert_eq!(
+            query.terms[0].constraint,
+            TokenConstraint::Composed {
+                op: TokenConstraintOperation::Or,
+                children: vec![affix(suffix("que")), affix(suffix("tio"))],
+            }
+        );
+
+        let query = parse_query("arma ~ *que").unwrap();
+        assert_eq!(query.terms.len(), 2);
+        assert_eq!(query.terms[1].constraint, affix(suffix("que")));
+        assert_eq!(
+            query.terms[1].relation,
+            QueryRelation::Proximity {
+                distance: 5,
+                is_directed: false
+            }
+        );
+
+        let query = parse_query("arma 3~> *que con*").unwrap();
+        assert_eq!(query.terms.len(), 3);
+        assert_eq!(
+            query.terms[1].relation,
+            QueryRelation::Proximity {
+                distance: 3,
+                is_directed: true
+            }
+        );
+        assert_eq!(query.terms[2].constraint, affix(prefix("con")));
+        assert_eq!(query.terms[2].relation, QueryRelation::After);
+
+        let query = parse_query("[Caesar] *que").unwrap();
+        assert_eq!(query.scope, vec!["Caesar".to_string()]);
+        assert_eq!(query.terms[0].constraint, affix(suffix("que")));
+    }
+
+    #[test]
+    fn wildcard_needs_letters() {
+        for input in ["*", "@word:*", "@w:*"] {
+            assert!(atom_error(input).contains("at least 3 letters"), "{input}");
+        }
+        assert!(query_error("*").contains("at least 3 letters"));
+        assert!(query_error("arma *").contains("at least 3 letters"));
+    }
+
+    #[test]
+    fn wildcard_allows_one_star() {
+        for input in ["*mor*", "a*b*c", "**que", "con**", "@word:*mor*"] {
+            assert!(atom_error(input).contains("more than one '*'"), "{input}");
+        }
+        assert!(query_error("*mor*").contains("more than one '*'"));
+    }
+
+    #[test]
+    fn wildcard_needs_three_letters() {
+        for input in ["in*", "*um", "a*b", "ab*", "@w:a*b"] {
+            assert!(atom_error(input).contains("too short"), "{input}");
+        }
+        assert!(query_error("arma in*").contains("too short"));
+    }
+
+    #[test]
+    fn wildcard_allows_only_latin_letters() {
+        for input in ["con1*", "bell-*", "ē*", "*quē", "@word:a1*bc"] {
+            assert!(
+                atom_error(input).contains("may only contain Latin letters"),
+                "{input}"
+            );
+        }
+        assert!(query_error("ē*").contains("may only contain Latin letters"));
+        assert!(query_error("arma ē*").contains("may only contain Latin letters"));
+    }
+
+    #[test]
+    fn wildcard_only_on_words() {
+        for input in ["@lemma:con*", "@l:*fico", "@lemma:*"] {
+            assert_eq!(
+                atom_error(input),
+                "Wildcards ('*') are only supported for words, not @lemma",
+                "{input}"
+            );
+        }
+        assert_eq!(
+            atom_error("@case:a*"),
+            "Wildcards ('*') are only supported for words, not @case"
+        );
+        assert_eq!(
+            atom_error("@tense:*"),
+            "Wildcards ('*') are only supported for words, not @tense"
+        );
+        assert!(query_error("arma @lemma:con*").contains("not @lemma"));
+    }
+
+    #[test]
+    fn multibyte_characters_never_split_mid_codepoint() {
+        let latin_only = "may only contain Latin letters";
+        for query in [
+            "(*quē)",
+            "(ē*)",
+            "(*quē or con*)",
+            "(ē* or con*)",
+            "(*tio) (*quē) con*",
+            "ē* arma",
+            "arma ~ (con* and *quē)",
+        ] {
+            assert!(query_error(query).contains(latin_only), "{query}");
+        }
+        assert!(query_error("arma aa—~ *que").contains("Invalid token atom"));
+        assert!(query_error("(quē)").contains("Invalid token atom"));
+        assert_eq!(
+            parse_relation(" —~ ").unwrap(),
+            QueryRelation::Proximity {
+                distance: DEFAULT_PROXIMITY,
+                is_directed: false
+            }
+        );
+        let query = parse_query("(*tio) (*que) con*").unwrap();
+        assert_eq!(query.terms.len(), 3);
+        assert_eq!(query.terms[2].constraint, affix(prefix("con")));
+    }
+
+    #[test]
+    fn parse_query_never_panics() {
+        const PIECES: &[&str] = &[
+            "ē", "—", "(", ")", "*", "~", "~>", " ", "a", "que", "!", "@w:", " and ", " or ", "3",
+            "[", "]",
+        ];
+        let mut queries = vec![String::new()];
+        for _ in 0..4 {
+            queries = queries
+                .iter()
+                .flat_map(|q| PIECES.iter().map(move |p| format!("{q}{p}")))
+                .collect();
+            for query in &queries {
+                let _ = parse_query(query);
+            }
+        }
     }
 }
