@@ -86,13 +86,11 @@ pub(super) fn validate_query(query: &Query) -> Result<(), QueryExecError> {
             "Queries can contain at most {MAX_WILDCARD_TERMS} wildcard ('*') terms"
         )));
     }
-    // Wildcards are parsed, but not executed yet.
-    let supported = wildcards == 0
-        && query
-            .terms
-            .iter()
-            .all(|term| is_term_currently_supported(&term.constraint));
-    if !supported {
+    if !query
+        .terms
+        .iter()
+        .all(|term| is_term_currently_supported(&term.constraint))
+    {
         return Err(QueryExecError::new(
             "The given query contains constructs that are not yet supported",
         ));
@@ -115,6 +113,11 @@ mod tests {
             "et",
             "@lemma:do oscula @case:dat",
             "(@case:dat or @voice:passive)",
+            "*que",
+            "[Caesar] *que",
+            "con* *que in*bilis",
+            "(con* or *que) in*bilis",
+            "(@lemma:do and *bat)",
         ] {
             assert_eq!(validate(query), Ok(()), "{query}");
         }
@@ -122,7 +125,7 @@ mod tests {
 
     #[test]
     fn rejects_unsupported_constructs() {
-        for query in ["!et", "((et or in) and @case:abl)"] {
+        for query in ["!et", "((et or in) and @case:abl)", "!*que"] {
             assert!(
                 validate(query).unwrap_err().contains("not yet supported"),
                 "{query}"
@@ -139,18 +142,6 @@ mod tests {
             "con* ~ (*que and @case:abl) ~ in*bilis ~ !per*",
         ] {
             assert_eq!(validate(query), Err(too_many.to_string()), "{query}");
-        }
-        // Up to 3 parse and count fine, but don't run yet.
-        for query in [
-            "con* *que in*bilis",
-            "(con* or *que) in*bilis",
-            "*que",
-            "[Caesar] *que",
-        ] {
-            assert!(
-                validate(query).unwrap_err().contains("not yet supported"),
-                "{query}"
-            );
         }
     }
 }

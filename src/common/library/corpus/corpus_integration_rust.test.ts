@@ -148,6 +148,37 @@ describe("Corpus Integration Test", () => {
     expect(rejected).toEqual([]);
   });
 
+  it("should find words by prefix, suffix, or both", () => {
+    const matchWords = (query: string) =>
+      queryCorpus(query).matches.flatMap(getMatchText);
+
+    expect(matchWords("marmor*")).toEqual([
+      "Marmor",
+      "marmoris",
+      "marmorem",
+      "marmore",
+      "marmoribus",
+      "marmora",
+    ]);
+    expect(matchWords("GALL*")).toEqual(["Gallus", "Gallum", "Gallus"]);
+    expect(matchWords("*cula")).toEqual(["oscula", "oscula", "oscula"]);
+    expect(matchWords("@w:acc*it")).toEqual(["accognoscit"]);
+    expect(matchWords("dedit *cula saxo")).toEqual(["dedit oscula saxo"]);
+    expect(matchWords("(rex or *ina)")).toEqual(["rex", "regina"]);
+    expect(matchWords("xyz*")).toEqual([]);
+  });
+
+  it("should reject invalid wildcards", () => {
+    expect(() => queryCorpus("in*")).toThrow(/too short/);
+    expect(() => queryCorpus("*mor*")).toThrow(/more than one/);
+    expect(() => queryCorpus("@lemma:marm*")).toThrow(
+      /only supported for words/
+    );
+    expect(() => queryCorpus("mar* *ris acc* *que")).toThrow(
+      /at most 3 wildcard/
+    );
+  });
+
   it("should find a single word", () => {
     const query = "@word:servum";
     const results = queryCorpus(query);

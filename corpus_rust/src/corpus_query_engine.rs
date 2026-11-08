@@ -1,3 +1,4 @@
+mod affix_index;
 mod corpus_candidate_filtering;
 mod corpus_data_readers;
 mod corpus_index_calculation;
@@ -250,6 +251,40 @@ mod tests {
         "in @case:abl",
     ];
 
+    /// Wildcards: lists (`in*bilis`) and bitmasks (`*que`), no matches, scopes,
+    /// the sparse-anchor shortcut on either side of a rare word (`aeneas` has
+    /// ~200 hits), `and`/`or` (with fused wildcards, and children that match
+    /// nothing), and multi-term spans across hard breaks.
+    const AFFIX_QUERIES: &[&str] = &[
+        "bell*",
+        "con*",
+        "*tio",
+        "*que",
+        "in*bilis",
+        "xyz*",
+        "[Caesar] *que",
+        "[Caesar] con* *que",
+        "[Caesar] legatos *que",
+        "imperator *que",
+        "*que imperator",
+        "aeneas *que",
+        "*que aeneas",
+        "aeneas con* *que",
+        "(@lemma:abies and con*)",
+        // ~100 candidates, so `con*` and `*que` are checked by text.
+        "(@lemma:conticesco and con*)",
+        "(@lemma:conticesco and *que)",
+        "(@lemma:do and *bat)",
+        "(con* or per*)",
+        "(in*bilis or *bat)",
+        "(bell* or et)",
+        "(xyz* or et)",
+        "(notaword or et)",
+        "*que et",
+        "bell* *que",
+        "@case:abl *orum",
+    ];
+
     /// Author-restricted queries whose candidates end up as a bitmask, so paging
     /// exercises the slice-relative bitmask cursor in `MatchIterator::new`.
     /// Exact author bounds are covered by `validate_author_range_is_exact`.
@@ -307,6 +342,97 @@ mod tests {
     }
 
     #[test]
+    fn validate_affix_queries() {
+        walk_pages(AFFIX_QUERIES);
+    }
+
+    /// Stage 2 checks only lemmata and inflections, so strict mode must leave
+    /// wildcards (alone or in an `and`) to Stage 1.
+    #[test]
+    fn validate_affix_queries_strict() {
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            None => return,
+        };
+        walk_pages_with_mode(
+            &engine,
+            &["*que", "(@lemma:do and *bat)", "in*bilis et"],
+            true,
+        );
+    }
+
+    #[test]
+    fn affix_budget_applies_only_to_merged_wildcards() {
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            None => return,
+        };
+        let options = QueryOptions {
+            page_size: 5,
+            context_len: 5,
+            strict_mode: false,
+        };
+        let run = |query: &str| engine.query_corpus(query, &PageData::default(), &options);
+        // ~107k + ~171k hits, merged, exceed the ~259k budget together.
+        let err = run("con* *que").unwrap_err();
+        assert!(err.message.contains("together"), "{}", err.message);
+        // Scoped, they're small enough.
+        assert!(run("[Caesar] con* *que").is_ok());
+        // Checked against `aeneas`'s ~200 candidates, they're never merged.
+        let result = run("aeneas con* *que").unwrap();
+        let sparse = |result: &CorpusQueryResult| {
+            result
+                .timing
+                .iter()
+                .filter(|(phase, _)| phase.starts_with("Sparse anchor"))
+                .count()
+        };
+        assert_eq!(sparse(&result), 2);
+        assert_eq!(sparse(&run("*que aeneas").unwrap()), 1);
+        // Large in the corpus, so checked by text even where it's small in scope.
+        assert_eq!(sparse(&run("[Caesar] legatos *que").unwrap()), 1);
+        // `imperator` has too many candidates for the shortcut.
+        assert_eq!(sparse(&run("imperator *que").unwrap()), 0);
+        let empty = run("xyz*").unwrap();
+        assert_eq!(empty.result_stats.estimated_results, 0);
+        assert!(empty.matches.is_empty());
+    }
+
+    /// The reference implementation has no proximity search, so check that
+    /// each match has the right words instead.
+    #[test]
+    fn affix_proximity_matches_both_patterns() {
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            None => return,
+        };
+        let options = QueryOptions {
+            page_size: 20,
+            context_len: 2,
+            strict_mode: false,
+        };
+        let result = engine
+            .query_corpus("bell* ~ *que", &PageData::default(), &options)
+            .unwrap();
+        assert!(result.result_stats.estimated_results > 20);
+        assert_eq!(result.matches.len(), 20);
+        for m in &result.matches {
+            let words: Vec<String> = m
+                .text
+                .iter()
+                .filter(|(_, is_match)| *is_match)
+                .flat_map(|(text, _)| {
+                    text.split(|c: char| !c.is_alphabetic())
+                        .map(str::to_lowercase)
+                        .collect::<Vec<_>>()
+                })
+                .collect();
+            assert!(words.iter().any(|w| w.starts_with("bell")), "{words:?}");
+            assert!(words.iter().any(|w| w.ends_with("que")), "{words:?}");
+        }
+    }
+
+    #[test]
     fn validate_author_bitmask_queries() {
         walk_pages(AUTHOR_BITMASK_QUERIES);
     }
@@ -351,12 +477,20 @@ mod tests {
     /// Compares the first `PAGES_PER_QUERY` pages of each query against the
     /// reference implementation, following the engine's own cursors.
     fn walk_pages_with<S: AsRef<str>>(engine: &CorpusQueryEngine, queries: &[S]) {
+        walk_pages_with_mode(engine, queries, false);
+    }
+
+    fn walk_pages_with_mode<S: AsRef<str>>(
+        engine: &CorpusQueryEngine,
+        queries: &[S],
+        strict_mode: bool,
+    ) {
         for query in queries {
             for &(page_size, context_len) in TEST_OPTIONS {
                 let options = QueryOptions {
                     page_size,
                     context_len,
-                    strict_mode: false,
+                    strict_mode,
                 };
                 let mut page_data = PageData::default();
                 for _ in 0..PAGES_PER_QUERY {

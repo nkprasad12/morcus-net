@@ -14,7 +14,9 @@ use crate::{
         CorpusQueryEngine, CorpusQueryResult, IndexData, QueryExecError,
         index_data::{apply_and_with_arrays, apply_or_with_arrays},
     },
-    query_parsing_v2::{QueryTerm, TokenConstraint, parse_query},
+    query_parsing_v2::{
+        AffixPattern, QueryTerm, TokenConstraint, TokenConstraintAtom, parse_query,
+    },
 };
 
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
@@ -118,11 +120,45 @@ impl CorpusQueryEngine {
         }
     }
 
+    /// Scans the whole vocabulary rather than using its prefix and suffix
+    /// searches, and ignores the query's scope.
+    fn affix_index_ref_impl(&self, pattern: &AffixPattern) -> Vec<u32> {
+        let (prefix, suffix) = pattern.parts();
+        let mut lists: Vec<Vec<u32>> = (0..self.vocab.len() as u32)
+            .filter(|&id| {
+                let word = self.vocab.word(id).unwrap();
+                word.len() >= prefix.len() + suffix.len()
+                    && word.starts_with(prefix.as_bytes())
+                    && word.ends_with(suffix.as_bytes())
+            })
+            .map(|id| {
+                let elements = self.vocab.word_postings_range(id).unwrap();
+                self.raw_buffers
+                    .word_postings(self.corpus.word_postings_offset, &elements)
+                    .unwrap()
+                    .to_vec()
+            })
+            .collect();
+        while lists.len() > 1 {
+            lists = lists
+                .chunks(2)
+                .map(|pair| match pair {
+                    [a, b] => apply_or_with_arrays(a, b, 0),
+                    _ => pair[0].clone(),
+                })
+                .collect();
+        }
+        lists.pop().unwrap_or_default()
+    }
+
     fn index_for_constraint(
         &self,
         constraint: &TokenConstraint,
     ) -> Result<Vec<u32>, QueryExecError> {
         match constraint {
+            TokenConstraint::Atom(TokenConstraintAtom::Affix(pattern)) => {
+                Ok(self.affix_index_ref_impl(pattern))
+            }
             TokenConstraint::Atom(atom) => {
                 // Like the engine, an atom that isn't in the corpus (e.g. an
                 // unknown word) matches nothing.

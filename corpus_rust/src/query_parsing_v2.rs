@@ -73,6 +73,17 @@ pub enum AffixPattern {
     PrefixSuffix { prefix: String, suffix: String },
 }
 
+impl AffixPattern {
+    /// The fixed letters before and after the `*` (either may be empty).
+    pub fn parts(&self) -> (&str, &str) {
+        match self {
+            AffixPattern::Prefix(p) => (p, ""),
+            AffixPattern::Suffix(s) => ("", s),
+            AffixPattern::PrefixSuffix { prefix, suffix } => (prefix, suffix),
+        }
+    }
+}
+
 impl std::fmt::Display for AffixPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

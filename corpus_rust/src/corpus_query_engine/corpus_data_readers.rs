@@ -64,6 +64,10 @@ impl CorpusText {
         unsafe { String::from_utf8_unchecked(self.reader.bytes(start, end).to_vec()) }
     }
 
+    pub fn bytes(&self, start: usize, end: usize) -> &[u8] {
+        self.reader.bytes(start, end)
+    }
+
     pub fn advise_range(&self, start: usize, end: usize) {
         self.reader.advise_range(start, end);
     }
@@ -88,17 +92,19 @@ impl IndexBuffers {
     }
 
     /// `elements` are `u32` indices into the array that starts at byte `base`.
+    pub fn word_postings(&self, base: u32, elements: &Range<u32>) -> Result<&[u32], String> {
+        let range = self
+            .u32_byte_range(base, elements)
+            .ok_or_else(|| format!("Word postings {elements:?} are out of bounds"))?;
+        u32_from_bytes(self.reader.bytes(range.start, range.end))
+    }
+
     pub fn resolve_word_postings(
         &self,
         base: u32,
         elements: &Range<u32>,
     ) -> Result<IndexData<'_>, String> {
-        let range = self
-            .u32_byte_range(base, elements)
-            .ok_or_else(|| format!("Word postings {elements:?} are out of bounds"))?;
-        Ok(IndexData::List(u32_from_bytes(
-            self.reader.bytes(range.start, range.end),
-        )?))
+        Ok(IndexData::List(self.word_postings(base, elements)?))
     }
 
     pub fn resolve_index(

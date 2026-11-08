@@ -1,7 +1,10 @@
 use std::cmp::{max, min};
 
 use crate::{
-    corpus_query_engine::{CorpusQueryEngine, QueryExecError},
+    corpus_query_engine::{
+        CorpusQueryEngine, QueryExecError, affix_index::AffixPlan,
+        corpus_index_calculation::AtomPostings,
+    },
     query_parsing_v2::{
         QueryRelation, QueryTerm, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
     },
@@ -14,15 +17,40 @@ pub struct SizeBounds {
     pub lower: usize,
 }
 
+/// An atom, resolved once per query.
 #[derive(Debug, Clone)]
-struct InternalAtom {
-    size_bounds: SizeBounds,
+pub(super) enum InternalAtom<'a> {
+    Postings(AtomPostings<'a>),
+    Affix(AffixPlan<'a>),
+    /// Matches nothing (e.g. a word that isn't in the corpus).
+    Missing,
+}
+
+#[derive(Debug, Clone)]
+pub(super) enum InternalConstraintKind<'a> {
+    Atom(InternalAtom<'a>),
+    Composed {
+        op: TokenConstraintOperation,
+        children: Vec<InternalConstraint<'a>>,
+    },
+    /// Not executable yet; converted only for its size bounds.
+    Negated,
 }
 
 #[derive(Debug, Clone)]
 pub struct InternalConstraint<'a> {
     pub inner: &'a TokenConstraint,
     pub size_bounds: SizeBounds,
+    pub(super) kind: InternalConstraintKind<'a>,
+}
+
+impl<'a> InternalConstraint<'a> {
+    pub(super) fn as_affix(&self) -> Option<&AffixPlan<'a>> {
+        match &self.kind {
+            InternalConstraintKind::Atom(InternalAtom::Affix(plan)) => Some(plan),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -46,52 +74,50 @@ impl std::fmt::Display for InternalQueryTerm<'_> {
 
 // Methods for converting a query to an internal form.
 impl CorpusQueryEngine {
-    /// Get the size bounds for a token constraint atom. This should be present in the raw data.
-    fn get_bounds_for_atom(&self, atom: &TokenConstraintAtom) -> SizeBounds {
-        let postings = match self.get_postings_for(atom) {
-            Some(p) => p,
-            None => {
-                return SizeBounds { upper: 0, lower: 0 };
-            }
-        };
-        let elements_in_index = self.num_postings(&postings);
-        SizeBounds {
-            upper: elements_in_index as usize,
-            lower: elements_in_index as usize,
+    /// Resolves an atom, with its number of matches in the whole corpus.
+    fn convert_atom<'a>(&'a self, atom: &'a TokenConstraintAtom) -> (InternalAtom<'a>, usize) {
+        if let TokenConstraintAtom::Affix(pattern) = atom {
+            let plan = self.plan_affix(pattern);
+            let hits = plan.corpus_hits;
+            return (InternalAtom::Affix(plan), hits);
         }
-    }
-
-    /// Converts an atom to its internal representation.
-    fn convert_atom(&self, atom: &TokenConstraintAtom) -> InternalAtom {
-        InternalAtom {
-            size_bounds: self.get_bounds_for_atom(atom),
+        match self.get_postings_for(atom) {
+            Some(postings) => {
+                let hits = self.num_postings(&postings) as usize;
+                (InternalAtom::Postings(postings), hits)
+            }
+            None => (InternalAtom::Missing, 0),
         }
     }
 
     /// Converts a constraint to its internal representation, calculating size bounds appropriately.
     pub(super) fn convert_constraint<'a>(
-        &self,
+        &'a self,
         constraint: &'a TokenConstraint,
     ) -> Result<InternalConstraint<'a>, QueryExecError> {
         match constraint {
             TokenConstraint::Atom(atom) => {
-                let internal_atom = self.convert_atom(atom);
-                let size_bounds = internal_atom.size_bounds.clone();
+                let (atom, hits) = self.convert_atom(atom);
                 Ok(InternalConstraint {
                     inner: constraint,
-                    size_bounds,
+                    size_bounds: SizeBounds {
+                        upper: hits,
+                        lower: hits,
+                    },
+                    kind: InternalConstraintKind::Atom(atom),
                 })
             }
             TokenConstraint::Composed { op, children } => {
-                let first = self.convert_constraint(
-                    children
-                        .first()
-                        .ok_or(QueryExecError::new("Empty composed query"))?,
-                )?;
+                let children = children
+                    .iter()
+                    .map(|child| self.convert_constraint(child))
+                    .collect::<Result<Vec<_>, _>>()?;
+                let first = children
+                    .first()
+                    .ok_or(QueryExecError::new("Empty composed query"))?;
                 let mut lower = first.size_bounds.lower;
                 let mut upper = first.size_bounds.upper;
-                for child in children.iter().skip(1) {
-                    let converted = self.convert_constraint(child)?;
+                for converted in children.iter().skip(1) {
                     if *op == TokenConstraintOperation::And {
                         // These bounds are not quite tight due to the pigeonhole principle
                         // if the upper bounds are more than half the number of tokens,
@@ -106,23 +132,25 @@ impl CorpusQueryEngine {
                 Ok(InternalConstraint {
                     inner: constraint,
                     size_bounds: SizeBounds { upper, lower },
+                    kind: InternalConstraintKind::Composed { op: *op, children },
                 })
             }
             TokenConstraint::Negated(inner) => {
                 let converted = self.convert_constraint(inner)?;
                 let n = self.corpus.num_tokens as usize;
-                let upper = n - converted.size_bounds.lower;
-                let lower = n - converted.size_bounds.upper;
+                let upper = n.saturating_sub(converted.size_bounds.lower);
+                let lower = n.saturating_sub(converted.size_bounds.upper);
                 Ok(InternalConstraint {
-                    inner,
+                    inner: constraint,
                     size_bounds: SizeBounds { upper, lower },
+                    kind: InternalConstraintKind::Negated,
                 })
             }
         }
     }
 
     pub(super) fn convert_query_term<'a>(
-        &self,
+        &'a self,
         term: &'a QueryTerm,
     ) -> Result<InternalQueryTerm<'a>, QueryExecError> {
         let constraint = self.convert_constraint(&term.constraint)?;

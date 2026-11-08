@@ -5,17 +5,19 @@ use crate::{
     corpus_index::StoredMapValue,
     corpus_query_engine::{
         CorpusQueryEngine, IndexData, IndexDataRoO, QueryExecError,
-        corpus_query_conversion::InternalQueryTerm,
+        affix_index::WildcardBudget,
+        corpus_query_conversion::{
+            InternalAtom, InternalConstraint, InternalConstraintKind, InternalQueryTerm,
+        },
         index_data::{
             IndexRange, IndexSlice, apply_and_to_indices, apply_or_to_indices, find_fuzzy_matches,
         },
     },
     profiler::TimeProfiler,
-    query_parsing_v2::{
-        QueryRelation, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
-    },
+    query_parsing_v2::{QueryRelation, TokenConstraintAtom, TokenConstraintOperation},
 };
 
+#[derive(Debug, Clone)]
 pub(super) enum AtomPostings<'a> {
     Stored(&'a StoredMapValue),
     /// An element (not byte) range of the word postings.
@@ -88,56 +90,83 @@ fn combine_span_candidates<'a>(
 impl CorpusQueryEngine {
     fn compute_index_for_composed<'a>(
         &'a self,
-        children: &'a [TokenConstraint],
-        op: &'a TokenConstraintOperation,
+        children: &'a [InternalConstraint<'a>],
+        op: TokenConstraintOperation,
         range: &'a IndexRange,
+        budget: &WildcardBudget,
     ) -> Result<Option<IndexSlice<'a>>, QueryExecError> {
         // Sort the children by their upper size bounds. For `and` operations, we want the
         // smallest upper bound first so the most constrained children are considered first.
         // For `or` operations, we want the largest upper bound first so that we hopefully
         // start and stick with a bitmask.
-        let mut internal_children = children
-            .iter()
-            .map(|c| self.convert_constraint(c))
-            .collect::<Result<Vec<_>, _>>()?;
-        internal_children.sort_by_key(|c| c.size_bounds.upper);
-        if *op == TokenConstraintOperation::Or {
-            internal_children.reverse();
+        let mut children: Vec<&InternalConstraint> = children.iter().collect();
+        children.sort_by_key(|c| c.size_bounds.upper);
+        match op {
+            TokenConstraintOperation::And => {
+                let (first, rest) = children
+                    .split_first()
+                    .ok_or(QueryExecError::new("Empty composed query"))?;
+                let mut data = match self.compute_index_for(first, range, budget)? {
+                    Some(data) => data,
+                    None => return Ok(None),
+                };
+                for child in rest {
+                    if let Some(plan) = child.as_affix()
+                        && self.use_sparse_anchor(&data, plan)
+                    {
+                        data = self.filter_by_affix(&data, plan, data.position, range)?;
+                        continue;
+                    }
+                    let child_data = match self.compute_index_for(child, range, budget)? {
+                        Some(data) => data,
+                        None => return Ok(None),
+                    };
+                    data = apply_and_to_indices(&data, &child_data)?;
+                }
+                Ok(Some(data))
+            }
+            TokenConstraintOperation::Or => {
+                children.reverse();
+                // Merge all the wildcards into one index, rather than one each.
+                let (affixes, others): (Vec<_>, Vec<_>) =
+                    children.into_iter().partition(|c| c.as_affix().is_some());
+                let plans: Vec<_> = affixes.iter().filter_map(|c| c.as_affix()).collect();
+                let mut data = self.merge_affixes(&plans, range, budget)?;
+                // An `or` matches where any child does, so children that
+                // match nothing are skipped.
+                for child in others {
+                    let Some(child_data) = self.compute_index_for(child, range, budget)? else {
+                        continue;
+                    };
+                    data = Some(match data {
+                        Some(data) => apply_or_to_indices(&data, &child_data)?,
+                        None => child_data,
+                    });
+                }
+                Ok(data)
+            }
         }
-
-        let first = internal_children
-            .first()
-            .ok_or(QueryExecError::new("Empty composed query"))?;
-        let mut data = match self.compute_index_for(first.inner, range)? {
-            Some(data) => data,
-            None => return Ok(None),
-        };
-
-        for child in internal_children.iter().skip(1) {
-            let child_data = match self.compute_index_for(child.inner, range)? {
-                Some(data) => data,
-                None => return Ok(None),
-            };
-            data = match op {
-                TokenConstraintOperation::And => apply_and_to_indices(&data, &child_data),
-                TokenConstraintOperation::Or => apply_or_to_indices(&data, &child_data),
-            }?;
-        }
-        Ok(Some(data))
     }
 
     /// Computes the candidate index for a particular token constraint.
     fn compute_index_for<'a>(
         &'a self,
-        constraint: &'a TokenConstraint,
+        constraint: &'a InternalConstraint<'a>,
         range: &'a IndexRange,
+        budget: &WildcardBudget,
     ) -> Result<Option<IndexSlice<'a>>, QueryExecError> {
-        match constraint {
-            TokenConstraint::Atom(atom) => Ok(self.index_for_atom(atom, range)),
-            TokenConstraint::Composed { children, op } => {
-                self.compute_index_for_composed(children, op, range)
+        match &constraint.kind {
+            InternalConstraintKind::Atom(InternalAtom::Postings(postings)) => {
+                Ok(self.index_for_postings(postings, range))
             }
-            TokenConstraint::Negated(_) => {
+            InternalConstraintKind::Atom(InternalAtom::Affix(plan)) => {
+                self.merge_affixes(&[plan], range, budget)
+            }
+            InternalConstraintKind::Atom(InternalAtom::Missing) => Ok(None),
+            InternalConstraintKind::Composed { children, op } => {
+                self.compute_index_for_composed(children, *op, range, budget)
+            }
+            InternalConstraintKind::Negated => {
                 Err(QueryExecError::new("Negated constraints are not supported"))
             }
         }
@@ -164,16 +193,18 @@ impl CorpusQueryEngine {
     /// Computes candidates for each span.
     pub(super) fn candidates_for_spans<'a>(
         &'a self,
-        spans: &'a [&[InternalQueryTerm]],
+        spans: &'a [&'a [InternalQueryTerm<'a>]],
         range: &'a IndexRange,
         profiler: &mut TimeProfiler,
     ) -> Result<Option<Vec<SpanResult<'a>>>, QueryExecError> {
+        let budget = WildcardBudget::new(self.corpus.num_tokens);
         let mut span_results = Vec::new();
         for span in spans {
-            let candidates = match self.candidates_for_single_span(span, range, profiler)? {
-                Some(res) => res,
-                None => return Ok(None),
-            };
+            let candidates =
+                match self.candidates_for_single_span(span, range, &budget, profiler)? {
+                    Some(res) => res,
+                    None => return Ok(None),
+                };
             span_results.push(SpanResult {
                 candidates,
                 length: span.len(),
@@ -185,8 +216,9 @@ impl CorpusQueryEngine {
 
     fn candidates_for_single_span<'a>(
         &'a self,
-        query: &'a [InternalQueryTerm],
+        query: &'a [InternalQueryTerm<'a>],
         range: &'a IndexRange,
+        budget: &WildcardBudget,
         profiler: &mut TimeProfiler,
     ) -> Result<Option<IndexSlice<'a>>, QueryExecError> {
         let mut indexed_terms: Vec<(usize, &InternalQueryTerm)> =
@@ -196,7 +228,7 @@ impl CorpusQueryEngine {
         let (first_original_index, first_term) = indexed_terms
             .first()
             .ok_or(QueryExecError::new("Empty query"))?;
-        let mut data = match self.compute_index_for(first_term.constraint.inner, range)? {
+        let mut data = match self.compute_index_for(&first_term.constraint, range, budget)? {
             Some(data) => data,
             _ => return Ok(None),
         };
@@ -208,7 +240,14 @@ impl CorpusQueryEngine {
         profiler.phase("Initial candidates");
 
         for (original_index, term) in indexed_terms.iter().skip(1) {
-            let term_data = match self.compute_index_for(term.constraint.inner, range)? {
+            if let Some(plan) = term.constraint.as_affix()
+                && self.use_sparse_anchor(&data, plan)
+            {
+                data = self.filter_by_affix(&data, plan, *original_index as u32, range)?;
+                profiler.phase(format!("Sparse anchor filter from {original_index}").as_str());
+                continue;
+            }
+            let term_data = match self.compute_index_for(&term.constraint, range, budget)? {
                 Some(data) => data,
                 _ => return Ok(None),
             };
@@ -255,7 +294,7 @@ impl CorpusQueryEngine {
             &TokenConstraintAtom::Inflection(inflection) => self
                 .get_metadata(inflection.get_label(), inflection.get_code())
                 .map(AtomPostings::Stored),
-            // `validate_query` rejects wildcards until they can be executed.
+            // Resolved separately, by `plan_affix`.
             TokenConstraintAtom::Affix(_) => None,
         }
     }
@@ -281,12 +320,12 @@ impl CorpusQueryEngine {
         }
     }
 
-    fn index_for_atom<'a>(
+    fn index_for_postings<'a>(
         &'a self,
-        part: &'a TokenConstraintAtom,
+        postings: &AtomPostings,
         range: &'a IndexRange,
     ) -> Option<IndexSlice<'a>> {
-        let full = self.resolve_postings(&self.get_postings_for(part)?).ok()?;
+        let full = self.resolve_postings(postings).ok()?;
         IndexSlice::from(&full, range, 0).ok()
     }
 
@@ -341,6 +380,7 @@ mod tests {
             constraint: InternalConstraint {
                 inner: constraint,
                 size_bounds: SizeBounds { lower: 0, upper: 0 },
+                kind: InternalConstraintKind::Atom(InternalAtom::Missing),
             },
             relation,
         }
