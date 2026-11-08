@@ -25,25 +25,18 @@ const MIN_SPARSE_ANCHOR_AFFIX_HITS: usize = 10_000;
 const MIN_WILDCARD_BUDGET: usize = 250_000;
 
 #[derive(Debug, Clone)]
-pub(super) enum WordIds {
+pub(super) enum WordIds<'a> {
     /// A prefix's words are contiguous.
     Range(Range<u32>),
+    /// A suffix's words in `by_suffix`, not yet sorted by word ID.
+    Unsorted(&'a [u32]),
     Sorted(Vec<u32>),
-}
-
-impl WordIds {
-    fn iter(&self) -> Box<dyn Iterator<Item = u32> + '_> {
-        match self {
-            WordIds::Range(range) => Box::new(range.clone()),
-            WordIds::Sorted(ids) => Box::new(ids.iter().copied()),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
 pub(super) struct AffixPlan<'a> {
     pub pattern: &'a AffixPattern,
-    words: WordIds,
+    words: WordIds<'a>,
     /// In the whole corpus, like the other atoms' size bounds, whatever the
     /// query's scope.
     pub corpus_hits: usize,
@@ -126,16 +119,6 @@ impl CorpusQueryEngine {
         range.start == 0 && range.end >= self.corpus.num_tokens
     }
 
-    fn word_postings(&self, id: u32) -> Result<&[u32], QueryExecError> {
-        let elements = self
-            .vocab
-            .word_postings_range(id)
-            .ok_or_else(|| QueryExecError::new("Word ID out of range"))?;
-        self.raw_buffers
-            .word_postings(self.corpus.word_postings_offset, &elements)
-            .map_err(exec_err)
-    }
-
     /// Calls `f` with every posting of `plan` inside `range`, a slice at a time
     /// (each sorted, but not sorted relative to each other).
     fn for_each_posting_slice(
@@ -144,7 +127,8 @@ impl CorpusQueryEngine {
         range: &IndexRange,
         mut f: impl FnMut(&[u32]),
     ) -> Result<(), QueryExecError> {
-        if let (true, WordIds::Range(ids)) = (self.is_unscoped(range), &plan.words) {
+        let unscoped = self.is_unscoped(range);
+        if let (true, WordIds::Range(ids)) = (unscoped, &plan.words) {
             // One contiguous run of postings, so one read.
             let elements = self
                 .vocab
@@ -157,19 +141,61 @@ impl CorpusQueryEngine {
             f(postings);
             return Ok(());
         }
-        for id in plan.words.iter() {
-            let postings = self.word_postings(id)?;
-            let start = postings.partition_point(|&t| t < range.start);
-            let end = postings.partition_point(|&t| t < range.end);
-            f(&postings[start..end]);
+        let offsets = self.vocab.postings_offsets();
+        let total_elements = 0..offsets.last().copied().unwrap_or(0);
+        let all_postings = self
+            .raw_buffers
+            .word_postings(self.corpus.word_postings_offset, &total_elements)
+            .map_err(exec_err)?;
+        let mut visit = |id: u32| -> Result<(), QueryExecError> {
+            let i = id as usize;
+            let (&lo, &hi) = offsets
+                .get(i)
+                .zip(offsets.get(i + 1))
+                .ok_or_else(|| QueryExecError::new("Word ID out of range"))?;
+            let postings = all_postings
+                .get(lo as usize..hi as usize)
+                .ok_or_else(|| QueryExecError::new("Word postings out of bounds"))?;
+            if unscoped {
+                f(postings);
+            } else {
+                let start = postings.partition_point(|&t| t < range.start);
+                let end = postings.partition_point(|&t| t < range.end);
+                f(&postings[start..end]);
+            }
+            Ok(())
+        };
+        match &plan.words {
+            WordIds::Range(ids) => {
+                for id in ids.clone() {
+                    visit(id)?;
+                }
+            }
+            WordIds::Unsorted(ids) => {
+                // Sort by word ID so the postings are read in address order.
+                // Explicit `_mm_prefetch` lookahead was evaluated here and
+                // slowed merges down: ascending accesses already trigger the
+                // hardware prefetcher, while short posting slices don't
+                // amortize the software prefetch instructions.
+                let mut sorted = ids.to_vec();
+                sorted.sort_unstable();
+                for id in sorted {
+                    visit(id)?;
+                }
+            }
+            WordIds::Sorted(ids) => {
+                for &id in ids {
+                    visit(id)?;
+                }
+            }
         }
         Ok(())
     }
 
-    pub(super) fn plan_affix<'a>(&self, pattern: &'a AffixPattern) -> AffixPlan<'a> {
+    pub(super) fn plan_affix<'a>(&'a self, pattern: &'a AffixPattern) -> AffixPlan<'a> {
         let words = match pattern {
             AffixPattern::Prefix(p) => WordIds::Range(self.vocab.prefix_range(p)),
-            AffixPattern::Suffix(s) => WordIds::Sorted(self.vocab.suffix_ids_sorted(s)),
+            AffixPattern::Suffix(s) => WordIds::Unsorted(self.vocab.suffix_ids_unsorted(s)),
             AffixPattern::PrefixSuffix { prefix, suffix } => {
                 WordIds::Sorted(self.vocab.prefix_suffix_ids_sorted(prefix, suffix))
             }
@@ -179,11 +205,8 @@ impl CorpusQueryEngine {
                 .vocab
                 .prefix_postings_range(ids.clone())
                 .map_or(0, |r| r.len()),
-            WordIds::Sorted(ids) => ids
-                .iter()
-                .filter_map(|&id| self.vocab.word_postings_range(id))
-                .map(|r| r.len())
-                .sum(),
+            WordIds::Unsorted(ids) => self.vocab.sum_postings_len(ids),
+            WordIds::Sorted(ids) => self.vocab.sum_postings_len(ids),
         };
         AffixPlan {
             pattern,

@@ -23,7 +23,7 @@ mod tests;
 use std::cmp::Ordering;
 use std::ops::Range;
 
-pub use crate::byte_readers::{RawByteReader, ReaderKind};
+use crate::byte_readers::RawByteReader;
 pub use binary_format::{MAGIC, VERSION};
 pub use jump_table::NUM_BUCKETS;
 use jump_table::{bucket, pattern_buckets};
@@ -137,16 +137,31 @@ impl SortedVocab {
         self.prefix_postings_range(word_id..word_id.checked_add(1)?)
     }
 
+    pub(crate) fn postings_offsets(&self) -> &[u32] {
+        self.u32s(&self.postings_offsets)
+    }
+
     /// The postings range of the contiguous `word_ids` (e.g. a prefix range),
     /// if they exist. Its length is their total number of postings.
     pub fn prefix_postings_range(&self, word_ids: Range<u32>) -> Option<Range<u32>> {
         if word_ids.start > word_ids.end {
             return None;
         }
-        let offsets = self.u32s(&self.postings_offsets);
+        let offsets = self.postings_offsets();
         let start = *offsets.get(word_ids.start as usize)?;
         let end = *offsets.get(word_ids.end as usize)?;
         Some(start..end)
+    }
+
+    pub fn sum_postings_len(&self, word_ids: &[u32]) -> usize {
+        let offsets = self.postings_offsets();
+        word_ids
+            .iter()
+            .filter_map(|&id| {
+                let i = id as usize;
+                Some(offsets.get(i + 1)?.saturating_sub(*offsets.get(i)?) as usize)
+            })
+            .sum()
     }
 
     /// A validated `u32` section (empty only if it was never validated).

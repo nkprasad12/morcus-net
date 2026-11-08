@@ -131,7 +131,7 @@ impl SortedVocab {
     }
 
     /// Opens the vocabulary file at `path`.
-    pub fn open(path: &str, kind: ReaderKind) -> Result<Self, String> {
+    pub(crate) fn open(path: &str, kind: ReaderKind) -> Result<Self, String> {
         if kind == ReaderKind::InMemory {
             return Self::from_bytes(std::fs::read(path).map_err(|e| format!("{path}: {e}"))?);
         }
@@ -147,7 +147,10 @@ impl SortedVocab {
     /// bytes. Checks the header, sizes, alignment and the `u32` tables (one
     /// sequential pass, no allocation, never touching the text), so that
     /// every lookup stays in bounds. `verify_invariants` checks the rest.
-    pub fn from_reader(reader: Box<dyn RawByteReader>, byte_len: usize) -> Result<Self, String> {
+    pub(crate) fn from_reader(
+        reader: Box<dyn RawByteReader>,
+        byte_len: usize,
+    ) -> Result<Self, String> {
         if cfg!(target_endian = "big") {
             return Err("SortedVocab requires a little-endian target".to_string());
         }

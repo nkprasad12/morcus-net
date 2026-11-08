@@ -96,7 +96,10 @@ fn create_query_engine() -> corpus_query_engine::CorpusQueryEngine {
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     {
-        std::env::set_current_dir("..").unwrap();
+        let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap();
+        std::env::set_current_dir(repo_root).unwrap();
         let mut query_benches = c.benchmark_group("Query Execution");
         let corpus = create_query_engine();
         let page_data = corpus::api::PageData {
@@ -114,13 +117,17 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         };
         query_benches.bench_function("dedit oscula nato", |b| {
             b.iter(|| {
-                let _ = corpus.query_corpus(dedit_oscula_nato, &page_data, &options);
+                corpus
+                    .query_corpus(dedit_oscula_nato, &page_data, &options)
+                    .unwrap();
             })
         });
 
         query_benches.bench_function("bitmask query", |b| {
             b.iter(|| {
-                let _ = corpus.query_corpus(bitmask_query, &page_data, &options);
+                corpus
+                    .query_corpus(bitmask_query, &page_data, &options)
+                    .unwrap();
             })
         });
 
@@ -128,13 +135,26 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             ("arma virumque", "arma virumque"),
             ("in abl", "in @case:abl"),
             ("bitmask len 2", "@case:dat @case:acc"),
+            ("prefix bell*", "bell*"),
+            ("prefix con*", "con*"),
+            ("suffix *tio", "*tio"),
+            ("suffix *que", "*que"),
+            ("affix in*bilis", "in*bilis"),
+            ("scoped [Caesar] *que", "[Caesar] *que"),
+            ("sparse anchor aeneas *que", "aeneas *que"),
+            (
+                "sparse anchor [Caesar] legatos *que",
+                "[Caesar] legatos *que",
+            ),
+            ("or fusion (con* or per*)", "(con* or per*)"),
         ] {
             query_benches.bench_function(name, |b| {
                 b.iter(|| {
-                    let _ = corpus.query_corpus(query, &page_data, &options);
+                    corpus.query_corpus(query, &page_data, &options).unwrap();
                 })
             });
         }
+        query_benches.finish();
     }
     {
         let mut smear_benches = c.benchmark_group("Smear Bitmask");

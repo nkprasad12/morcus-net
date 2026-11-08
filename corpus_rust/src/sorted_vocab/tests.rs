@@ -1,7 +1,7 @@
 use super::binary_format::HEADER_BYTES;
 use super::jump_table::{bucket, pattern_buckets};
 use super::*;
-use crate::byte_readers::aligned_copy;
+use crate::byte_readers::{ReaderKind, aligned_copy};
 
 /// Builds a vocabulary where word `i` (in `words` order) has `i + 1`
 /// postings, returning it and the words in sorted order.
@@ -493,6 +493,8 @@ fn postings_ranges() {
     #[allow(clippy::reversed_empty_ranges)]
     let reversed = 3..2;
     assert_eq!(v.prefix_postings_range(reversed), None);
+    assert_eq!(v.sum_postings_len(&[]), 0);
+    assert_eq!(v.sum_postings_len(&[0, 2, 6, 99]), 5 + 3 + 4);
 }
 
 // --- Corrupt inputs. ---
