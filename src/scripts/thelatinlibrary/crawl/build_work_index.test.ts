@@ -348,6 +348,100 @@ describe("build_work_index", () => {
     }
   });
 
+  it("splits bundled audit entries into one work per split", () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "ll-work-split-"));
+    try {
+      const manifest: SnapshotManifest = {
+        "erasmus/moriae.shtml": page("erasmus/moriae.shtml"),
+        "erasmus/querela.shtml": page("erasmus/querela.shtml"),
+        "erasmus/coll.shtml": page("erasmus/coll.shtml"),
+      };
+      const audit = {
+        neolatin_works: [
+          {
+            ll_author: "Erasmus",
+            ll_title: "Opera Selecta",
+            ll_paths: ["erasmus/moriae.txt", "erasmus/querela.txt"],
+            ll_words: 999,
+          },
+        ],
+      };
+      const splitOverrides = {
+        extraAuditPages: [{ llAuthor: "Erasmus", page: "erasmus/coll.shtml" }],
+        splitAuditEntries: {
+          Erasmus: [
+            { title: "Moriae Encomium", pages: ["erasmus/moriae.shtml"] },
+            {
+              title: "Querela Pacis & Colloquia",
+              pages: ["erasmus/querela.shtml", "erasmus/coll.shtml"],
+            },
+          ],
+        },
+      };
+      const index = buildWorkIndex({
+        rootDir: tmpRoot,
+        manifest,
+        overrides: splitOverrides,
+        // The bundle's id stays retired instead of going to the first split.
+        previousIndex: {
+          version: 1,
+          generatedAt: "2026-01-01",
+          works: [
+            previousWork("ll/erasmus-opera-selecta", [
+              "erasmus/moriae.shtml",
+              "erasmus/querela.shtml",
+            ]),
+          ],
+        },
+        audit,
+      });
+      expect(
+        index.works.map((w) => [w.workId, w.title, w.period, w.pages])
+      ).toEqual([
+        [
+          "ll/erasmus-moriae-encomium",
+          "Moriae Encomium",
+          "neolatin",
+          ["erasmus/moriae.shtml"],
+        ],
+        [
+          "ll/erasmus-querela-pacis-colloquia",
+          "Querela Pacis & Colloquia",
+          "neolatin",
+          ["erasmus/coll.shtml", "erasmus/querela.shtml"],
+        ],
+      ]);
+
+      // Rebuilding from that index keeps the split ids.
+      const rebuilt = buildWorkIndex({
+        rootDir: tmpRoot,
+        manifest,
+        overrides: splitOverrides,
+        previousIndex: index,
+        audit,
+      });
+      expect(rebuilt.works.map((w) => w.workId)).toEqual(
+        index.works.map((w) => w.workId)
+      );
+
+      // A stale split that misses a page fails loudly.
+      expect(() =>
+        buildWorkIndex({
+          rootDir: tmpRoot,
+          manifest,
+          overrides: {
+            splitAuditEntries: {
+              Erasmus: [{ title: "Moria", pages: ["erasmus/moriae.shtml"] }],
+            },
+          },
+          audit,
+        })
+      ).toThrow(/splitAuditEntries\["Erasmus"\]/);
+    } finally {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
   it("infers an unaudited work's period through the hub -> author page -> work chain", async () => {
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "ll-work-hub-"));
     try {

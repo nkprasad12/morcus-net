@@ -89,6 +89,83 @@ export interface WorkIndexOverrides {
   >;
   /** Metadata for unaudited works, keyed by their first page. */
   unauditedWorks?: Record<string, UnauditedWorkOverride>;
+  /**
+   * Audit entries that bundle several works (e.g. an author's "Opera
+   * Selecta"), split into one work per item, keyed by the entry's `ll_author`.
+   * Together the splits must list exactly the entry's pages (after aliases
+   * and `extraAuditPages`).
+   */
+  splitAuditEntries?: Record<string, AuditEntrySplit[]>;
+}
+
+/** One work carved out of a bundled audit entry. */
+export interface AuditEntrySplit {
+  title: string;
+  /** Pages under `raw/` (e.g. `erasmus/moriae.shtml`). */
+  pages: string[];
+}
+
+/**
+ * Resolves each audit entry's pages (applying `auditPathAliases` and
+ * `extraAuditPages`) and replaces entries listed in `splitAuditEntries` with
+ * one entry per split. Throws if the splits don't cover exactly the entry's
+ * pages, so a stale override fails loudly instead of dropping pages.
+ */
+export function expandAuditEntries(
+  entries: readonly AuditWorkEntry[],
+  manifest: SnapshotManifest,
+  overrides: WorkIndexOverrides = {}
+): { entry: AuditWorkEntry; pages: string[]; split: boolean }[] {
+  const aliases = overrides.auditPathAliases ?? {};
+  const out: { entry: AuditWorkEntry; pages: string[]; split: boolean }[] = [];
+  for (const entry of entries) {
+    const resolved = (entry.ll_paths ?? []).map((p) =>
+      resolveAuditPathToHtml(p, manifest, aliases)
+    );
+    for (const extra of overrides.extraAuditPages ?? []) {
+      if (
+        extra.llAuthor === entry.ll_author &&
+        manifest[extra.page] &&
+        !resolved.includes(extra.page)
+      ) {
+        resolved.push(extra.page);
+      }
+    }
+    const pages = [...new Set(resolved)];
+
+    const splits = overrides.splitAuditEntries?.[entry.ll_author];
+    if (splits === undefined) {
+      out.push({ entry, pages, split: false });
+      continue;
+    }
+    const splitPages = splits.flatMap((s) => s.pages);
+    const expected = [...pages].sort();
+    const actual = [...splitPages].sort();
+    if (
+      new Set(splitPages).size !== splitPages.length ||
+      expected.join("\n") !== actual.join("\n")
+    ) {
+      throw new Error(
+        `splitAuditEntries["${entry.ll_author}"] must list each of the ` +
+          `entry's pages exactly once.\n  entry: ${expected.join(", ")}\n` +
+          `  splits: ${actual.join(", ")}`
+      );
+    }
+    for (const split of splits) {
+      out.push({
+        entry: {
+          ...entry,
+          ll_title: split.title,
+          ll_paths: split.pages,
+          ll_file_count: split.pages.length,
+          ll_words: undefined,
+        },
+        pages: [...split.pages],
+        split: true,
+      });
+    }
+  }
+  return out;
 }
 
 export interface BuildWorkIndexOptions {
@@ -447,13 +524,16 @@ export function buildWorkIndex(
    * the id its author and title slugify to (several works can list the same
    * single composite page), the same page list, the id that listed its first
    * page, any other. Otherwise mint a fresh slug that no
-   * work, past or present, has used.
+   * work, past or present, has used. With `ownSlugOnly` (works split out of
+   * a bundled audit entry), only the id its author and title slugify to is
+   * kept, so no split inherits the bundle's id.
    */
   const allocateWorkId = (
     author: string,
     title: string,
     pages: readonly string[],
-    mainPageCount: number
+    mainPageCount: number,
+    ownSlugOnly = false
   ): string => {
     const authorSlug = slugify(author) || "unknown";
     const stem = path.posix
@@ -479,13 +559,14 @@ export function buildWorkIndex(
     const isBaseSlug = (id: string) =>
       id === base ||
       (id.startsWith(`${base}-`) && /^\d+$/.test(id.slice(base.length + 1)));
-    const previous =
-      candidates.find(isBaseSlug) ??
-      candidates.find(
-        (id) => (previousPagesById.get(id) ?? []).join("\n") === mainPages
-      ) ??
-      candidates.find((id) => firstPageIds.includes(id)) ??
-      candidates[0];
+    const previous = ownSlugOnly
+      ? candidates.find(isBaseSlug)
+      : candidates.find(isBaseSlug) ??
+        candidates.find(
+          (id) => (previousPagesById.get(id) ?? []).join("\n") === mainPages
+        ) ??
+        candidates.find((id) => firstPageIds.includes(id)) ??
+        candidates[0];
     if (previous !== undefined) {
       usedWorkIds.add(previous);
       return previous;
@@ -552,7 +633,11 @@ export function buildWorkIndex(
   ];
 
   for (const { bucket, defaultStatus, entries } of buckets) {
-    for (const entry of entries) {
+    for (const { entry, pages: uniqueResolved, split } of expandAuditEntries(
+      entries,
+      manifest,
+      overrides
+    )) {
       const redundantSet = new Set<string>();
       for (const r of entry.redundant_files ?? []) {
         const rPath = typeof r === "string" ? r : r.path;
@@ -566,20 +651,6 @@ export function buildWorkIndex(
         redundantSet.add(normalizePagePath(altPath));
         redundantSet.add(resolveAuditPathToHtml(altPath, manifest, aliases));
       }
-
-      const rawResolved = (entry.ll_paths ?? []).map((p) =>
-        resolveAuditPathToHtml(p, manifest, aliases)
-      );
-      for (const extra of overrides.extraAuditPages ?? []) {
-        if (
-          extra.llAuthor === entry.ll_author &&
-          manifest[extra.page] &&
-          !rawResolved.includes(extra.page)
-        ) {
-          rawResolved.push(extra.page);
-        }
-      }
-      const uniqueResolved = [...new Set(rawResolved)];
 
       const keptPages: string[] = [];
       const strippedPages: string[] = [];
@@ -704,7 +775,8 @@ export function buildWorkIndex(
           entry.ll_author,
           entry.ll_title,
           [...finalPages, ...strippedPages],
-          finalPages.length
+          finalPages.length,
+          split
         );
 
       const diskWords = countWordsOnDisk(rootDir, finalPages);
