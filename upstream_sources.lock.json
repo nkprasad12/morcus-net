@@ -89,7 +89,7 @@
     "thelatinlibrary": {
       "repo": "https://github.com/nkprasad12/TheLatinLibrary.git",
       "branch": "main",
-      "commit": "3112132297788fa4e7848db09c4ccd8a2a3807b8",
+      "commit": "8be54c192f45a5477ee70cd22728e3ee6a416118",
       "env": "THELATINLIBRARY_ROOT"
     }
   }
