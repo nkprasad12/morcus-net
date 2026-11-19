@@ -40,8 +40,9 @@ export const DICT_ATTRIBUTIONS: Record<string, DictAttributionInfo> = {
   GES: {
     sourceText: "Heidelberg University",
     sourceUrl: "https://latin-dict.github.io/dictionaries/Gesner1749.html",
-    licenseText: "Public Domain",
-    detailsHtml: `Johann Matthias Gesner, <em>Novus Linguae et Eruditionis Romanae Thesaurus</em> (1749). Transcribed by the team of Dr. Wilhelm K&uuml;hlmann from Heidelberg University; accessed via <a href="https://latin-dict.github.io/dictionaries/Gesner1749.html" target="_blank" rel="noopener noreferrer">latin-dict.github.io</a>.`,
+    licenseText: "CC BY-SA 3.0",
+    licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/",
+    detailsHtml: `Johann Matthias Gesner, <em>Novus Linguae et Eruditionis Romanae Thesaurus</em> (1749). Transcribed by the team of Dr. Wilhelm K&uuml;hlmann from Heidelberg University; accessed via <a href="https://latin-dict.github.io/dictionaries/Gesner1749.html" target="_blank" rel="noopener noreferrer">latin-dict.github.io</a> under a CC BY-SA 3.0 license.`,
   },
   FOR: {
     sourceText: "lexica.linguax.com",
