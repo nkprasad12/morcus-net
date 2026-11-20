@@ -226,6 +226,19 @@ Rules, checked in the engine (`query_validation.rs`) and mirrored in `errorsForT
   - **Output size (`pageSize` × `contextLen`):** Cross-thread return moves the 24-byte Rust `String` header (`O(1)`, zero-copy), while `napi_create_string_utf8` and `JSON.parse` run on the main thread in both sync and async. As output text grows (>8 KB), async uses _less_ main-thread CPU than sync because snippet extraction and `serde_json::to_string` move to the worker thread.
   - **Gotcha:** Do not call `napi_unref_threadsafe_function` while a query is in flight (or without ref/unref pairing around active jobs), or standalone scripts/tests with no other active libuv handles will exit while waiting on the Promise.
 
+### 3.7 Separate absolute vs. bitmask-relative coordinates in `index_data.rs`
+
+**Status:** Idea, low priority (current bugs fixed and regression-tested).
+
+In [`index_data.rs`](../../../../corpus_rust/src/corpus_query_engine/index_data.rs), arrays hold **absolute** corpus token IDs, while scoped `BitMask` slices (`bitmask_start > 0`) hold **bitmask-relative** offsets `[0, bitmask.len() * 64)`. Mixing the two caused real bugs (for example, `effective_index` is absolute in `apply_and_with_bitmask_and_array`, but relative `index + offset - bitmask_start` in `find_fuzzy_matches_with_array_and_bitmask`, while `bitmask_end_bit` kept `+ bitmask_start`). Also note `final_bit = bitmask.len() * 64 - 1` in `find_fuzzy_matches_with_bitmask_and_array` assumes `bitmask` is non-empty (enforced today by `IndexSlice::from`).
+
+Ways to eliminate coordinate-space confusion:
+
+1. **Encapsulate math in a `BitmaskView<'a>` / `BitmaskBuf` helper:** Store `(bits, start: u32)` behind one view type whose methods own all `start` subtraction, signed clamping, bounds checks, and `/ 64` / `% 64` indexing (`to_rel(abs, offset) -> Option<usize>`, `rel_window(abs, offset, left, right) -> Option<RangeInclusive<usize>>`), handling `bitmask.is_empty()` safely once.
+2. **Compile-time newtypes (`AbsToken(u32)`, `RelBit(usize)`, `RelDelta(i64)`):** Prevent comparing an absolute bound against a relative bit index at type-check time.
+3. **Strict `abs_*` vs. `rel_*` naming:** Retire ambiguous names (`effective_index`, `bitmask_end`, `start`, `end`) in favor of `abs_pos` (`index as i64 + offset as i64`), `rel_bit` (`abs_pos - bitmask_start as i64`), and `rel_len` (`bitmask.len() * 64`).
+4. **Shared boundary test matrix:** Cover every `bitmask_start`-aware helper with empty bitmask, `abs < bitmask_start - radius`, `abs` in `[bitmask_start - radius, bitmask_start)`, last bit `bitmask_start + bit_len - 1`, and `bitmask_start + bit_len`.
+
 ---
 
 ## Phase 4: Concordance Mode, Pagination, UI & Indexer Polish

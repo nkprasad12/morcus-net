@@ -549,7 +549,7 @@ fn find_fuzzy_matches_with_array_and_bitmask(
     bitmask_start: u32,
 ) -> Vec<u32> {
     let mut results: Vec<u32> = Vec::new();
-    let bitmask_end_bit = bitmask.len() * 64 + bitmask_start as usize;
+    let bitmask_end_bit = bitmask.len() * 64;
 
     // Smear the bitmask according to the max_distance and direction
     let smeared_bitmask = bitmask_utils::smear_bitmask(bitmask, max_distance, direction);
@@ -604,7 +604,7 @@ fn find_fuzzy_matches_with_bitmask_and_array(
         let effective_index = *index as i64 + offset as i64 - bitmask_start as i64;
         let start = effective_index - left_mod as i64;
         let end = effective_index + right_mod as i64;
-        if end < 0 || start as usize > final_bit {
+        if end < 0 || start > final_bit as i64 {
             continue;
         }
         let start = max(0, start) as usize;
@@ -1489,5 +1489,28 @@ mod tests {
         let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 1, Both, 64);
         let expected = to_bitmask(&[1, 6], 128);
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_array_and_bitmask_does_not_panic_past_bitmask_end() {
+        // bitmask has 1 u64 (64 bits) covering absolute tokens [64, 128).
+        // With offset = 1, array element 127 maps to effective_index = 127 + 1 - 64 = 64,
+        // which is outside the bitmask and must be skipped rather than panicking.
+        let first = &[65, 127];
+        let second_bitmask = to_bitmask(&[1], 64);
+        let result =
+            find_fuzzy_matches_with_array_and_bitmask(first, &second_bitmask, 1, 1, Both, 64);
+        assert_eq!(result, vec![65]);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_bitmask_and_array_does_not_drop_negative_start() {
+        // bitmask relative [1] with bitmask_start = 64 => absolute 65.
+        // array = [64], max_distance = 2 => effective_index = 0, start = -2, end = 2.
+        // Clamping start to 0 must still match relative bit 1.
+        let bitmask = to_bitmask(&[1], 64);
+        let array = vec![64u32];
+        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 2, Both, 64);
+        assert_eq!(result, to_bitmask(&[1], 64));
     }
 }
