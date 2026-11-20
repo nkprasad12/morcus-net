@@ -8,7 +8,7 @@
     "lexica": {
       "repo": "https://github.com/nkprasad12/lexica.git",
       "branch": "master",
-      "commit": "a05b816746ec7518c06b4233cf9efbb4d9c4bffd",
+      "commit": "4dc45189dacbc2c1d6fd4832a814c333c0066b49",
       "env": "LS_PATH",
       "file": "CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml"
     },
@@ -36,7 +36,7 @@
     "smithandhall": {
       "repo": "https://github.com/nkprasad12/smithandhall.git",
       "branch": "v1edits",
-      "commit": "34548d81a54dc6f4f74a4f7a81e3e311a7e1bcbf",
+      "commit": "5cdf6dafa0c4da59472172176e5f5748251d08c4",
       "env": "SH_RAW_PATH",
       "file": "sh_F2_latest.txt"
     },
