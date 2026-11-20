@@ -1,7 +1,7 @@
 # Pinned by digest so the base is part of this file, and so of the image's
 # build context and tag (see src/scripts/helper_images/). Upgrading Node is a
 # deliberate edit here.
-FROM node:26-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39
+FROM node:26-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc
 WORKDIR /morcus
 COPY --chown=node:node pruner.js ./pruner.js
 ENV NODE_ENV=production

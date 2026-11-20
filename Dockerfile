@@ -2,7 +2,7 @@
 # The Node base is pinned by digest (here and in the stages below), matching
 # `src/devops/pruner/Dockerfile`, so the server and pruner images share base
 # layers and Node upgrades are deliberate. Update all of them together.
-FROM node:26-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39
+FROM node:26-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc
 # `python3` is only for node-gyp: `npm ci` (npm 11) runs better-sqlite3's
 # implicit `node-gyp rebuild` despite its `"gypfile": false`. With the package's
 # prebuilt binary present, that rebuild compiles nothing, but node-gyp needs
@@ -27,7 +27,7 @@ ARG SOURCE_VERSION=local-docker-build
 ENV SOURCE_VERSION=$SOURCE_VERSION
 RUN npm run build
 
-FROM node:26-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39
+FROM node:26-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc
 WORKDIR /morcus
 COPY --from=0 /morcus/public public
 COPY --from=0 /morcus/build build
@@ -45,7 +45,7 @@ RUN chown -R node:node /morcus
 # so that a layer's bytes depend only on the file contents.
 RUN find /layers/ -exec touch -h -amt 200001010000.00 {} +
 
-FROM node:26-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39
+FROM node:26-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc
 # Each data directory gets its own layer. With `--link`, a layer doesn't depend
 # on the layers below it, and with normalised mtimes it's byte-identical (so
 # reused by the registry and on `docker pull`) whenever its contents are.
