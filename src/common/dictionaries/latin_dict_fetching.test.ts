@@ -169,4 +169,58 @@ describe("findEntriesForQuery", () => {
       { lemma: "quis#1", form: "quīs", data: "pl", usageNote: undefined },
     ]);
   });
+
+  it("does not duplicate inflections when merging main entry and subsection", async () => {
+    const tempDb = "latin_dict_fetching.alias.test.tmp.db";
+    SqliteDict.save(
+      [
+        {
+          id: "n10",
+          keys: ["pars"],
+          entry: "pars",
+          derivedKeys: [["n10.1", ["pars"]]],
+        },
+      ],
+      tempDb
+    );
+    try {
+      const backing = sqliteBacking(tempDb);
+      const reviver = (raw: string): EntryResult => ({
+        entry: raw,
+        outline: {
+          mainKey: raw,
+          mainSection: { text: raw, level: 0, ordinal: "", sectionId: raw },
+        },
+      });
+      const results = await findEntriesForQuery("partis", {
+        storage: new StoredDict(backing),
+        options: { handleInflections: true },
+        inflectionProvider: () => [
+          analysis("pars#1", "partis"),
+          analysis("pars#2", "partis"),
+        ],
+        reviver,
+        toEntryResult: (x) => x,
+        disambiguator: () => true,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].inflections).toEqual([
+        { lemma: "pars#1", form: "partis", data: "", usageNote: undefined },
+        { lemma: "pars#2", form: "partis", data: "", usageNote: undefined },
+      ]);
+      expect(results[0].subsections).toEqual([
+        {
+          id: "n10.1",
+          name: "pars",
+          inflections: [
+            { lemma: "pars#1", form: "partis", data: "", usageNote: undefined },
+            { lemma: "pars#2", form: "partis", data: "", usageNote: undefined },
+          ],
+        },
+      ]);
+    } finally {
+      cleanupSqlTableFiles(tempDb);
+    }
+  });
 });

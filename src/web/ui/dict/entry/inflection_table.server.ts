@@ -24,7 +24,7 @@ export function formatInflectionForm(rawForm: string): string {
  * collapse into visually identical rows, so we drop the duplicates.
  */
 export function dedupeInflections(
-  inflections: InflectionData[]
+  inflections: readonly InflectionData[]
 ): InflectionData[] {
   const seen = new Set<string>();
   const result: InflectionData[] = [];
@@ -54,7 +54,9 @@ function formatAnalysis(inflection: InflectionData): string {
  * Renders inflection analyses grouped by macronized form, one line per form,
  * with multiple analyses of the same form joined by ` · `.
  */
-export function renderInflections(inflections: InflectionData[]): string {
+export function renderInflections(
+  inflections: readonly InflectionData[]
+): string {
   const deduped = dedupeInflections(inflections);
   if (deduped.length === 0) {
     return "";

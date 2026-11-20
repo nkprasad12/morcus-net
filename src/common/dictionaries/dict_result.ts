@@ -60,7 +60,7 @@ export namespace InflectionData {
 export interface DictSubsectionResult {
   id: string;
   name: string;
-  inflections?: InflectionData[];
+  inflections?: readonly InflectionData[];
 }
 
 export namespace DictSubsectionResult {
@@ -75,8 +75,8 @@ export namespace DictSubsectionResult {
 export interface EntryResult {
   entry: string;
   outline: EntryOutline;
-  inflections?: InflectionData[];
-  subsections?: DictSubsectionResult[];
+  inflections?: readonly InflectionData[];
+  subsections?: readonly DictSubsectionResult[];
 }
 
 export namespace EntryResult {

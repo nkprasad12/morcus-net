@@ -3,6 +3,7 @@ import { haveCompatibleVowelLength } from "@/common/character_utils";
 import type {
   EntryResult,
   DictSubsectionResult,
+  InflectionData,
 } from "@/common/dictionaries/dict_result";
 import type {
   StoredDict,
@@ -142,16 +143,17 @@ export async function findEntriesForQuery<T extends EntryResult>(
       })
       .map((entryData) => {
         const subsectionIds = entryData.subsections?.map((s) => s.id);
-        const inflections = inflectedForms.flatMap((inflData) =>
-          inflData.inflectionData.map((info) => ({
-            lemma: analysis.lemma,
-            form:
-              // We use | instead of + as the seprator since Morpheus tables use
-              // + to signal diareses.
-              inflData.form + (info.enclitic ? ` | ${info.enclitic}` : ""),
-            data: wordInflectionDataToArray(info.grammaticalData).join(" "),
-            usageNote: info.tags?.join(" "),
-          }))
+        const inflections: readonly InflectionData[] = inflectedForms.flatMap(
+          (inflData) =>
+            inflData.inflectionData.map((info) => ({
+              lemma: analysis.lemma,
+              form:
+                // We use | instead of + as the seprator since Morpheus tables use
+                // + to signal diareses.
+                inflData.form + (info.enclitic ? ` | ${info.enclitic}` : ""),
+              data: wordInflectionDataToArray(info.grammaticalData).join(" "),
+              usageNote: info.tags?.join(" "),
+            }))
         );
         const result: DecodedStoredEntryAndMetadata = { ...entryData };
         if (entryData.includeMain) {
@@ -184,36 +186,54 @@ export async function findEntriesForQuery<T extends EntryResult>(
     const id = toMerge.id;
     const merged = mergedResults.get(id);
     if (merged === undefined) {
-      mergedResults.set(id, toMerge);
+      mergedResults.set(id, {
+        ...toMerge,
+        inflections: toMerge.inflections?.slice(),
+        subsections: toMerge.subsections?.map((s) => ({ ...s })),
+      });
       continue;
     }
-    if (toMerge.inflections) {
-      if (merged.inflections === undefined) {
-        merged.inflections = [];
-      }
-      merged.inflections.push(...toMerge.inflections);
-    }
-    for (const pendingSubsection of toMerge.subsections ?? []) {
-      const mergedSubsection = merged.subsections?.filter(
-        (s) => s.id === pendingSubsection.id
-      )?.[0];
-      if (merged.subsections === undefined) {
-        merged.subsections = [];
-      }
-      if (mergedSubsection === undefined) {
-        merged.subsections.push({ ...pendingSubsection });
-        continue;
-      }
-      if (pendingSubsection.inflections === undefined) {
-        // If we have no inflections, there's nothing to merge.
-        continue;
-      }
-      if (mergedSubsection.inflections === undefined) {
-        mergedSubsection.inflections = [];
-      }
-      mergedSubsection.inflections.push(...pendingSubsection.inflections);
-    }
+    mergedResults.set(id, {
+      ...merged,
+      inflections: mergeInflections(merged.inflections, toMerge.inflections),
+      subsections: mergeSubsections(merged.subsections, toMerge.subsections),
+    });
   }
   extras?.log("resultsFiltered");
   return Array.from(mergedResults.values());
+}
+
+function mergeInflections(
+  existing: readonly InflectionData[] | undefined,
+  incoming: readonly InflectionData[] | undefined
+): readonly InflectionData[] | undefined {
+  if (incoming === undefined) {
+    return existing;
+  }
+  return existing === undefined ? [...incoming] : [...existing, ...incoming];
+}
+
+function mergeSubsections(
+  existing: readonly DictSubsectionResult[] | undefined,
+  incoming: readonly DictSubsectionResult[] | undefined
+): readonly DictSubsectionResult[] | undefined {
+  if (incoming === undefined) {
+    return existing;
+  }
+  const merged = (existing ?? []).map((s) => ({ ...s }));
+  for (const pending of incoming) {
+    const idx = merged.findIndex((s) => s.id === pending.id);
+    if (idx === -1) {
+      merged.push({ ...pending });
+      continue;
+    }
+    merged[idx] = {
+      ...merged[idx],
+      inflections: mergeInflections(
+        merged[idx].inflections,
+        pending.inflections
+      ),
+    };
+  }
+  return merged;
 }

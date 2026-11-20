@@ -78,7 +78,7 @@ export function resolveSubsectionAnchor(
  * render several chips all pointing at the same place.
  */
 export function dedupeSubsections(
-  subsections: DictSubsectionResult[],
+  subsections: readonly DictSubsectionResult[],
   entryId: string,
   presentIds: Set<string>
 ): SubsectionGroup[] {
