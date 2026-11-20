@@ -142,7 +142,7 @@ export async function findEntriesForQuery<T extends EntryResult>(
       })
       .map((entryData) => {
         const subsectionIds = entryData.subsections?.map((s) => s.id);
-        const inflections = analysis.inflectedForms.flatMap((inflData) =>
+        const inflections = inflectedForms.flatMap((inflData) =>
           inflData.inflectionData.map((info) => ({
             lemma: analysis.lemma,
             form:

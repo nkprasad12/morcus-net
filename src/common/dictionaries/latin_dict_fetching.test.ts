@@ -8,6 +8,7 @@ import {
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { cleanupSqlTableFiles } from "@/common/test_helpers";
 import type { LatinWordAnalysis } from "@/morceus/cruncher_types";
+import { LatinNumber } from "@/morceus/types";
 
 console.debug = jest.fn();
 
@@ -130,5 +131,42 @@ describe("findEntriesForQuery", () => {
     const ictusResults = await ictusSetup.query("quís");
     expect(ictusSetup.matchesForCleanName).toHaveBeenCalledWith("quis");
     expect(ictusResults.map((r) => r.entry)).toEqual(["quis"]);
+  });
+
+  it("omits vowel-incompatible inflected forms from the same lemma", async () => {
+    const { query } = setup([
+      {
+        lemma: "quis#1",
+        inflectedForms: [
+          {
+            form: "quĭs",
+            inflectionData: [
+              {
+                lemma: "quis#1",
+                form: "quĭs",
+                grammaticalData: { number: LatinNumber.Singular },
+              },
+            ],
+          },
+          {
+            form: "quīs",
+            inflectionData: [
+              {
+                lemma: "quis#1",
+                form: "quīs",
+                grammaticalData: { number: LatinNumber.Plural },
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const results = await query("quīs");
+
+    expect(results).toHaveLength(1);
+    expect(results[0].inflections).toEqual([
+      { lemma: "quis#1", form: "quīs", data: "pl", usageNote: undefined },
+    ]);
   });
 });
