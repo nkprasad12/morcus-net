@@ -523,6 +523,7 @@
 :le:admoveo
 :vs:ad-mo^v	conj2
 :vs:ad-mo_v perfstem
+:vs:ad-mo_ mov_contr_perf
 :vs:ad-mo_t pp4
 :le:admugio
 :vs:ad-mu_g	conj4
@@ -916,6 +917,7 @@
 :le:amoveo
 :vs:a_-mo^v	conj2
 :vs:a_-mo_v perfstem
+:vs:a_-mo_ mov_contr_perf
 :vs:a_-mo_t pp4
 :le:amplexor
 :de:amplex	are_vb dep
@@ -2778,6 +2780,8 @@
 :le:commoveo
 :vs:com-mo^v	conj2
 :vs:com-mo_v perfstem
+:vs:com-mo_ mov_contr_perf
+:vs:con-mo_ mov_contr_perf orth
 :vs:com-mo_t pp4
 :le:commulceo
 :vs:com-mulc	conj2
@@ -11874,6 +11878,7 @@
 :le:permoveo
 :vs:per-mo^v	conj2
 :vs:per-mo_v perfstem
+:vs:per-mo_ mov_contr_perf
 :vs:per-mo_t pp4
 :le:permulceo
 :vs:per-mulc	conj2
@@ -13500,6 +13505,7 @@
 :le:promoveo
 :vs:pro_-mo^v	conj2
 :vs:pro_-mo_v perfstem
+:vs:pro_-mo_ mov_contr_perf
 :vs:pro_-mo_t pp4
 :le:prompto
 :de:pro_mpt	are_vb
@@ -14448,6 +14454,7 @@
 :le:removeo
 :vs:re^-mo^v	conj2
 :vs:re^-mo_v perfstem
+:vs:re^-mo_ mov_contr_perf
 :vs:re^-mo_t pp4
 :le:remugio
 :de:re^-mu_g	ire_vb
@@ -15287,6 +15294,7 @@
 :le:semoveo
 :vs:se_-mo^v	conj2
 :vs:se_-mo_v perfstem
+:vs:se_-mo_ mov_contr_perf
 :vs:se_-mo_t pp4
 :le:semustulo
 :de:se_mustu^l	are_vb
@@ -16224,6 +16232,7 @@
 :le:summoveo
 :vs:sum-mo^v	conj2
 :vs:sum-mo_v perfstem
+:vs:sum-mo_ mov_contr_perf
 :vs:sum-mo_t pp4
 :le:summurmuro
 :de:sum-murmu^r	are_vb

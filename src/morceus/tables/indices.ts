@@ -17,6 +17,9 @@ const VERB_TABLES = new Set([
   "ivperf",
   "avperf",
   "evperf",
+  "mov_contr_perf",
+  "ov_contr_perf",
+  "nosco_contr_perf",
 ]);
 
 export enum IndexMode {

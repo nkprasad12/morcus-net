@@ -64,9 +64,9 @@
 :le:dimoveo
 :vs:di_mo^v conj2
 :vs:di_mo_v perfstem
+:vs:di_mo_ mov_contr_perf
 :vs:di_mo_t pp4
 :vs:dismo_t pp4 orth
-:vb:di_mo_runt 3rd pl perf ind act contr
 
 :le:dispando
 :vs:dispand conj3
@@ -887,8 +887,8 @@
 :le:demoveo
 :vs:de_mo^v conj2 
 :vs:de_mo_v perfstem 
+:vs:de_mo_ mov_contr_perf
 :vs:de_mo_t pp4 
-:vb:de_mo_runt perf ind act 3rd pl contr
 
 :le:dissilio
 :vs:dis-si^l    conj4
@@ -897,8 +897,8 @@
 :le:submoveo
 :vs:submo^v conj2 
 :vs:submo_v perfstem 
+:vs:submo_ mov_contr_perf
 :vs:submo_t pp4 
-:vb:submo_runt perf ind act 3rd pl contr
 
 #de-nascor de_nascor
 #de + nascor -> de_ + nascor 
@@ -1094,10 +1094,11 @@
 :le:emoveo
 :vs:e_mo^v conj2 
 :vs:e_mo_v perfstem 
+:vs:e_mo_ mov_contr_perf
 :vs:e_mo_t pp4 
-:vb:e_mo_runt perf ind act 3rd pl contr
 :vs:exmo^v conj2 orth 
 :vs:exmo_v perfstem orth
+:vs:exmo_ mov_contr_perf orth
 :vs:exmo_t pp4 orth
 
 #ex-nascor e_nascor

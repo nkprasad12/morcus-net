@@ -565,8 +565,8 @@
 :le:moveo
 :vs:mo^v conj2
 :vs:mo_v perfstem
+:vs:mo_ mov_contr_perf
 :vs:mo_t pp4
-:vb:mo_runt 3rd pl perf ind act contr
 
 :le:mitto
 :vs:mitt conj3
@@ -925,6 +925,7 @@
 :le:surgo
 :vs:surg	conj3
 :vs:surri^g	conj3
+:vs:subri^g	conj3
 :vs:surre_x	perfstem
 :vs:subre_x	perfstem
 :vs:surrect	pp4

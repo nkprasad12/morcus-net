@@ -15929,7 +15929,7 @@ ariste_
 
 A^risti_des		
 :le:Aristides
-:aj:A^risti_d	es_is masc
+:no:A^risti_d	es_is_greek masc
 
 
 a^risti^fer		
@@ -18973,6 +18973,7 @@ a_tra_menta_ri^um
 a_tra_mentum		
 :le:atramentum
 :no:a_tra_ment	us_i neut
+:no:attra_ment	us_i neut orth
 
 
 A_^trami_tae		
@@ -92525,11 +92526,13 @@ imber
 imberbis		<orth type=alt>inb-</orth>	
 :le:imberbis
 :aj:imberb	is_e
+:aj:inberb	is_e orth
 
 
 imberbus		
 :le:imberbus
 :aj:imberb	us_a_um
+:aj:inberb	us_a_um orth
 
 
 imbo^ni^tas		<orth type=alt>inb-</orth>	
