@@ -7,7 +7,7 @@ import {
 } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { cleanupSqlTableFiles } from "@/common/test_helpers";
-import type { LatinWordAnalysis } from "@/morceus/cruncher_types";
+import type { CrunchResult, LatinWordAnalysis } from "@/morceus/cruncher_types";
 import { LatinNumber } from "@/morceus/types";
 
 console.debug = jest.fn();
@@ -222,5 +222,375 @@ describe("findEntriesForQuery", () => {
     } finally {
       cleanupSqlTableFiles(tempDb);
     }
+  });
+});
+
+describe("findEntriesForQuery ranking tiers", () => {
+  const RANKING_DB = "latin_dict_fetching.ranking.test.tmp.db";
+  // Minimal synthetic dictionary entries reused across tiering test cases.
+  const ENTRIES: RawDictEntry[] = [
+    { id: "e_head", keys: ["head"], entry: "head" },
+    { id: "e_moveo", keys: ["moveo"], entry: "moveo" },
+    { id: "e_admoveo", keys: ["admoveo"], entry: "admoveo" },
+    { id: "e_mora", keys: ["mora"], entry: "mora" },
+    { id: "e_mos", keys: ["mos"], entry: "mos" },
+    { id: "e_morior", keys: ["morior"], entry: "morior" },
+    { id: "e_nosco", keys: ["nosco"], entry: "nosco" },
+    { id: "e_nostius", keys: ["Nostius"], entry: "Nostius" },
+    { id: "e_imberbis", keys: ["imberbis"], entry: "imberbis" },
+  ];
+
+  beforeAll(() => {
+    SqliteDict.save(ENTRIES, RANKING_DB);
+  });
+
+  afterAll(() => {
+    cleanupSqlTableFiles(RANKING_DB);
+  });
+
+  function makeInfo(
+    lemma: string,
+    form: string,
+    opts?: { tags?: string[]; relaxedCase?: true }
+  ): CrunchResult {
+    return {
+      lemma,
+      form,
+      grammaticalData: {},
+      tags: opts?.tags,
+      relaxedCase: opts?.relaxedCase,
+    };
+  }
+
+  function queryWith(input: string, analyses: LatinWordAnalysis[]) {
+    const backing = sqliteBacking(RANKING_DB);
+    return findEntriesForQuery(input, {
+      storage: new StoredDict(backing),
+      options: { handleInflections: true },
+      inflectionProvider: () => analyses,
+      reviver: (raw): EntryResult => ({
+        entry: raw,
+        outline: {
+          mainKey: raw,
+          mainSection: { text: raw, level: 0, ordinal: "", sectionId: raw },
+        },
+      }),
+      toEntryResult: (x) => x,
+      disambiguator: () => true,
+    });
+  }
+
+  it("orders Tiers 2 through 5 lexicographically by exact-case, then non-deranked", async () => {
+    const results = await queryWith("moris", [
+      // Tier 5: relaxedCase + deranked
+      {
+        lemma: "Nostius",
+        inflectedForms: [
+          {
+            form: "moris",
+            inflectionData: [
+              makeInfo("Nostius", "moris", {
+                tags: ["poetic"],
+                relaxedCase: true,
+              }),
+            ],
+          },
+        ],
+      },
+      // Tier 4: relaxedCase + primary
+      {
+        lemma: "imberbis",
+        inflectedForms: [
+          {
+            form: "moris",
+            inflectionData: [
+              makeInfo("imberbis", "moris", { relaxedCase: true }),
+            ],
+          },
+        ],
+      },
+      // Tier 3: exact-case + deranked (appears first from cruncher)
+      {
+        lemma: "moveo",
+        inflectedForms: [
+          {
+            form: "mo_ris",
+            inflectionData: [makeInfo("moveo", "mo_ris", { tags: ["contr"] })],
+          },
+        ],
+      },
+      // Tier 2: exact-case + primary (relative Morceus order preserved)
+      analysis("mora", "mo^ri_s"),
+      analysis("mos", "mo_ris"),
+    ]);
+
+    expect(results.map((r) => r.entry)).toEqual([
+      "mora",
+      "mos",
+      "moveo",
+      "imberbis",
+      "Nostius",
+    ]);
+  });
+
+  it("keeps exact headwords in Tier 1 even when tagged deranked or relaxedCase", async () => {
+    const results = await queryWith("head", [
+      {
+        lemma: "head",
+        inflectedForms: [
+          {
+            form: "head",
+            inflectionData: [
+              makeInfo("head", "head", {
+                tags: ["archaic"],
+                relaxedCase: true,
+              }),
+            ],
+          },
+        ],
+      },
+      analysis("mos", "head"),
+    ]);
+
+    expect(results.map((r) => r.entry)).toEqual(["head", "mos"]);
+  });
+
+  it("keeps exact-case contracted/syncopated verbs above relaxed-case proper nouns (nosti pattern)", async () => {
+    const results = await queryWith("nosti", [
+      {
+        lemma: "nosco",
+        inflectedForms: [
+          {
+            form: "no_sti_",
+            inflectionData: [makeInfo("nosco", "no_sti_", { tags: ["contr"] })],
+          },
+        ],
+      },
+      {
+        lemma: "Nostius",
+        inflectedForms: [
+          {
+            form: "Nosti_",
+            inflectionData: [
+              makeInfo("Nostius", "Nosti_", { relaxedCase: true }),
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(results.map((r) => r.entry)).toEqual(["nosco", "Nostius"]);
+  });
+
+  it("does not derank orth, variant, greek, or dep tags", async () => {
+    const results = await queryWith("inberbes", [
+      {
+        lemma: "moveo",
+        inflectedForms: [
+          {
+            form: "inberbes",
+            inflectionData: [makeInfo("moveo", "inberbes", { tags: ["late"] })],
+          },
+        ],
+      },
+      {
+        lemma: "imberbis",
+        inflectedForms: [
+          {
+            form: "inberbe_s",
+            inflectionData: [
+              makeInfo("imberbis", "inberbe_s", { tags: ["orth"] }),
+            ],
+          },
+        ],
+      },
+      {
+        lemma: "mora",
+        inflectedForms: [
+          {
+            form: "inberbes",
+            inflectionData: [
+              makeInfo("mora", "inberbes", { tags: ["variant"] }),
+            ],
+          },
+        ],
+      },
+      {
+        lemma: "mos",
+        inflectedForms: [
+          {
+            form: "inberbes",
+            inflectionData: [makeInfo("mos", "inberbes", { tags: ["greek"] })],
+          },
+        ],
+      },
+      {
+        lemma: "morior",
+        inflectedForms: [
+          {
+            form: "inberbes",
+            inflectionData: [makeInfo("morior", "inberbes", { tags: ["dep"] })],
+          },
+        ],
+      },
+    ]);
+
+    expect(results.map((r) => r.entry)).toEqual([
+      "imberbis",
+      "mora",
+      "mos",
+      "morior",
+      "moveo",
+    ]);
+  });
+
+  it("re-evaluates mixed analyses after vowel-length filtering and orders within-entry inflections", async () => {
+    const moriorAnalysis: LatinWordAnalysis = {
+      lemma: "morior",
+      inflectedForms: [
+        {
+          form: "mo^ri_s",
+          inflectionData: [
+            makeInfo("morior", "mo^ri_s", { tags: ["dep", "early"] }),
+          ],
+        },
+        {
+          form: "mo^ri^s",
+          inflectionData: [makeInfo("morior", "mo^ri^s", { tags: ["dep"] })],
+        },
+      ],
+    };
+    const moveoContr: LatinWordAnalysis = {
+      lemma: "moveo",
+      inflectedForms: [
+        {
+          form: "mo_ri_s",
+          inflectionData: [makeInfo("moveo", "mo_ri_s", { tags: ["contr"] })],
+        },
+      ],
+    };
+
+    // Unmacronized: morior has non-deranked `mo^ri^s`, stays Tier 2 ahead of moveo,
+    // and sorts `mo^ri^s` before `mo^ri_s (dep early)` within morior.
+    const unmacronized = await queryWith("moris", [
+      moveoContr,
+      moriorAnalysis,
+      analysis("mora", "mo^ri_s"),
+    ]);
+    expect(unmacronized.map((r) => r.entry)).toEqual([
+      "morior",
+      "mora",
+      "moveo",
+    ]);
+    expect(unmacronized[0].inflections?.map((i) => i.form)).toEqual([
+      "mo^ri^s",
+      "mo^ri_s",
+    ]);
+
+    // Macronized: `mo^ri^s` is filtered out, leaving only `mo^ri_s (dep early)`,
+    // so morior drops to Tier 3 behind mora while keeping Morceus relative order vs moveo.
+    const macronized = await queryWith("morīs", [
+      moveoContr,
+      moriorAnalysis,
+      analysis("mora", "mo^ri_s"),
+    ]);
+    expect(macronized.map((r) => r.entry)).toEqual(["mora", "moveo", "morior"]);
+
+    // Within a single analysis, exact-case deranked (rank 1) precedes relaxed-case primary (rank 2).
+    const mixedCaseAndTag = await queryWith("moris", [
+      {
+        lemma: "mora",
+        inflectedForms: [
+          {
+            form: "Mo_ris",
+            inflectionData: [makeInfo("mora", "Mo_ris", { relaxedCase: true })],
+          },
+          {
+            form: "mo^ri_s",
+            inflectionData: [makeInfo("mora", "mo^ri_s", { tags: ["contr"] })],
+          },
+        ],
+      },
+    ]);
+    expect(mixedCaseAndTag[0].inflections?.map((i) => i.form)).toEqual([
+      "mo^ri_s",
+      "Mo_ris",
+    ]);
+  });
+
+  it("preserves higher tier slot when merging cross-tier duplicates (including capitalized exactMatches)", async () => {
+    const results = await queryWith("Mos", [
+      {
+        lemma: "moveo",
+        inflectedForms: [
+          {
+            form: "mos",
+            inflectionData: [
+              makeInfo("moveo", "mos", { tags: ["contr"], relaxedCase: true }),
+            ],
+          },
+        ],
+      },
+      {
+        lemma: "mos",
+        inflectedForms: [
+          {
+            form: "mo_s",
+            inflectionData: [makeInfo("mos", "mo_s", { relaxedCase: true })],
+          },
+        ],
+      },
+      {
+        lemma: "mora",
+        inflectedForms: [
+          {
+            form: "mos",
+            inflectionData: [makeInfo("mora", "mos", { relaxedCase: true })],
+          },
+        ],
+      },
+    ]);
+
+    // Capitalized "Mos" hits `mos` in Tier 1 exactMatches; `mora` is Tier 4, `moveo` is Tier 5.
+    expect(results.map((r) => r.entry)).toEqual(["mos", "mora", "moveo"]);
+    expect(results[0].inflections?.map((i) => i.form)).toEqual(["mo_s"]);
+
+    // Tier 3 + Tier 2 hitting the same entry keeps Tier 2 order and merges Tier 2 inflections first.
+    const sameIdCrossTier = await queryWith("moris", [
+      {
+        lemma: "mos#1",
+        inflectedForms: [
+          {
+            form: "mo_ri_s",
+            inflectionData: [makeInfo("mos#1", "mo_ri_s", { tags: ["early"] })],
+          },
+        ],
+      },
+      analysis("mora", "mo^ri_s"),
+      analysis("mos#2", "mo_ris"),
+    ]);
+    expect(sameIdCrossTier.map((r) => r.entry)).toEqual(["mora", "mos"]);
+    expect(sameIdCrossTier[1].inflections?.map((i) => i.lemma)).toEqual([
+      "mos#2",
+      "mos#1",
+    ]);
+  });
+
+  it("still returns results when only Tier 3 matches exist", async () => {
+    const results = await queryWith("admorunt", [
+      {
+        lemma: "admoveo",
+        inflectedForms: [
+          {
+            form: "admo_runt",
+            inflectionData: [
+              makeInfo("admoveo", "admo_runt", { tags: ["contr"] }),
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(results.map((r) => r.entry)).toEqual(["admoveo"]);
   });
 });

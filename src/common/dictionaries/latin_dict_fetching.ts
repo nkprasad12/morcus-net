@@ -15,11 +15,75 @@ import {
   foldLatinLigaturesAndNumerals,
   removeDiacritics,
 } from "@/common/text_cleaning";
-import { type LatinWordAnalysis } from "@/morceus/cruncher_types";
+import {
+  type CrunchResult,
+  type LatinWordAnalysis,
+} from "@/morceus/cruncher_types";
 import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
 import type { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 const REPLACED_CHARS = new Map<string, string>([["ſ", "s"]]);
+
+// Secondary usage/register tags deranked below standard forms. Excludes variant
+// spelling/morphological/loanword markers such as `orth`, `variant`, and `greek`,
+// as well as grammatical/semantic tags (e.g. `dep`, name classes).
+const DERANKED_TAGS = new Set<string>([
+  "contr",
+  "syncop",
+  "syncope",
+  "early",
+  "archaic",
+  "old",
+  "rare",
+  "poetic",
+  "poet",
+  "late",
+  "disputed",
+]);
+
+function hasDerankedTag(tags?: readonly string[]): boolean {
+  return tags?.some((tag) => DERANKED_TAGS.has(tag)) === true;
+}
+
+/**
+ * Lexicographic rank for an inflection: exact-case beats relaxed-case,
+ * and within each case tier, non-deranked tags beat deranked tags.
+ */
+function inflectionRank(info: DeepReadonly<CrunchResult>): number {
+  const relaxed = info.relaxedCase === true ? 2 : 0;
+  const deranked = hasDerankedTag(info.tags) ? 1 : 0;
+  return relaxed + deranked;
+}
+
+function buildRankedInflections(
+  lemma: string,
+  inflectedForms: DeepReadonly<LatinWordAnalysis["inflectedForms"]>
+): { tierIndex: number; inflections: readonly InflectionData[] } {
+  const rankedPairs = inflectedForms
+    .flatMap((inflData) =>
+      inflData.inflectionData.map((info) => ({
+        form: inflData.form,
+        info,
+        rank: inflectionRank(info),
+      }))
+    )
+    .sort((a, b) => a.rank - b.rank);
+  const allRelaxedCase = rankedPairs.every((pair) => pair.rank >= 2);
+  const allDeranked = rankedPairs.every((pair) => pair.rank % 2 === 1);
+  const tierIndex = (allRelaxedCase ? 2 : 0) + (allDeranked ? 1 : 0);
+  const inflections = rankedPairs.map(
+    ({ form, info }): InflectionData => ({
+      lemma,
+      form:
+        // We use | instead of + as the separator since Morpheus tables use
+        // + to signal diareses.
+        form + (info.enclitic ? ` | ${info.enclitic}` : ""),
+      data: wordInflectionDataToArray(info.grammaticalData).join(" "),
+      usageNote: info.tags?.join(" "),
+    })
+  );
+  return { tierIndex, inflections };
+}
 
 /**
  * Finds analyses for the diacritic-free input.
@@ -106,7 +170,10 @@ export async function findEntriesForQuery<T extends EntryResult>(
   const cleanInput = removeDiacritics(input)
     .replaceAll("\u0304", "")
     .replaceAll("\u0306", "");
-  const inflectedResults: DecodedStoredEntryAndMetadata[] = [];
+  // Tiers 2-5 for non-exact-lemma matches, indexed by `buildRankedInflections`:
+  // 0 = exact-case primary, 1 = exact-case deranked,
+  // 2 = relaxed-case primary, 3 = relaxed-case deranked.
+  const inflectedTiers: DecodedStoredEntryAndMetadata[][] = [[], [], [], []];
   const exactResults: DecodedStoredEntryAndMetadata[] = [];
   // Get inflected results that may match the input.
   const analyses = await inflectionProvider(cleanInput);
@@ -124,6 +191,11 @@ export async function findEntriesForQuery<T extends EntryResult>(
     if (inflectedForms.length === 0) {
       continue;
     }
+
+    const { tierIndex, inflections } = buildRankedInflections(
+      analysis.lemma,
+      inflectedForms
+    );
 
     // Get the base lemma - for example, for `occido#2` -> `occido`.
     const lemmaChunks = analysis.lemma.split("#");
@@ -143,18 +215,6 @@ export async function findEntriesForQuery<T extends EntryResult>(
       })
       .map((entryData) => {
         const subsectionIds = entryData.subsections?.map((s) => s.id);
-        const inflections: readonly InflectionData[] = inflectedForms.flatMap(
-          (inflData) =>
-            inflData.inflectionData.map((info) => ({
-              lemma: analysis.lemma,
-              form:
-                // We use | instead of + as the seprator since Morpheus tables use
-                // + to signal diareses.
-                inflData.form + (info.enclitic ? ` | ${info.enclitic}` : ""),
-              data: wordInflectionDataToArray(info.grammaticalData).join(" "),
-              usageNote: info.tags?.join(" "),
-            }))
-        );
         const result: DecodedStoredEntryAndMetadata = { ...entryData };
         if (entryData.includeMain) {
           result.inflections = inflections;
@@ -175,14 +235,14 @@ export async function findEntriesForQuery<T extends EntryResult>(
     if (lemmaBase === removeDiacritics(input)) {
       exactResults.push(...results);
     } else {
-      inflectedResults.push(...results);
+      inflectedTiers[tierIndex].push(...results);
     }
   }
 
   const mergedResults = new Map<string, EntryResult>();
   for (const toMerge of exactResults
     .concat(exactMatches)
-    .concat(inflectedResults)) {
+    .concat(...inflectedTiers)) {
     const id = toMerge.id;
     const merged = mergedResults.get(id);
     if (merged === undefined) {
